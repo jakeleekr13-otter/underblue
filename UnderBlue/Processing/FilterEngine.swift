@@ -35,7 +35,7 @@ final class FilterEngine: Sendable {
         lightDetailKernel = MetalKernels.color("UnderBlueLightDetail")
         var calm: [String: CIColorKernel] = [:]
         for name in ["UnderBlueCalmShare", "UnderBlueCalmSpread", "UnderBlueCalmWeight", "UnderBlueCalmPremultiply",
-                     "UnderBlueWaterCalm", "UnderBlueCalmKeep"] { calm[name] = MetalKernels.color(name) }
+                     "UnderBlueWaterCalm", "UnderBlueCalmKeep", "UnderBlueVioletCalm"] { calm[name] = MetalKernels.color(name) }
         calmKernels = calm
     }
 
@@ -44,10 +44,27 @@ final class FilterEngine: Sendable {
         return apply(image, correction: .make(analysis: settings.analysis, preset: settings.preset, adjustments: settings.adjustments),
                      intensity: settings.appliedIntensity)
     }
-    func apply(_ image: CIImage, correction: ColorCorrection, intensity: Float, calmWeight: CIImage? = nil) -> CIImage {
+    /// `violetCalm` false leaves the violet calm to the caller: RestorationEngine.combined runs it once
+    /// on the blended output.
+    func apply(_ image: CIImage, correction: ColorCorrection, intensity: Float, calmWeight: CIImage? = nil,
+               violetCalm calmsViolet: Bool = true) -> CIImage {
         let amount = min(1, max(0, intensity.isFinite ? intensity : 0))
         guard amount > 0 else { return image }
-        return blend(image, finishing(image, correction: correction, calmWeight: calmWeight), amount: amount)
+        let calm = calmWeight ?? waterCalmWeight(image, correction: correction)
+        let shown = blend(image, finishing(image, correction: correction, calmWeight: calm), amount: amount)
+        return calmsViolet ? violetCalm(shown, source: image, calmWeight: calm) : shown
+    }
+    /// Violet the correction made loses its chroma; a pixel that was violet in the source keeps it
+    /// (FinishingMath.violetCalm). It runs once, on the colour that is shown. Per path it was wrong on
+    /// m5: the restored path left the sand lavender and the source path cyan, and their blend was
+    /// neutral (chroma 0.017); calming the restored lavender alone left the blend cyan (0.020).
+    /// It only lowers chroma at the same lightness, so no channel crosses white.
+    /// `calmWeight` (waterCalmWeight of the source) tells water from subjects; nil treats all as subject.
+    func violetCalm(_ image: CIImage, source: CIImage, calmWeight: CIImage?) -> CIImage {
+        guard let kernel = calmKernels["UnderBlueVioletCalm"] else { return image }
+        let water = calmWeight ?? CIImage(color: .black).cropped(to: image.extent)
+        return (kernel.apply(extent: image.extent, arguments: [image, source, water,
+            CIVector(x: CGFloat(FinishingMath.violetCalmAmount), y: CGFloat(FinishingMath.violetWaterHue), z: 0, w: 0)]) ?? image).cropped(to: image.extent)
     }
     /// Applies a preset at full strength. Callers choose what the final intensity blends against.
     func finishing(_ image: CIImage, settings: FilterSettings) -> CIImage {

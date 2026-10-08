@@ -259,6 +259,29 @@ Correction lifts the noise in open water, and the sharpening steps lift it again
 
 **Depth image clamp.** `RestorationEngine.depthImage` now clamps the depth map before scaling. Before, the border sampled the empty space outside the map. How much depended on the region that the later filters asked for. So any blur after the restoration changed the restored edge rows. With the water calm, `testRestoredVideoFrameKeepsItsEdges` read 0.948 on the iPhone, the simulator and the Mac. With the clamp it passes. The image interior is unchanged. The border now matches the old output.
 
+### Violet calm (8 Oct 2026)
+
+The correction can push red into blue pixels until they read violet or magenta. On O5 the reef went from OKLab hue 248 in the source to 291, and 4.8% of the frame was violet. AquaColorFix has 0.1%.
+
+- Kernel `UnderBlueVioletCalm`, CPU mirror `FinishingMath.violetCalm`. It runs once on the shown output: at the end of `FilterEngine.apply`, and in `RestorationEngine.combined` after the depth blend.
+- It acts on a pixel whose OKLab hue is 282 to 340, with ramps of 12 degrees. The pixel's chroma must be clear: the rule fades in from 0.015 to 0.03. Lightness always stays.
+- A subject pixel loses `violetCalmAmount` (1) of its chroma. The ramps keep some colour.
+- Water turns back to `violetWaterHue` (OKLab 265, blue) at its own chroma. The water share comes from the [water calm](#water-calm-8-oct-2026) weight. Grey water is as wrong as violet water: turned grey, Deep Dive's cyan test water lost its blue lead, and r05's deep water lost chroma (23.9 to 17.3).
+- A pixel whose source was violet too keeps its colour. r04's magenta anemone stays at 56.6% violet pixels.
+- Per path it was wrong on m5. The restored path left the sand lavender and the source path cyan. Their blend was neutral (chroma 0.017). Calming the restored lavender alone left the blend cyan (0.020).
+
+| Measure, Mac harness at 1200 px | Before | After |
+|---|---|---|
+| Violet pixels (OKLab 282 to 330, chroma 0.03 or more), O5 / O1 | 4.8% / 2.3% | 0.7% / 0.3% |
+| Violet pixels, sum over 14 photos (without m3 and r04) | 17.0% | 7.8% |
+| r04 magenta anemone | 56.6% | 56.6% |
+| Mean CIE76 to the references, 10 pairs (without m3) | 16.24 | 16.14 |
+| r05 deep water chroma / OKLab hue | 23.9 / 270 | 23.7 / 267 |
+| m5 sand / m6 belly chroma | 0.017 / 0.043 | 0.017 / 0.043 |
+| AquaColorFix gate, photo / video | 13.20 / 13.09 | 13.02 / 12.84 |
+
+It does not make subjects warm. On O5 the reef turns grey; AquaColorFix makes it yellow-brown (hue 76, chroma 0.073). See [Rejected](#rejected) for the subject hue rules that were tried.
+
 ### Highlight shoulder
 
 Every finishing step can push a highlight past white, and none rolls it off. Before this rule, bright sand clipped in one channel and turned flat mint (r14). So the last finishing step is a shoulder: kernel `UnderBlueHighlightShoulder`, CPU mirror `FinishingMath.shoulder`.
@@ -496,6 +519,7 @@ No separate figure is recorded here for these four. The scorecard shows the comb
 | Water hue goal 240 in full, bounds 0.35 to 2.2, solver polish | Water hue on pairs 1 and 5: 246 and 257 to 238 and 247 (target 240). The polish took pair 5 from 16.2 to 13.9. |
 | Murky chroma floor 0.14 to 0.22 | Pair 2 water chroma 0.17 to 0.20 (AquaColorFix 0.23). |
 | Tone: shadow lift 0.28 + 0.22 haze to 0.2 + 0.15 haze; highlights 0.92 - 0.2 haze; highlight rule down to -0.12 | Gate 13.60 to 12.50; median L* on pairs 1 to 3 within 2 of AquaColorFix (before +3 to +7). Shadows kept the black level: brightness stayed at exposure x 0.45. |
+| Violet calm (8 Oct 2026) | See [Violet calm](#violet-calm-8-oct-2026). Violet pixels over 14 photos 17.0% to 7.8%; gate 13.20 to 13.02 (video 13.09 to 12.84); r04 unchanged. |
 | Water calm and depth image clamp (8 Oct 2026) | See [Water calm](#water-calm-8-oct-2026). Far water noise on IMG_7260 1.57 to 0.22; mola texture 6.47 to 6.39; gate 13.14 to 13.20. |
 | Fine detail layer, strength 1.3, floor 0.004, band to 0.15 to 0.30, gated by the neutral weight | Pair 3 detail energy 5.07 to 6.79 (AquaColorFix 8.10); subject detail up on every pair; water detail on pair 3 stays under AquaColorFix's (5.59 against 6.52). Gate 12.50 to 12.54. No visible halo on the mola or the manta edge at 100%. |
 
@@ -519,6 +543,10 @@ No separate figure is recorded here for these four. The scorecard shows the comb
 | Murky lift goal 1.2 + 0.9 murky^2 to 1.1 + 0.4 murky^2 | No change on pair 2 (its lift is capped either way); market m2 lost 8 deltaE. |
 | Old shadow lift kept with the rest of the tone change | m2 23.7 to 23.1 only; gate 12.50 to 13.02. |
 | Detail layer gated by the plain water-like weight, floor 0.012 | Pair 3 detail 5.07 to 5.19: the mola is water-like, so it got nothing. |
+| Subject light removal below red, and k 0.4 to 0.8 (8 Oct 2026) | Green and blue were allowed below the pixel's red, so a subject could turn warm. The problem photos barely moved: O4 green subject pixels 44% to 41%. Only m1 gained warmth. |
+| Subject hue rotation, green toward 80 degrees (8 Oct 2026) | O4 green subject pixels 44% to 41%. A partial turn moved cyan through the green band: r14 green 24.6% to 39.5%. A full turn made r14's sand beige-pink and left green and magenta streaks on its batfish. |
+| Warmth from the source's redness against the water | It does not separate a pigmented reef from sand. On m5 the sand is 13.6 times redder than the water and the coral 5.5 times. |
+| Violet calm per path, before or after the shoulder | It moved the m5 sand chroma from 0.017 to 0.020. Only the blended output is right; see [Violet calm](#violet-calm-8-oct-2026). |
 | Water calm weight from colour alone (8 Oct 2026) | It blurred the O3 mola and the O4 manta and its reef: both are water-coloured. |
 | Water calm weight read on the restored image | Its water share was 0.65 in far water and below 0.2 within 12 px of a subject. That left a band of noise around the IMG_7260 turtle, about 60 px wide. |
 | Water calm also taking back the unsharp masks | It turned their soft dark fringe into a sharp dark line along the IMG_7261 wrasse. |

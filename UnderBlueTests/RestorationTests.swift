@@ -1303,6 +1303,60 @@ final class RestorationTests: XCTestCase {
         XCTAssertEqual(FinishingMath.calmFlatness(FinishingMath.calmFlatHigh), 0, accuracy: 1e-6)
     }
 
+    func testVioletCalmLowersOnlyTheVioletTheCorrectionMade() {
+        func lch(_ l: Float, _ c: Float, _ h: Float) -> SIMD3<Float> {
+            ColorCorrection.linear(fromOKLab: SIMD3(l, c * cos(h * .pi / 180), c * sin(h * .pi / 180)))
+        }
+        // The OKLab inverse returns the colour.
+        let any = SIMD3<Float>(0.12, 0.25, 0.4)
+        assertEqual(ColorCorrection.linear(fromOKLab: ColorCorrection.oklab(any)), any, accuracy: 1e-4)
+        let violet = lch(0.5, 0.06, 300), blueSource = lch(0.45, 0.05, 248), violetSource = lch(0.5, 0.08, 300)
+        // Violet the correction made (the source was blue): it loses violetCalmAmount of its chroma.
+        let calmed = ColorCorrection.oklch(FinishingMath.violetCalm(violet, source: blueSource))
+        let before = ColorCorrection.oklch(violet)
+        XCTAssertEqual(calmed.x, before.x, accuracy: 1e-3)
+        XCTAssertEqual(calmed.y, before.y * (1 - FinishingMath.violetCalmAmount), accuracy: 1e-3)
+        // On the ramp (hue 276) the pixel keeps some chroma and its hue.
+        let edge = lch(0.5, 0.06, 276), edgeOut = ColorCorrection.oklch(FinishingMath.violetCalm(edge, source: blueSource))
+        XCTAssertGreaterThan(edgeOut.y, 0.01); XCTAssertLessThan(edgeOut.y, 0.06)
+        XCTAssertEqual(edgeOut.z, 276, accuracy: 0.5)
+        // Water made violet turns back to blue at its own chroma, so it is neither violet nor grey.
+        let water = ColorCorrection.oklch(FinishingMath.violetCalm(violet, source: blueSource, waterShare: 1))
+        XCTAssertEqual(water.y, before.y, accuracy: 1e-3)
+        XCTAssertEqual(water.z, FinishingMath.violetWaterHue, accuracy: 0.5)
+        // A source that was violet (a magenta anemone) keeps its colour.
+        assertEqual(FinishingMath.violetCalm(violet, source: violetSource), violet, accuracy: 1e-5)
+        // Blue water and a warm subject are outside the band.
+        let blue = lch(0.5, 0.1, 255), warm = lch(0.6, 0.08, 70)
+        assertEqual(FinishingMath.violetCalm(blue, source: blueSource), blue, accuracy: 1e-6)
+        assertEqual(FinishingMath.violetCalm(warm, source: blueSource), warm, accuracy: 1e-6)
+    }
+
+    func testVioletCalmKernelMatchesCPUMirror() throws {
+        let engine = FilterEngine()
+        let kernel = try XCTUnwrap(engine.calmKernelForTesting("UnderBlueVioletCalm"))
+        let extent = CGRect(x: 0, y: 0, width: 4, height: 4)
+        func lch(_ l: Float, _ c: Float, _ h: Float) -> SIMD3<Float> {
+            ColorCorrection.linear(fromOKLab: SIMD3(l, c * cos(h * .pi / 180), c * sin(h * .pi / 180)))
+        }
+        func solid(_ c: SIMD3<Float>) -> CIImage {
+            CIImage(color: CIColor(red: CGFloat(c.x), green: CGFloat(c.y), blue: CGFloat(c.z), colorSpace: FilterEngine.workingSpace)!)
+                .cropped(to: extent)
+        }
+        for (c, source) in [(lch(0.5, 0.06, 300), lch(0.45, 0.05, 248)), (lch(0.5, 0.06, 300), lch(0.5, 0.08, 300)),
+                            (lch(0.55, 0.04, 278), lch(0.45, 0.05, 248)), (lch(0.5, 0.1, 255), lch(0.45, 0.05, 248)),
+                            (lch(0.6, 0.08, 70), lch(0.45, 0.05, 248))] {
+          for share: Float in [0, 0.5, 1] {
+            let out = try XCTUnwrap(kernel.apply(extent: extent, arguments: [solid(c), solid(source), solid(.init(0, share, 0)),
+                CIVector(x: CGFloat(FinishingMath.violetCalmAmount), y: CGFloat(FinishingMath.violetWaterHue), z: 0, w: 0)]))
+            var pixel = [Float](repeating: 0, count: 4)
+            engine.context.render(out, toBitmap: &pixel, rowBytes: 16, bounds: CGRect(x: 1, y: 1, width: 1, height: 1),
+                                  format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+            assertEqual(SIMD3(pixel[0], pixel[1], pixel[2]), FinishingMath.violetCalm(c, source: source, waterShare: share), accuracy: 0.003)
+          }
+        }
+    }
+
     func testWaterCalmAndKeepKernelsMatchCPUMirror() throws {
         let engine = FilterEngine()
         let calm = try XCTUnwrap(engine.calmKernelForTesting("UnderBlueWaterCalm"))

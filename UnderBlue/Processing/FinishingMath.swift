@@ -233,6 +233,41 @@ enum FinishingMath {
     /// detail; at 0.005 to 0.009 they kept 65%. Beside the IMG_7260 turtle (8-12 px) the noise is 0.61
     /// L*; it was 1.60 before the calm. Lower settings keep more bubbles and leave more noise at edges.
     static let calmFlatLow: Float = 0.004, calmFlatHigh: Float = 0.007
+
+    /// Violet calm, on the shown output. The UnderBlueVioletCalm kernel mirrors it. The correction can push
+    /// red into blue pixels until they read violet or magenta: the reef in O5 went from OKLab hue 248
+    /// in the source to 291, and 4.8% of the frame was violet (AquaColorFix 0.1%, 8 Oct 2026).
+    /// - A subject pixel whose OKLab hue lies in 282 to 340 (ramps of 12) loses violetCalmAmount of its
+    ///   chroma. Lightness stays. At 1 the band's centre turns grey; the ramps keep some colour.
+    /// - Water (the source's water share, from the water calm weight) turns back to violetWaterHue at
+    ///   its own chroma instead: grey water is as wrong as violet water. Turned grey, Deep Dive's cyan
+    ///   water lost its blue lead (PhotoTests), and r05's deep water lost chroma (23.9 to 17.3).
+    /// - Only clear violet counts (chroma from 0.015 to 0.03).
+    /// - It runs once on the shown output: FilterEngine.apply, or RestorationEngine.combined after the
+    ///   depth blend. See FilterEngine.violetCalm.
+    /// - A pixel whose source was violet too (hue 280 to 345, chroma from 0.01 to 0.025) keeps its
+    ///   colour: r04's magenta anemone stays at 56.6% violet pixels.
+    static func violetCalm(_ c: SIMD3<Float>, source: SIMD3<Float>, waterShare: Float = 0) -> SIMD3<Float> {
+        func smoothstep(_ low: Float, _ high: Float, _ x: Float) -> Float {
+            let t = min(1, max(0, (x - low) / max(1e-5, high - low)))
+            return t * t * (3 - 2 * t)
+        }
+        func hue(_ o: SIMD3<Float>) -> Float { let h = atan2(o.z, o.y) * 180 / .pi; return h < 0 ? h + 360 : h }
+        let o = ColorCorrection.oklab(c)
+        guard (o.y * o.y + o.z * o.z).squareRoot() > 1e-5 else { return c }
+        let h = hue(o)
+        let violet = smoothstep(270, 282, h) * (1 - smoothstep(340, 352, h)) * smoothstep(0.015, 0.03, (o.y * o.y + o.z * o.z).squareRoot())
+        guard violet > 0 else { return c }
+        let so = ColorCorrection.oklab(source), sh = hue(so)
+        let sourceViolet = smoothstep(270, 280, sh) * (1 - smoothstep(345, 355, sh)) * smoothstep(0.01, 0.025, (so.y * so.y + so.z * so.z).squareRoot())
+        let made = violet * (1 - sourceViolet), share = min(1, max(0, waterShare))
+        let chroma = (o.y * o.y + o.z * o.z).squareRoot()
+        let keep = 1 - min(1, max(0, violetCalmAmount)) * made * (1 - share)
+        let turned = (h + (violetWaterHue - h) * made * share) * .pi / 180
+        let out = ColorCorrection.linear(fromOKLab: SIMD3(o.x, cos(turned) * chroma * keep, sin(turned) * chroma * keep))
+        return out.x.isFinite && out.y.isFinite && out.z.isFinite ? out : c
+    }
+    static let violetCalmAmount: Float = 1, violetWaterHue: Float = 265
     static let paleLow: Float = 0.65, paleHigh: Float = 0.9
     /// Linear BT.2020 (the working space) to linear BT.709 / sRGB primaries. Standard colorimetry.
     static func display(_ c: SIMD3<Float>) -> SIMD3<Float> {

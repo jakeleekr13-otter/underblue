@@ -30,6 +30,19 @@ extension ColorCorrection {
                      1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
                      0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s)
     }
+    /// The linear Rec. 2020 colour of an OKLab (L, a, b): the inverse of oklab.
+    static func linear(fromOKLab o: SIMD3<Float>) -> SIMD3<Float> {
+        let l = o.x + 0.3963377774 * o.y + 0.2158037573 * o.z
+        let m = o.x - 0.1055613458 * o.y - 0.0638541728 * o.z
+        let s = o.x - 0.0894841775 * o.y - 1.2914855480 * o.z
+        let lms = SIMD3<Float>(l * l * l, m * m * m, s * s * s)
+        let x = 1.2270138511 * lms.x - 0.5577999807 * lms.y + 0.2812561490 * lms.z
+        let y = -0.0405801784 * lms.x + 1.1122568696 * lms.y - 0.0716766787 * lms.z
+        let z = -0.0763812845 * lms.x - 0.4214819784 * lms.y + 1.5861632204 * lms.z
+        return SIMD3(1.7166512 * x - 0.3556708 * y - 0.2533663 * z,
+                     -0.6666844 * x + 1.6164812 * y + 0.0157685 * z,
+                     0.0176399 * x - 0.0427706 * y + 0.9421031 * z)
+    }
     /// OKLab lightness, chroma and hue angle in degrees. Cyan is about 200, azure 250,
     /// pure blue 264, indigo 276 and violet 290.
     static func oklch(_ c: SIMD3<Float>) -> SIMD3<Float> {

@@ -291,3 +291,55 @@ static float calmGamma(float3 c) {
     const float3 out = mix(after.rgb, before.rgb, clamp(weight.r, 0.0f, 1.0f));
     return all(isfinite(out)) ? float4(out, after.a) : after;
 }
+
+// Violet calm, on the shown output (FilterEngine.violetCalm). FinishingMath.violetCalm is the CPU mirror.
+// The correction can push red into blue pixels until they read violet or magenta: a reef behind blue
+// water, sunlit water. A clearly violet pixel (OKLab hue 282 to 340, chroma from 0.015 to 0.03) changes,
+// unless the source pixel was violet too (a magenta anemone): water turns back to blue at its own
+// chroma, a subject loses its chroma. Lightness stays.
+static float3 violetOKLab(float3 c) {
+    const float x = dot(c, float3(0.6369580f, 0.1446169f, 0.1688810f));
+    const float y = dot(c, float3(0.2627002f, 0.6779981f, 0.0593017f));
+    const float z = dot(c, float3(0.0f, 0.0280727f, 1.0609851f));
+    const float3 lms = float3(0.8189330101f * x + 0.3618667424f * y - 0.1288597137f * z,
+                              0.0329845436f * x + 0.9293118715f * y + 0.0361456387f * z,
+                              0.0482003018f * x + 0.2643662691f * y + 0.6338517070f * z);
+    const float3 q = sign(lms) * pow(abs(lms), float3(1.0f / 3.0f));
+    return float3(dot(q, float3(0.2104542553f, 0.7936177850f, -0.0040720468f)),
+                  dot(q, float3(1.9779984951f, -2.4285922050f, 0.4505937099f)),
+                  dot(q, float3(0.0259040371f, 0.7827717662f, -0.8086757660f)));
+}
+static float3 violetLinear(float3 o) {
+    const float3 q = float3(o.x + 0.3963377774f * o.y + 0.2158037573f * o.z,
+                            o.x - 0.1055613458f * o.y - 0.0638541728f * o.z,
+                            o.x - 0.0894841775f * o.y - 1.2914855480f * o.z);
+    const float3 lms = q * q * q;
+    const float3 xyz = float3(dot(lms, float3(1.2270138511f, -0.5577999807f, 0.2812561490f)),
+                              dot(lms, float3(-0.0405801784f, 1.1122568696f, -0.0716766787f)),
+                              dot(lms, float3(-0.0763812845f, -0.4214819784f, 1.5861632204f)));
+    return float3(dot(xyz, float3(1.7166512f, -0.3556708f, -0.2533663f)),
+                  dot(xyz, float3(-0.6666844f, 1.6164812f, 0.0157685f)),
+                  dot(xyz, float3(0.0176399f, -0.0427706f, 0.9421031f)));
+}
+static float violetHue(float3 o) { return fmod(atan2(o.z, o.y) * 57.29578f + 360.0f, 360.0f); }
+// water = the water calm weight (g = the source's water share). Water turns back to blue
+// (shape.y, OKLab hue) at its own chroma; a subject loses violetCalm (shape.x) of its chroma.
+[[stitchable]] float4 UnderBlueVioletCalm(coreimage::sample_t c, coreimage::sample_t source, coreimage::sample_t water, float4 shape) {
+    const float3 o = violetOKLab(c.rgb);
+    if (!(length(o.yz) > 1e-5f)) { return c; }
+    const float h = violetHue(o);
+    const float violet = smoothstep(270.0f, 282.0f, h) * (1.0f - smoothstep(340.0f, 352.0f, h))
+        * smoothstep(0.015f, 0.03f, length(o.yz));
+    if (!(violet > 0.0f)) { return c; }
+    const float3 so = violetOKLab(source.rgb);
+    const float sh = violetHue(so);
+    const float sourceViolet = smoothstep(270.0f, 280.0f, sh) * (1.0f - smoothstep(345.0f, 355.0f, sh))
+        * smoothstep(0.01f, 0.025f, length(so.yz));
+    const float made = violet * (1.0f - sourceViolet);
+    const float share = clamp(water.g, 0.0f, 1.0f);
+    const float C = length(o.yz);
+    const float keep = 1.0f - clamp(shape.x, 0.0f, 1.0f) * made * (1.0f - share);
+    const float hb = (h + (shape.y - h) * made * share) * 0.017453293f;
+    const float3 out = violetLinear(float3(o.x, float2(cos(hb), sin(hb)) * C * keep));
+    return all(isfinite(out)) ? float4(out, c.a) : c;
+}

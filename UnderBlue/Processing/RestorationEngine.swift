@@ -255,7 +255,7 @@ final class RestorationEngine: Sendable {
         // Both paths calm the water the source shows. On the restored image the water test read 0.65
         // in far water and below 0.2 near a subject, which left a noisy band (IMG_7260, 8 Oct 2026).
         let calm = filter.waterCalmWeight(image, correction: values.current)
-        let current = filter.apply(image, correction: values.current, intensity: amount, calmWeight: calm)
+        let current = filter.apply(image, correction: values.current, intensity: amount, calmWeight: calm, violetCalm: false)
         let physicallyRestored = try restore(image, plan: plan)
         let finished = filter.finishing(physicallyRestored, correction: values.restored, reference: image, calmWeight: calm)
         let depthAware = filter.blend(image, finished, amount: amount)
@@ -268,12 +268,12 @@ final class RestorationEngine: Sendable {
         let values = plan.depth.values
         guard let nearest = values.min(), let farthest = values.max(), farthest - nearest > 0.05,
               let depthBlendKernel else {
-            return filter.blend(current, depthAware, amount: weight)
+            return filter.violetCalm(filter.blend(current, depthAware, amount: weight), source: image, calmWeight: calm)
         }
         let depth = try depthImage(plan.depth, matching: image.extent)
         let mixed = depthBlendKernel.apply(extent: image.extent, arguments: [current, depthAware, depth,
             CIVector(x: CGFloat(weight), y: CGFloat(Self.nearDepth), z: 0, w: 0)])
-        return (mixed ?? filter.blend(current, depthAware, amount: weight)).cropped(to: image.extent)
+        return filter.violetCalm((mixed ?? filter.blend(current, depthAware, amount: weight)).cropped(to: image.extent), source: image, calmWeight: calm)
     }
 
     /// The correction values combined applies: one set for the source image, one for the restored image.

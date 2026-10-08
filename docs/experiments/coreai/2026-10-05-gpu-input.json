@@ -1,0 +1,478 @@
+{
+  "conversion_normalized_rmse": 0.0024792699183774345,
+  "date": "2026-10-05",
+  "device": "physical iPhone 17",
+  "experiment": "same CoreAI model CPU vs GPU input preparation; CoreML reference",
+  "limitations": [
+    "CPU and GPU share same CoreAI model and function",
+    "GPU packs into reused shared buffer; serial experiment only",
+    "Explicit GPU completion before inference; no overlap claim",
+    "CoreML reference uses different P6 compressed model"
+  ],
+  "low_power": false,
+  "ordering": "all 6 permutations twice",
+  "os": "Version 27.0.1 (Build 24A446)",
+  "runs_per_mode": 12,
+  "scope": "depth preparation+inference+normalization; excludes rendering and export",
+  "summary": {
+    "coreai_cpu": {
+      "depth_pipeline_ms": {
+        "max": 75.797208,
+        "median": 72.553729,
+        "min": 70.655084
+      },
+      "inference_ms": {
+        "max": 45.044041,
+        "median": 43.929583,
+        "min": 43.386916
+      },
+      "input_preparation_ms": {
+        "max": 22.320709,
+        "median": 20.3171665,
+        "min": 18.917833
+      },
+      "output_processing_ms": {
+        "max": 8.722917,
+        "median": 8.293625500000001,
+        "min": 7.788375
+      }
+    },
+    "coreai_gpu": {
+      "depth_pipeline_ms": {
+        "max": 56.957542,
+        "median": 55.653,
+        "min": 53.370708
+      },
+      "inference_ms": {
+        "max": 45.488125,
+        "median": 44.0318545,
+        "min": 42.724458
+      },
+      "input_preparation_ms": {
+        "max": 2.758,
+        "median": 2.6400625,
+        "min": 2.49925
+      },
+      "output_processing_ms": {
+        "max": 9.2775,
+        "median": 8.511874500000001,
+        "min": 7.7075
+      }
+    },
+    "coreml": {
+      "depth_pipeline_ms": {
+        "max": 34.460458,
+        "median": 32.783916500000004,
+        "min": 32.122708
+      },
+      "inference_ms": {
+        "max": 21.067208,
+        "median": 20.6210205,
+        "min": 20.471667
+      }
+    }
+  },
+  "thermal_end": 0,
+  "thermal_start": 0,
+  "timings": [
+    {
+      "depth_pipeline_ms": 33.523458,
+      "inference_ms": 20.649084,
+      "mode": "coreml",
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 75.797208,
+      "inference_ms": 44.828125,
+      "input_preparation_ms": 22.320709,
+      "mode": "coreai_cpu",
+      "output_processing_ms": 8.563292,
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 56.518417,
+      "inference_ms": 45.31825,
+      "input_preparation_ms": 2.49925,
+      "mode": "coreai_gpu",
+      "output_processing_ms": 8.619167,
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 32.39225,
+      "inference_ms": 20.586875,
+      "mode": "coreml",
+      "round": 1
+    },
+    {
+      "depth_pipeline_ms": 56.4105,
+      "inference_ms": 45.421583,
+      "input_preparation_ms": 2.639083,
+      "mode": "coreai_gpu",
+      "output_processing_ms": 8.275208,
+      "round": 1
+    },
+    {
+      "depth_pipeline_ms": 72.318042,
+      "inference_ms": 44.057833,
+      "input_preparation_ms": 19.73575,
+      "mode": "coreai_cpu",
+      "output_processing_ms": 8.448875,
+      "round": 1
+    },
+    {
+      "depth_pipeline_ms": 71.438583,
+      "inference_ms": 44.576625,
+      "input_preparation_ms": 18.990916,
+      "mode": "coreai_cpu",
+      "output_processing_ms": 7.788375,
+      "round": 2
+    },
+    {
+      "depth_pipeline_ms": 32.70925,
+      "inference_ms": 20.828292,
+      "mode": "coreml",
+      "round": 2
+    },
+    {
+      "depth_pipeline_ms": 56.757125,
+      "inference_ms": 45.488125,
+      "input_preparation_ms": 2.564083,
+      "mode": "coreai_gpu",
+      "output_processing_ms": 8.629125,
+      "round": 2
+    },
+    {
+      "depth_pipeline_ms": 73.879875,
+      "inference_ms": 44.657916,
+      "input_preparation_ms": 20.463833,
+      "mode": "coreai_cpu",
+      "output_processing_ms": 8.647083,
+      "round": 3
+    },
+    {
+      "depth_pipeline_ms": 54.96875,
+      "inference_ms": 43.9155,
+      "input_preparation_ms": 2.5075,
+      "mode": "coreai_gpu",
+      "output_processing_ms": 8.422416,
+      "round": 3
+    },
+    {
+      "depth_pipeline_ms": 34.460458,
+      "inference_ms": 21.067208,
+      "mode": "coreml",
+      "round": 3
+    },
+    {
+      "depth_pipeline_ms": 56.957542,
+      "inference_ms": 45.475625,
+      "input_preparation_ms": 2.528834,
+      "mode": "coreai_gpu",
+      "output_processing_ms": 8.791583,
+      "round": 4
+    },
+    {
+      "depth_pipeline_ms": 32.122708,
+      "inference_ms": 20.497084,
+      "mode": "coreml",
+      "round": 4
+    },
+    {
+      "depth_pipeline_ms": 72.789416,
+      "inference_ms": 44.13975,
+      "input_preparation_ms": 20.604792,
+      "mode": "coreai_cpu",
+      "output_processing_ms": 7.959125,
+      "round": 4
+    },
+    {
+      "depth_pipeline_ms": 54.7695,
+      "inference_ms": 43.69875,
+      "input_preparation_ms": 2.714792,
+      "mode": "coreai_gpu",
+      "output_processing_ms": 8.283875,
+      "round": 5
+    },
+    {
+      "depth_pipeline_ms": 70.655084,
+      "inference_ms": 43.386916,
+      "input_preparation_ms": 18.917833,
+      "mode": "coreai_cpu",
+      "output_processing_ms": 8.266209,
+      "round": 5
+    },
+    {
+      "depth_pipeline_ms": 33.0465,
+      "inference_ms": 20.802583,
+      "mode": "coreml",
+      "round": 5
+    },
+    {
+      "depth_pipeline_ms": 32.792083,
+      "inference_ms": 20.836167,
+      "mode": "coreml",
+      "round": 6
+    },
+    {
+      "depth_pipeline_ms": 75.02125,
+      "inference_ms": 45.044041,
+      "input_preparation_ms": 21.615375,
+      "mode": "coreai_cpu",
+      "output_processing_ms": 8.252875,
+      "round": 6
+    },
+    {
+      "depth_pipeline_ms": 53.939708,
+      "inference_ms": 42.917292,
+      "input_preparation_ms": 2.641042,
+      "mode": "coreai_gpu",
+      "output_processing_ms": 8.295167,
+      "round": 6
+    },
+    {
+      "depth_pipeline_ms": 33.728166,
+      "inference_ms": 20.59875,
+      "mode": "coreml",
+      "round": 7
+    },
+    {
+      "depth_pipeline_ms": 55.662084,
+      "inference_ms": 44.09825,
+      "input_preparation_ms": 2.537416,
+      "mode": "coreai_gpu",
+      "output_processing_ms": 8.943416,
+      "round": 7
+    },
+    {
+      "depth_pipeline_ms": 73.465417,
+      "inference_ms": 43.584667,
+      "input_preparation_ms": 21.13625,
+      "mode": "coreai_cpu",
+      "output_processing_ms": 8.661833,
+      "round": 7
+    },
+    {
+      "depth_pipeline_ms": 71.441917,
+      "inference_ms": 43.538875,
+      "input_preparation_ms": 19.862917,
+      "mode": "coreai_cpu",
+      "output_processing_ms": 7.959958,
+      "round": 8
+    },
+    {
+      "depth_pipeline_ms": 32.444125,
+      "inference_ms": 20.570917,
+      "mode": "coreml",
+      "round": 8
+    },
+    {
+      "depth_pipeline_ms": 55.643916,
+      "inference_ms": 44.195542,
+      "input_preparation_ms": 2.758,
+      "mode": "coreai_gpu",
+      "output_processing_ms": 8.601333,
+      "round": 8
+    },
+    {
+      "depth_pipeline_ms": 73.2595,
+      "inference_ms": 43.394041,
+      "input_preparation_ms": 21.061958,
+      "mode": "coreai_cpu",
+      "output_processing_ms": 8.722917,
+      "round": 9
+    },
+    {
+      "depth_pipeline_ms": 53.432125,
+      "inference_ms": 42.9825,
+      "input_preparation_ms": 2.665709,
+      "mode": "coreai_gpu",
+      "output_processing_ms": 7.7075,
+      "round": 9
+    },
+    {
+      "depth_pipeline_ms": 32.731542,
+      "inference_ms": 20.643291,
+      "mode": "coreml",
+      "round": 9
+    },
+    {
+      "depth_pipeline_ms": 56.038208,
+      "inference_ms": 43.965459,
+      "input_preparation_ms": 2.704083,
+      "mode": "coreai_gpu",
+      "output_processing_ms": 9.2775,
+      "round": 10
+    },
+    {
+      "depth_pipeline_ms": 32.77575,
+      "inference_ms": 20.471667,
+      "mode": "coreml",
+      "round": 10
+    },
+    {
+      "depth_pipeline_ms": 71.895459,
+      "inference_ms": 43.801333,
+      "input_preparation_ms": 20.1705,
+      "mode": "coreai_cpu",
+      "output_processing_ms": 7.829833,
+      "round": 10
+    },
+    {
+      "depth_pipeline_ms": 53.370708,
+      "inference_ms": 42.724458,
+      "input_preparation_ms": 2.677291,
+      "mode": "coreai_gpu",
+      "output_processing_ms": 7.88275,
+      "round": 11
+    },
+    {
+      "depth_pipeline_ms": 71.476292,
+      "inference_ms": 43.612708,
+      "input_preparation_ms": 19.454208,
+      "mode": "coreai_cpu",
+      "output_processing_ms": 8.321042,
+      "round": 11
+    },
+    {
+      "depth_pipeline_ms": 32.867042,
+      "inference_ms": 20.577333,
+      "mode": "coreml",
+      "round": 11
+    }
+  ],
+  "validation": [
+    {
+      "input": {
+        "bit_mismatches": 0,
+        "count": 609168,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      },
+      "photo": "asymmetric",
+      "rgb_byte_mismatches": 0
+    },
+    {
+      "input": {
+        "bit_mismatches": 0,
+        "count": 609168,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      },
+      "normalized_depth": {
+        "bit_mismatches": 0,
+        "count": 203056,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      },
+      "photo": "m6",
+      "raw_depth": {
+        "bit_mismatches": 0,
+        "count": 203056,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      },
+      "rgb_byte_mismatches": 0
+    },
+    {
+      "input": {
+        "bit_mismatches": 0,
+        "count": 609168,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      },
+      "normalized_depth": {
+        "bit_mismatches": 0,
+        "count": 203056,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      },
+      "photo": "m5",
+      "raw_depth": {
+        "bit_mismatches": 0,
+        "count": 203056,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      },
+      "rgb_byte_mismatches": 0
+    },
+    {
+      "input": {
+        "bit_mismatches": 0,
+        "count": 609168,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      },
+      "normalized_depth": {
+        "bit_mismatches": 0,
+        "count": 203056,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      },
+      "photo": "O3",
+      "raw_depth": {
+        "bit_mismatches": 0,
+        "count": 203056,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      },
+      "rgb_byte_mismatches": 0
+    }
+  ],
+  "warmups": [
+    {
+      "depth_pipeline_ms": 3084.190042,
+      "inference_ms": 24.301,
+      "mode": "coreml",
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 82.912292,
+      "inference_ms": 52.196667,
+      "input_preparation_ms": 21.717583,
+      "mode": "coreai_cpu",
+      "output_processing_ms": 8.925375,
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 54.317583,
+      "inference_ms": 43.731792,
+      "input_preparation_ms": 2.323375,
+      "mode": "coreai_gpu",
+      "output_processing_ms": 8.189541,
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 33.013125,
+      "inference_ms": 21.51725,
+      "mode": "coreml",
+      "round": 1
+    },
+    {
+      "depth_pipeline_ms": 72.37275,
+      "inference_ms": 44.236167,
+      "input_preparation_ms": 20.101334,
+      "mode": "coreai_cpu",
+      "output_processing_ms": 7.955375,
+      "round": 1
+    },
+    {
+      "depth_pipeline_ms": 61.212125,
+      "inference_ms": 50.569708,
+      "input_preparation_ms": 2.775834,
+      "mode": "coreai_gpu",
+      "output_processing_ms": 7.797875,
+      "round": 1
+    }
+  ],
+  "warmups_per_mode": 2
+}

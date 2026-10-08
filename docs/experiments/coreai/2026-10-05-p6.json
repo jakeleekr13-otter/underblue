@@ -1,0 +1,481 @@
+{
+  "baseline_conversion_difference": {
+    "mae": 0.0031617182421351743,
+    "max_absolute": 0.009765625,
+    "p95_absolute": 0.0078125,
+    "rmse": 0.0037963820625154464
+  },
+  "baseline_conversion_normalized_rmse": 0.0024792699183774345,
+  "compression_fixed_input_difference": {
+    "mae": 0.14075007133192322,
+    "max_absolute": 0.353515625,
+    "p95_absolute": 0.263671875,
+    "rmse": 0.15668941264752506
+  },
+  "device": "physical iPhone17",
+  "experiment": "CoreAI V2 Small uncompressed FP16 versus P6, same GPU preparation",
+  "limits": [
+    "Same CoreAI FP16 compute model, P6 per-tensor weight palette candidate",
+    "CoreML uses Apple's distinct P6 recipe/conversion",
+    "Photo differences are not ground-truth accuracy",
+    "Timing excludes final correction rendering/export",
+    "GPU input retains one bulk CPU byte copy; serial experiment"
+  ],
+  "low_power": false,
+  "ordering": "6 permutations twice",
+  "os": "Version 27.0.1 (Build 24A446)",
+  "photos": [
+    {
+      "depth_difference_p6_vs_fp16": {
+        "mae": 0.01614916556539824,
+        "max_absolute": 0.36484408378601074,
+        "p95_absolute": 0.040629565715789795,
+        "rmse": 0.021949012203646444
+      },
+      "photo": "m6",
+      "plan_confidence": {
+        "coreai_fp16": 0.6438043117523193,
+        "coreai_p6": 0.6832244396209717,
+        "coreml": 0.6835022568702698
+      },
+      "rgb_8bit_difference_p6_vs_coreml": {
+        "mae": 1.5421431327160493,
+        "max_absolute": 22,
+        "p95_absolute": 4,
+        "rmse": 2.0833680552662086
+      },
+      "rgb_8bit_difference_p6_vs_fp16": {
+        "mae": 1.2051729681069958,
+        "max_absolute": 20,
+        "p95_absolute": 3,
+        "rmse": 1.6037124577427655
+      }
+    },
+    {
+      "depth_difference_p6_vs_fp16": {
+        "mae": 0.00468212334959748,
+        "max_absolute": 0.28538447618484497,
+        "p95_absolute": 0.01537179946899414,
+        "rmse": 0.008682937780689348
+      },
+      "photo": "m5",
+      "plan_confidence": {
+        "coreai_fp16": 0.6106776595115662,
+        "coreai_p6": 0.6109167337417603,
+        "coreml": 0.6208881735801697
+      },
+      "rgb_8bit_difference_p6_vs_coreml": {
+        "mae": 2.7794129774305554,
+        "max_absolute": 177,
+        "p95_absolute": 10,
+        "rmse": 6.052438672873017
+      },
+      "rgb_8bit_difference_p6_vs_fp16": {
+        "mae": 0.44261610243055555,
+        "max_absolute": 189,
+        "p95_absolute": 2,
+        "rmse": 1.309362155200853
+      }
+    },
+    {
+      "depth_difference_p6_vs_fp16": {
+        "mae": 0.005606442545474951,
+        "max_absolute": 0.45426779985427856,
+        "p95_absolute": 0.022413432598114014,
+        "rmse": 0.012016875352154767
+      },
+      "photo": "O3",
+      "plan_confidence": {
+        "coreai_fp16": 0.5339346528053284,
+        "coreai_p6": 0.5549024939537048,
+        "coreml": 0.5485262274742126
+      },
+      "rgb_8bit_difference_p6_vs_coreml": {
+        "mae": 0.9861263020833333,
+        "max_absolute": 31,
+        "p95_absolute": 4,
+        "rmse": 1.724603982823142
+      },
+      "rgb_8bit_difference_p6_vs_fp16": {
+        "mae": 0.8516986762152777,
+        "max_absolute": 33,
+        "p95_absolute": 3,
+        "rmse": 1.3258454702330509
+      }
+    }
+  ],
+  "runs_per_mode": 12,
+  "summary": {
+    "coreai_fp16": {
+      "depth_pipeline_ms": {
+        "max": 55.399917,
+        "median": 53.90925,
+        "min": 51.481292
+      },
+      "inference_ms": {
+        "max": 44.592167,
+        "median": 43.457896,
+        "min": 42.153375
+      },
+      "input_preparation_ms": {
+        "max": 2.568833,
+        "median": 2.2019585,
+        "min": 1.692084
+      },
+      "output_processing_ms": {
+        "max": 8.954792,
+        "median": 8.190354500000002,
+        "min": 7.307208
+      }
+    },
+    "coreai_p6": {
+      "depth_pipeline_ms": {
+        "max": 51.181917,
+        "median": 42.380624999999995,
+        "min": 41.492125
+      },
+      "inference_ms": {
+        "max": 37.8955,
+        "median": 29.7316045,
+        "min": 29.463125
+      },
+      "input_preparation_ms": {
+        "max": 2.880208,
+        "median": 2.5555415000000004,
+        "min": 2.494667
+      },
+      "output_processing_ms": {
+        "max": 10.883334,
+        "median": 9.9087705,
+        "min": 9.203417
+      }
+    },
+    "coreml": {
+      "depth_pipeline_ms": {
+        "max": 34.236834,
+        "median": 33.229042,
+        "min": 31.3385
+      },
+      "inference_ms": {
+        "max": 20.906958,
+        "median": 20.543542,
+        "min": 19.898375
+      }
+    }
+  },
+  "thermal_end": 0,
+  "thermal_start": 0,
+  "timings": [
+    {
+      "depth_pipeline_ms": 31.985125,
+      "inference_ms": 20.478333,
+      "mode": "coreml",
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 55.399917,
+      "inference_ms": 43.909333,
+      "input_preparation_ms": 2.46775,
+      "mode": "coreai_fp16",
+      "output_processing_ms": 8.954792,
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 42.269875,
+      "inference_ms": 29.896583,
+      "input_preparation_ms": 2.494667,
+      "mode": "coreai_p6",
+      "output_processing_ms": 9.800292,
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 34.236834,
+      "inference_ms": 20.45275,
+      "mode": "coreml",
+      "round": 1
+    },
+    {
+      "depth_pipeline_ms": 43.304875,
+      "inference_ms": 29.671875,
+      "input_preparation_ms": 2.670333,
+      "mode": "coreai_p6",
+      "output_processing_ms": 10.883334,
+      "round": 1
+    },
+    {
+      "depth_pipeline_ms": 53.156875,
+      "inference_ms": 43.136458,
+      "input_preparation_ms": 1.856959,
+      "mode": "coreai_fp16",
+      "output_processing_ms": 8.087708,
+      "round": 1
+    },
+    {
+      "depth_pipeline_ms": 54.88175,
+      "inference_ms": 43.590458,
+      "input_preparation_ms": 2.552334,
+      "mode": "coreai_fp16",
+      "output_processing_ms": 8.664833,
+      "round": 2
+    },
+    {
+      "depth_pipeline_ms": 31.3385,
+      "inference_ms": 20.361209,
+      "mode": "coreml",
+      "round": 2
+    },
+    {
+      "depth_pipeline_ms": 42.491375,
+      "inference_ms": 29.899625,
+      "input_preparation_ms": 2.536959,
+      "mode": "coreai_p6",
+      "output_processing_ms": 9.977083,
+      "round": 2
+    },
+    {
+      "depth_pipeline_ms": 51.481292,
+      "inference_ms": 42.224416,
+      "input_preparation_ms": 1.828208,
+      "mode": "coreai_fp16",
+      "output_processing_ms": 7.354917,
+      "round": 3
+    },
+    {
+      "depth_pipeline_ms": 41.759417,
+      "inference_ms": 29.6805,
+      "input_preparation_ms": 2.503291,
+      "mode": "coreai_p6",
+      "output_processing_ms": 9.491,
+      "round": 3
+    },
+    {
+      "depth_pipeline_ms": 33.4355,
+      "inference_ms": 20.792333,
+      "mode": "coreml",
+      "round": 3
+    },
+    {
+      "depth_pipeline_ms": 43.2545,
+      "inference_ms": 29.936333,
+      "input_preparation_ms": 2.558958,
+      "mode": "coreai_p6",
+      "output_processing_ms": 10.684375,
+      "round": 4
+    },
+    {
+      "depth_pipeline_ms": 33.698083,
+      "inference_ms": 20.521917,
+      "mode": "coreml",
+      "round": 4
+    },
+    {
+      "depth_pipeline_ms": 55.132167,
+      "inference_ms": 43.745667,
+      "input_preparation_ms": 2.526875,
+      "mode": "coreai_fp16",
+      "output_processing_ms": 8.784542,
+      "round": 4
+    },
+    {
+      "depth_pipeline_ms": 41.634875,
+      "inference_ms": 29.73475,
+      "input_preparation_ms": 2.612292,
+      "mode": "coreai_p6",
+      "output_processing_ms": 9.203417,
+      "round": 5
+    },
+    {
+      "depth_pipeline_ms": 54.005,
+      "inference_ms": 43.761542,
+      "input_preparation_ms": 1.936167,
+      "mode": "coreai_fp16",
+      "output_processing_ms": 8.236167,
+      "round": 5
+    },
+    {
+      "depth_pipeline_ms": 33.753208,
+      "inference_ms": 20.687375,
+      "mode": "coreml",
+      "round": 5
+    },
+    {
+      "depth_pipeline_ms": 33.022584,
+      "inference_ms": 20.906958,
+      "mode": "coreml",
+      "round": 6
+    },
+    {
+      "depth_pipeline_ms": 55.343375,
+      "inference_ms": 44.592167,
+      "input_preparation_ms": 2.535417,
+      "mode": "coreai_fp16",
+      "output_processing_ms": 8.145584,
+      "round": 6
+    },
+    {
+      "depth_pipeline_ms": 51.181917,
+      "inference_ms": 37.8955,
+      "input_preparation_ms": 2.880208,
+      "mode": "coreai_p6",
+      "output_processing_ms": 10.3225,
+      "round": 6
+    },
+    {
+      "depth_pipeline_ms": 31.843208,
+      "inference_ms": 20.307292,
+      "mode": "coreml",
+      "round": 7
+    },
+    {
+      "depth_pipeline_ms": 44.288041,
+      "inference_ms": 31.181917,
+      "input_preparation_ms": 2.552125,
+      "mode": "coreai_p6",
+      "output_processing_ms": 10.4725,
+      "round": 7
+    },
+    {
+      "depth_pipeline_ms": 53.073625,
+      "inference_ms": 43.519917,
+      "input_preparation_ms": 1.692084,
+      "mode": "coreai_fp16",
+      "output_processing_ms": 7.785042,
+      "round": 7
+    },
+    {
+      "depth_pipeline_ms": 53.8135,
+      "inference_ms": 42.9805,
+      "input_preparation_ms": 2.568833,
+      "mode": "coreai_fp16",
+      "output_processing_ms": 8.189792,
+      "round": 8
+    },
+    {
+      "depth_pipeline_ms": 34.0905,
+      "inference_ms": 20.741875,
+      "mode": "coreml",
+      "round": 8
+    },
+    {
+      "depth_pipeline_ms": 42.51025,
+      "inference_ms": 29.728459,
+      "input_preparation_ms": 2.687917,
+      "mode": "coreai_p6",
+      "output_processing_ms": 10.006542,
+      "round": 8
+    },
+    {
+      "depth_pipeline_ms": 54.106834,
+      "inference_ms": 43.395875,
+      "input_preparation_ms": 1.743917,
+      "mode": "coreai_fp16",
+      "output_processing_ms": 8.892583,
+      "round": 9
+    },
+    {
+      "depth_pipeline_ms": 41.830625,
+      "inference_ms": 29.463125,
+      "input_preparation_ms": 2.516833,
+      "mode": "coreai_p6",
+      "output_processing_ms": 9.753791,
+      "round": 9
+    },
+    {
+      "depth_pipeline_ms": 32.260208,
+      "inference_ms": 20.658625,
+      "mode": "coreml",
+      "round": 9
+    },
+    {
+      "depth_pipeline_ms": 41.492125,
+      "inference_ms": 29.548958,
+      "input_preparation_ms": 2.526833,
+      "mode": "coreai_p6",
+      "output_processing_ms": 9.339292,
+      "round": 10
+    },
+    {
+      "depth_pipeline_ms": 32.465417,
+      "inference_ms": 19.898375,
+      "mode": "coreml",
+      "round": 10
+    },
+    {
+      "depth_pipeline_ms": 52.6305,
+      "inference_ms": 42.695542,
+      "input_preparation_ms": 2.55325,
+      "mode": "coreai_fp16",
+      "output_processing_ms": 7.307208,
+      "round": 10
+    },
+    {
+      "depth_pipeline_ms": 41.986416,
+      "inference_ms": 29.499875,
+      "input_preparation_ms": 2.566667,
+      "mode": "coreai_p6",
+      "output_processing_ms": 9.840458,
+      "round": 11
+    },
+    {
+      "depth_pipeline_ms": 52.216625,
+      "inference_ms": 42.153375,
+      "input_preparation_ms": 1.791125,
+      "mode": "coreai_fp16",
+      "output_processing_ms": 8.190917,
+      "round": 11
+    },
+    {
+      "depth_pipeline_ms": 33.829709,
+      "inference_ms": 20.565167,
+      "mode": "coreml",
+      "round": 11
+    }
+  ],
+  "warmups": [
+    {
+      "depth_pipeline_ms": 3146.373708,
+      "inference_ms": 29.087333,
+      "mode": "coreml",
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 69.476542,
+      "inference_ms": 52.169166,
+      "input_preparation_ms": 8.616209,
+      "mode": "coreai_fp16",
+      "output_processing_ms": 8.62375,
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 47.602958,
+      "inference_ms": 31.082666,
+      "input_preparation_ms": 6.998834,
+      "mode": "coreai_p6",
+      "output_processing_ms": 9.435709,
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 32.599666,
+      "inference_ms": 19.987584,
+      "mode": "coreml",
+      "round": 1
+    },
+    {
+      "depth_pipeline_ms": 54.5075,
+      "inference_ms": 43.402917,
+      "input_preparation_ms": 2.369834,
+      "mode": "coreai_fp16",
+      "output_processing_ms": 8.667459,
+      "round": 1
+    },
+    {
+      "depth_pipeline_ms": 41.437959,
+      "inference_ms": 29.707917,
+      "input_preparation_ms": 2.536125,
+      "mode": "coreai_p6",
+      "output_processing_ms": 9.121833,
+      "round": 1
+    }
+  ],
+  "warmups_per_mode": 2
+}

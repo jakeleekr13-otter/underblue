@@ -1,0 +1,643 @@
+{
+  "available_compute_kinds": [
+    "cpu",
+    "gpu",
+    "neuralEngine"
+  ],
+  "caveats": [
+    "Preferences allow runtime fallback; actual operation placement not traced",
+    "Load and warmup excluded; final color rendering/export excluded",
+    "CoreML reference uses distinct Apple model/recipe",
+    "One speed fixture, three depth consistency fixtures; no sustained workload"
+  ],
+  "date": "2026-10-06",
+  "device": "physical iPhone17",
+  "experiment": "same P6 CoreAI model and GPU input; compute preferences",
+  "load_ms": {
+    "automatic": 112.355917,
+    "gpu_preferred": 392.641625,
+    "neural_preferred": 911.114958
+  },
+  "low_power": false,
+  "ordering": "four-mode Williams design, three repetitions",
+  "os": "Version 27.0.1 (Build 24A446)",
+  "photos": [
+    {
+      "automatic_confidence": 0.6947709918022156,
+      "mode": "neural_preferred",
+      "mode_confidence": 0.6947709918022156,
+      "normalized_depth_vs_automatic": {
+        "bit_mismatches": 0,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      },
+      "photo": "m6",
+      "raw_depth_vs_automatic": {
+        "bit_mismatches": 0,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      }
+    },
+    {
+      "automatic_confidence": 0.6947709918022156,
+      "mode": "gpu_preferred",
+      "mode_confidence": 0.6947709918022156,
+      "normalized_depth_vs_automatic": {
+        "bit_mismatches": 0,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      },
+      "photo": "m6",
+      "raw_depth_vs_automatic": {
+        "bit_mismatches": 0,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      }
+    },
+    {
+      "automatic_confidence": 0.644175112247467,
+      "mode": "neural_preferred",
+      "mode_confidence": 0.644175112247467,
+      "normalized_depth_vs_automatic": {
+        "bit_mismatches": 0,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      },
+      "photo": "m5",
+      "raw_depth_vs_automatic": {
+        "bit_mismatches": 0,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      }
+    },
+    {
+      "automatic_confidence": 0.644175112247467,
+      "mode": "gpu_preferred",
+      "mode_confidence": 0.644175112247467,
+      "normalized_depth_vs_automatic": {
+        "bit_mismatches": 0,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      },
+      "photo": "m5",
+      "raw_depth_vs_automatic": {
+        "bit_mismatches": 0,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      }
+    },
+    {
+      "automatic_confidence": 0.6278976798057556,
+      "mode": "neural_preferred",
+      "mode_confidence": 0.6278976798057556,
+      "normalized_depth_vs_automatic": {
+        "bit_mismatches": 0,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      },
+      "photo": "O3",
+      "raw_depth_vs_automatic": {
+        "bit_mismatches": 0,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      }
+    },
+    {
+      "automatic_confidence": 0.6278976798057556,
+      "mode": "gpu_preferred",
+      "mode_confidence": 0.6278976798057556,
+      "normalized_depth_vs_automatic": {
+        "bit_mismatches": 0,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      },
+      "photo": "O3",
+      "raw_depth_vs_automatic": {
+        "bit_mismatches": 0,
+        "mae": 0,
+        "max_absolute": 0,
+        "rmse": 0
+      }
+    }
+  ],
+  "runs_per_mode": 12,
+  "summary": {
+    "automatic": {
+      "depth_pipeline_ms": {
+        "max": 44.52725,
+        "median": 41.790062000000006,
+        "min": 39.83575
+      },
+      "inference_ms": {
+        "max": 29.742625,
+        "median": 29.4470625,
+        "min": 29.204625
+      },
+      "input_preparation_ms": {
+        "max": 2.590708,
+        "median": 1.739708,
+        "min": 1.619875
+      },
+      "output_processing_ms": {
+        "max": 13.10575,
+        "median": 10.249770999999999,
+        "min": 8.790584
+      }
+    },
+    "coreml": {
+      "depth_pipeline_ms": {
+        "max": 44.884709,
+        "median": 32.964771,
+        "min": 31.693667
+      },
+      "inference_ms": {
+        "max": 27.086584,
+        "median": 20.505479,
+        "min": 19.939333
+      }
+    },
+    "gpu_preferred": {
+      "depth_pipeline_ms": {
+        "max": 53.309458,
+        "median": 40.8129165,
+        "min": 38.293917
+      },
+      "inference_ms": {
+        "max": 35.259125,
+        "median": 27.869771,
+        "min": 27.254666
+      },
+      "input_preparation_ms": {
+        "max": 2.853375,
+        "median": 2.1267505,
+        "min": 1.638375
+      },
+      "output_processing_ms": {
+        "max": 15.107541,
+        "median": 10.9555205,
+        "min": 9.224584
+      }
+    },
+    "neural_preferred": {
+      "depth_pipeline_ms": {
+        "max": 44.049209,
+        "median": 41.762625,
+        "min": 39.787583
+      },
+      "inference_ms": {
+        "max": 30.209292,
+        "median": 29.5316455,
+        "min": 29.294708
+      },
+      "input_preparation_ms": {
+        "max": 2.641083,
+        "median": 1.727958,
+        "min": 1.636417
+      },
+      "output_processing_ms": {
+        "max": 12.214417,
+        "median": 9.9298125,
+        "min": 8.741709
+      }
+    }
+  },
+  "thermal_end": 0,
+  "thermal_start": 0,
+  "timings": [
+    {
+      "depth_pipeline_ms": 32.156875,
+      "inference_ms": 20.099792,
+      "mode": "coreml",
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 41.634291,
+      "inference_ms": 29.668083,
+      "input_preparation_ms": 2.444125,
+      "mode": "automatic",
+      "output_processing_ms": 9.4335,
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 38.293917,
+      "inference_ms": 27.303459,
+      "input_preparation_ms": 1.674708,
+      "mode": "gpu_preferred",
+      "output_processing_ms": 9.245208,
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 40.113375,
+      "inference_ms": 29.472042,
+      "input_preparation_ms": 1.661375,
+      "mode": "neural_preferred",
+      "output_processing_ms": 8.899417,
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 41.171,
+      "inference_ms": 29.411459,
+      "input_preparation_ms": 1.619875,
+      "mode": "automatic",
+      "output_processing_ms": 10.057833,
+      "round": 1
+    },
+    {
+      "depth_pipeline_ms": 39.787583,
+      "inference_ms": 29.303333,
+      "input_preparation_ms": 1.636417,
+      "mode": "neural_preferred",
+      "output_processing_ms": 8.77275,
+      "round": 1
+    },
+    {
+      "depth_pipeline_ms": 44.884709,
+      "inference_ms": 27.086584,
+      "mode": "coreml",
+      "round": 1
+    },
+    {
+      "depth_pipeline_ms": 53.309458,
+      "inference_ms": 35.259125,
+      "input_preparation_ms": 2.853375,
+      "mode": "gpu_preferred",
+      "output_processing_ms": 15.107541,
+      "round": 1
+    },
+    {
+      "depth_pipeline_ms": 44.049209,
+      "inference_ms": 30.068,
+      "input_preparation_ms": 1.67525,
+      "mode": "neural_preferred",
+      "output_processing_ms": 12.214417,
+      "round": 2
+    },
+    {
+      "depth_pipeline_ms": 41.499208,
+      "inference_ms": 27.555417,
+      "input_preparation_ms": 1.679042,
+      "mode": "gpu_preferred",
+      "output_processing_ms": 12.178208,
+      "round": 2
+    },
+    {
+      "depth_pipeline_ms": 44.52725,
+      "inference_ms": 29.594167,
+      "input_preparation_ms": 1.740083,
+      "mode": "automatic",
+      "output_processing_ms": 13.10575,
+      "round": 2
+    },
+    {
+      "depth_pipeline_ms": 34.913667,
+      "inference_ms": 21.140167,
+      "mode": "coreml",
+      "round": 2
+    },
+    {
+      "depth_pipeline_ms": 41.451458,
+      "inference_ms": 28.091208,
+      "input_preparation_ms": 2.50925,
+      "mode": "gpu_preferred",
+      "output_processing_ms": 10.768375,
+      "round": 3
+    },
+    {
+      "depth_pipeline_ms": 32.571125,
+      "inference_ms": 20.56,
+      "mode": "coreml",
+      "round": 3
+    },
+    {
+      "depth_pipeline_ms": 43.679375,
+      "inference_ms": 29.832666,
+      "input_preparation_ms": 2.55525,
+      "mode": "neural_preferred",
+      "output_processing_ms": 11.201625,
+      "round": 3
+    },
+    {
+      "depth_pipeline_ms": 42.113958,
+      "inference_ms": 29.204625,
+      "input_preparation_ms": 1.636459,
+      "mode": "automatic",
+      "output_processing_ms": 11.179375,
+      "round": 3
+    },
+    {
+      "depth_pipeline_ms": 31.693667,
+      "inference_ms": 19.939333,
+      "mode": "coreml",
+      "round": 4
+    },
+    {
+      "depth_pipeline_ms": 42.028208,
+      "inference_ms": 29.686833,
+      "input_preparation_ms": 2.50925,
+      "mode": "automatic",
+      "output_processing_ms": 9.749917,
+      "round": 4
+    },
+    {
+      "depth_pipeline_ms": 38.298833,
+      "inference_ms": 27.254666,
+      "input_preparation_ms": 1.736208,
+      "mode": "gpu_preferred",
+      "output_processing_ms": 9.224584,
+      "round": 4
+    },
+    {
+      "depth_pipeline_ms": 41.6805,
+      "inference_ms": 29.47425,
+      "input_preparation_ms": 1.721375,
+      "mode": "neural_preferred",
+      "output_processing_ms": 10.394333,
+      "round": 4
+    },
+    {
+      "depth_pipeline_ms": 39.83575,
+      "inference_ms": 29.224125,
+      "input_preparation_ms": 1.73025,
+      "mode": "automatic",
+      "output_processing_ms": 8.790584,
+      "round": 5
+    },
+    {
+      "depth_pipeline_ms": 40.624125,
+      "inference_ms": 29.294708,
+      "input_preparation_ms": 1.703958,
+      "mode": "neural_preferred",
+      "output_processing_ms": 9.538375,
+      "round": 5
+    },
+    {
+      "depth_pipeline_ms": 34.052041,
+      "inference_ms": 20.641584,
+      "mode": "coreml",
+      "round": 5
+    },
+    {
+      "depth_pipeline_ms": 41.967541,
+      "inference_ms": 27.890917,
+      "input_preparation_ms": 2.575959,
+      "mode": "gpu_preferred",
+      "output_processing_ms": 11.420125,
+      "round": 5
+    },
+    {
+      "depth_pipeline_ms": 41.529166,
+      "inference_ms": 29.621625,
+      "input_preparation_ms": 1.836041,
+      "mode": "neural_preferred",
+      "output_processing_ms": 9.96775,
+      "round": 6
+    },
+    {
+      "depth_pipeline_ms": 40.179,
+      "inference_ms": 27.316708,
+      "input_preparation_ms": 1.638375,
+      "mode": "gpu_preferred",
+      "output_processing_ms": 11.142666,
+      "round": 6
+    },
+    {
+      "depth_pipeline_ms": 41.332208,
+      "inference_ms": 29.269208,
+      "input_preparation_ms": 1.694541,
+      "mode": "automatic",
+      "output_processing_ms": 10.280167,
+      "round": 6
+    },
+    {
+      "depth_pipeline_ms": 32.544417,
+      "inference_ms": 20.146625,
+      "mode": "coreml",
+      "round": 6
+    },
+    {
+      "depth_pipeline_ms": 40.017834,
+      "inference_ms": 27.967709,
+      "input_preparation_ms": 2.533292,
+      "mode": "gpu_preferred",
+      "output_processing_ms": 9.425834,
+      "round": 7
+    },
+    {
+      "depth_pipeline_ms": 31.762916,
+      "inference_ms": 20.167666,
+      "mode": "coreml",
+      "round": 7
+    },
+    {
+      "depth_pipeline_ms": 42.229959,
+      "inference_ms": 30.016375,
+      "input_preparation_ms": 2.481042,
+      "mode": "neural_preferred",
+      "output_processing_ms": 9.637125,
+      "round": 7
+    },
+    {
+      "depth_pipeline_ms": 41.934291,
+      "inference_ms": 29.458708,
+      "input_preparation_ms": 1.806708,
+      "mode": "automatic",
+      "output_processing_ms": 10.577791,
+      "round": 7
+    },
+    {
+      "depth_pipeline_ms": 34.040709,
+      "inference_ms": 20.749542,
+      "mode": "coreml",
+      "round": 8
+    },
+    {
+      "depth_pipeline_ms": 42.643916,
+      "inference_ms": 29.742625,
+      "input_preparation_ms": 2.590708,
+      "mode": "automatic",
+      "output_processing_ms": 10.219375,
+      "round": 8
+    },
+    {
+      "depth_pipeline_ms": 41.446833,
+      "inference_ms": 27.848625,
+      "input_preparation_ms": 1.786209,
+      "mode": "gpu_preferred",
+      "output_processing_ms": 11.733,
+      "round": 8
+    },
+    {
+      "depth_pipeline_ms": 41.84475,
+      "inference_ms": 29.436792,
+      "input_preparation_ms": 1.717292,
+      "mode": "neural_preferred",
+      "output_processing_ms": 10.604834,
+      "round": 8
+    },
+    {
+      "depth_pipeline_ms": 41.99575,
+      "inference_ms": 29.597417,
+      "input_preparation_ms": 1.712417,
+      "mode": "automatic",
+      "output_processing_ms": 10.598417,
+      "round": 9
+    },
+    {
+      "depth_pipeline_ms": 40.15325,
+      "inference_ms": 29.574041,
+      "input_preparation_ms": 1.756917,
+      "mode": "neural_preferred",
+      "output_processing_ms": 8.741709,
+      "round": 9
+    },
+    {
+      "depth_pipeline_ms": 33.062,
+      "inference_ms": 20.450958,
+      "mode": "coreml",
+      "round": 9
+    },
+    {
+      "depth_pipeline_ms": 43.255667,
+      "inference_ms": 28.297292,
+      "input_preparation_ms": 2.467292,
+      "mode": "gpu_preferred",
+      "output_processing_ms": 12.405541,
+      "round": 9
+    },
+    {
+      "depth_pipeline_ms": 42.999459,
+      "inference_ms": 29.48925,
+      "input_preparation_ms": 1.734541,
+      "mode": "neural_preferred",
+      "output_processing_ms": 11.692333,
+      "round": 10
+    },
+    {
+      "depth_pipeline_ms": 39.862667,
+      "inference_ms": 27.407125,
+      "input_preparation_ms": 1.765541,
+      "mode": "gpu_preferred",
+      "output_processing_ms": 10.606916,
+      "round": 10
+    },
+    {
+      "depth_pipeline_ms": 40.496958,
+      "inference_ms": 29.435417,
+      "input_preparation_ms": 1.742042,
+      "mode": "automatic",
+      "output_processing_ms": 9.234708,
+      "round": 10
+    },
+    {
+      "depth_pipeline_ms": 34.141792,
+      "inference_ms": 20.963666,
+      "mode": "coreml",
+      "round": 10
+    },
+    {
+      "depth_pipeline_ms": 40.155042,
+      "inference_ms": 28.175042,
+      "input_preparation_ms": 2.492792,
+      "mode": "gpu_preferred",
+      "output_processing_ms": 9.396792,
+      "round": 11
+    },
+    {
+      "depth_pipeline_ms": 32.867542,
+      "inference_ms": 20.163875,
+      "mode": "coreml",
+      "round": 11
+    },
+    {
+      "depth_pipeline_ms": 42.839125,
+      "inference_ms": 30.209292,
+      "input_preparation_ms": 2.641083,
+      "mode": "neural_preferred",
+      "output_processing_ms": 9.891875,
+      "round": 11
+    },
+    {
+      "depth_pipeline_ms": 41.645833,
+      "inference_ms": 29.254125,
+      "input_preparation_ms": 1.739333,
+      "mode": "automatic",
+      "output_processing_ms": 10.562417,
+      "round": 11
+    }
+  ],
+  "unavailable_variants": {},
+  "warmups": [
+    {
+      "depth_pipeline_ms": 3296.870583,
+      "inference_ms": 30.939458,
+      "mode": "coreml",
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 50.587709,
+      "inference_ms": 38.305125,
+      "input_preparation_ms": 2.4005,
+      "mode": "automatic",
+      "output_processing_ms": 9.804792,
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 42.08175,
+      "inference_ms": 29.65925,
+      "input_preparation_ms": 1.854208,
+      "mode": "neural_preferred",
+      "output_processing_ms": 10.483916,
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 39.452208,
+      "inference_ms": 27.71625,
+      "input_preparation_ms": 1.788709,
+      "mode": "gpu_preferred",
+      "output_processing_ms": 9.852542,
+      "round": 0
+    },
+    {
+      "depth_pipeline_ms": 33.839875,
+      "inference_ms": 21.674583,
+      "mode": "coreml",
+      "round": 1
+    },
+    {
+      "depth_pipeline_ms": 42.249083,
+      "inference_ms": 29.694583,
+      "input_preparation_ms": 1.82475,
+      "mode": "automatic",
+      "output_processing_ms": 10.651583,
+      "round": 1
+    },
+    {
+      "depth_pipeline_ms": 40.520042,
+      "inference_ms": 29.271083,
+      "input_preparation_ms": 1.711208,
+      "mode": "neural_preferred",
+      "output_processing_ms": 9.456042,
+      "round": 1
+    },
+    {
+      "depth_pipeline_ms": 39.080083,
+      "inference_ms": 27.261,
+      "input_preparation_ms": 1.671291,
+      "mode": "gpu_preferred",
+      "output_processing_ms": 10.077042,
+      "round": 1
+    }
+  ],
+  "warmups_per_mode": 2
+}

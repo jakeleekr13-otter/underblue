@@ -2,6 +2,8 @@
 
 This page describes how UnderBlue corrects underwater colour. It is for developers who change the colour pipeline.
 
+Core AI depth experiments and their measurements are in [CoreAIExperiments](CoreAIExperiments.md). An optional AI refiner was tested separately and [deferred after no clear perceptual benefit](AIRefinerPilot.md); it is not part of the shipping pipeline.
+
 ## Purpose and product rules
 
 - Analysis measures the scene. `ColorCorrection.make(analysis:preset:plan:)` turns the measurements into named values. It is the one pure mapping. `FilterEngine` only applies values.
@@ -11,9 +13,10 @@ This page describes how UnderBlue corrects underwater colour. It is for develope
 - We use our own simple, explainable logic. General optics is fine. We do not copy research code or tables.
 - Target look: clear cyan-to-blue water, warm natural subjects, more contrast and clarity, slightly brighter. Not grey, not violet or indigo, not neon.
 - Order: particle and noise removal come before colour correction. Sharpening and deblur come after them.
-  - The bright-scene reference-adaptation contribution now removes noise before its channel gains
-    (29 Sep 2026; see [m5 evaluation](M5ColorEvaluation.md)). The other contributions still have
-    no noise removal, and there is no deblur.
+  - A bright-scene reference denoiser was tested on 29 Sep 2026, then removed after iOS
+    edge/brightness errors on 1 Oct. Current `colorStage` uses `referenceInput = image`.
+    There is no dedicated denoiser or deblur in this path; the restoration detail split
+    limits noise amplification. The [m5 evaluation](M5ColorEvaluation.md) is a historical measurement.
   - Sharpening does run: two unsharp masks and the [fine detail layer](#clarity).
   - Sharpening can still amplify noise in contributions without prior denoising. See [Open problems](#open-problems-and-next-tasks).
 
@@ -130,15 +133,16 @@ differences with diagonal gains in linear sRGB, then converts back to linear Rec
   luminance 0.04 to 0.16; bright, pale pixels retain more of the established highlight treatment.
   The green exposure anchor fades the adaptation out over linear sRGB 0.8 to 0.9: near clipping,
   its measured ratios no longer reliably describe the surface.
-- Only the adapted contribution reads `CINoiseReduction` (noise level 0.04, sharpness zero),
-  before the channel gains. This is not a general denoiser before physical restoration, nor a
-  temporal video denoiser. Water and the other colour contribution retain their existing input.
+- The 29 Sep experiment fed `CINoiseReduction` (noise level 0.04, sharpness zero) to the adapted
+  contribution before its gains. That input was removed after iOS edge/brightness errors on
+  1 Oct. Current `FilterEngine.colorStage` feeds the same image to both kernel inputs;
+  it does not run this denoiser. See the device findings in [Verification](Verification.md).
 - For adapted surfaces, the black offset uses a smooth channel toe instead of a hard subtract
   and clip. It maps zero to zero while retaining small channel differences. The corresponding
   share of contrast/brightness is removed from the later `CIColorControls`, avoiding double
   application. The colour-matrix fallback retains the original controls.
-- Metal and the CPU mirror implement the same per-pixel rules. The CPU mirror accepts the
-  denoised reference pixel separately; it does not reproduce the spatial noise filter. Video
+- Metal and the CPU mirror implement the same per-pixel rules. The CPU mirror accepts a
+  separate reference pixel but does not reproduce a spatial noise filter. Video
   scene interpolation carries both new values.
 
 This is a measured improvement, not an assertion that the Sea-thru target has been reproduced.
@@ -634,7 +638,7 @@ The product owner still sees these four problems by eye on current outputs (28 S
 | Green cast is made stronger | Neutral-surface residual turned green-yellow (hue 126 to 173) at the tuning commit. m6 reef under the manta is olive-green. Sea-thru 03–05 and 07–08 still retain cyan/green subjects. | visible in the additional reference review; no subject-mask gate yet |
 | Violet appears | Deep Dive turns 12.1% of r11's pixels lavender. The violet band near the sun (IMG_7287) was fixed in `29f677d`. | unmeasured; the images are not collected yet |
 | Colours are flat: everything comes out beige | On 8682 the target has 9.6% warm pixels, ours had 0% (28 Sep 2026, at `c092902`). Aqua 02 and 05 and Sea-thru 03 still lack warm subject colours. | visible and paired; no general warm-subject metric yet |
-| Strong noise | O3 colour noise after luminance-only sharpening: flat water 1.28 against AquaColorFix 0.96, fish 3.29 against 1.81. The 29 Sep adapted contribution now denoises before its channel gains; other contributions do not. | m5 flat-region proxy measured; O3 and general pipeline still unresolved |
+| Strong noise | O3 colour noise after luminance-only sharpening: flat water 1.28 against AquaColorFix 0.96, fish 3.29 against 1.81. The 29 Sep reference denoiser was later removed after iOS rendering errors. | m5 flat-region proxy measured; no dedicated denoiser in the current path |
 
 ### Found in the 28 Sep 2026 review
 
@@ -645,9 +649,9 @@ All measured at HEAD. The numbers are in the [scorecard](#current-scorecard) and
 3. **Plan confidence is nearly flat.** It is 0.62 to 0.68 on 80% of the holdout. So "a low-confidence fit gives `current`" almost never acts.
 4. **`contrast` and `brightness` are a linear gain and a black offset.** Their names do not say so, and two filters nearly cancel each other on dark scenes.
 5. **The luminance weights do not match the working space.** `ColorCorrection.luma`, `FilterEngine.analyze`, the finishing kernels and `WaterModelEstimator` use BT.709 weights (0.2126, 0.7152, 0.0722). The working space is linear Rec. 2020, whose weights are (0.2627, 0.6780, 0.0593). `lab`, `oklab` and `PhotoHDR` use the Rec. 2020 weights. On the pair 1 water colour the difference is about 6%; red is under-weighted by 19%.
-6. **Most sharpening inputs still have no noise removal.** The 29 Sep bright-scene adapted
-   contribution denoises before its channel gains, but this is not a general pre-colour or temporal
-   denoiser. The product-order problem remains for the rest of the pipeline.
+6. **Sharpening still has no dedicated noise-removal stage.** The 29 Sep bright-scene reference
+   denoiser was removed after the 1 Oct iOS rendering errors. The restoration detail split limits
+   noise amplification but is not a general pre-colour or temporal denoiser.
 7. **The veil offset rests on one image.** Its evidence is m5 alone. Only gate pair 4 has a median luminance of 0.2 or more (0.21), and it is teal (`waterType` 0.57), so its offset is tiny. The code comment says "median 0.2 to 0.3", but the full offset also applies above 0.3.
 
 ### Tasks, in order

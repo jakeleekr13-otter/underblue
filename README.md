@@ -63,3 +63,5 @@ Synthetic media fixtures are checked in. `scripts/make_test_media.py` regenerate
 See [QA matrix](docs/QA.md), [processing decisions](docs/Architecture.md), and [diagnostics review](docs/Diagnostics.md) for verification and remaining release checks.
 
 The colour algorithm, its decisions and its evaluation are in [ColorAlgorithm](docs/ColorAlgorithm.md). The video pipeline is in [Video V2](docs/VideoV2.md). The scorecard harness is [scripts/color-eval](scripts/color-eval/README.md). Checks still open are in [Verification](docs/Verification.md).
+
+The [Core AI experiment record](docs/CoreAIExperiments.md) preserves the on-device depth comparisons and the decision to keep Core ML. The separate [AI refiner pilot](docs/AIRefinerPilot.md) found no clear perceptual benefit in a 13-photo three-way review, so the [independent AI preset](docs/AIPresetDevelopmentPlan.md) and its add-on are deferred. No AI refiner model is included in the app.

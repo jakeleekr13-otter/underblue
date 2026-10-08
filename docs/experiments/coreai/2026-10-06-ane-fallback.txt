@@ -1,0 +1,5 @@
+iPhone 17 / iOS 27.0.1 (24A446), Core AI P6, Neural Engine preferred
+Excerpt from the completed 2026-10-06 run; device paths and process identifiers omitted.
+
+ANE cannot handle intermediate tensor type fp32
+Full compile with ANE as preferred device failed. Falling back to full compile on GPU.

@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "experiment": "UnderBlueRefiner-v0.1 three-way human review",
+  "date": "2026-10-08",
+  "review_id": "9940f3518582f8dc462f68ef",
+  "seed": 991188,
+  "cases": 13,
+  "decision": "defer_ai_preset",
+  "reason": "The reviewer reported little perceptible difference; held-out validation produced no decisive preference.",
+  "model": {
+    "stage": "teacher-distilled pilot, not human-preference-trained",
+    "parameters": 42987,
+    "steps": 600,
+    "teacher": "NAFNet-SIDD-width32",
+    "candidate_strengths": {
+      "student-mild": 0.35,
+      "student-strong": 0.75
+    },
+    "coreai_asset_bytes": 92835
+  },
+  "choice_counts": {
+    "tie": 8,
+    "student-mild": 2,
+    "student-strong": 1,
+    "baseline": 1,
+    "no_good": 1,
+    "skip": 0
+  },
+  "minimum_preference_training_gate": {
+    "required": "at least 2 decisive train labels and 1 decisive validation label",
+    "decisive_train_labels": 3,
+    "decisive_validation_labels": 0,
+    "trainable": false
+  },
+  "votes": [
+    {
+      "case_id": "train-01",
+      "split": "train",
+      "choice": "student-strong",
+      "comment": "큰 차이는 못 느끼겠지만 보완 2의 부유물이 약간 더 작음"
+    },
+    {
+      "case_id": "train-02",
+      "split": "train",
+      "choice": "student-mild",
+      "comment": "큰 차이는 모르겠지만 보완 1이 아주 약간 더 선명해 보임"
+    },
+    {
+      "case_id": "train-03",
+      "split": "train",
+      "choice": "tie",
+      "comment": ""
+    },
+    {
+      "case_id": "train-04",
+      "split": "train",
+      "choice": "baseline",
+      "comment": "보완 1, 2에서 우측 산호와 물 배경 부위가 너무 진함"
+    },
+    {
+      "case_id": "train-05",
+      "split": "train",
+      "choice": "no_good",
+      "comment": "셋 다 부유물 노이즈가 너무 심함"
+    },
+    {
+      "case_id": "train-06",
+      "split": "train",
+      "choice": "tie",
+      "comment": ""
+    },
+    {
+      "case_id": "train-07",
+      "split": "train",
+      "choice": "tie",
+      "comment": ""
+    },
+    {
+      "case_id": "train-08",
+      "split": "train",
+      "choice": "tie",
+      "comment": ""
+    },
+    {
+      "case_id": "validation-01",
+      "split": "validation",
+      "choice": "tie",
+      "comment": ""
+    },
+    {
+      "case_id": "validation-02",
+      "split": "validation",
+      "choice": "tie",
+      "comment": ""
+    },
+    {
+      "case_id": "evaluation-01",
+      "split": "evaluation",
+      "choice": "student-mild",
+      "comment": "크게 차이 없음"
+    },
+    {
+      "case_id": "evaluation-02",
+      "split": "evaluation",
+      "choice": "tie",
+      "comment": ""
+    },
+    {
+      "case_id": "evaluation-03",
+      "split": "evaluation",
+      "choice": "tie",
+      "comment": ""
+    }
+  ]
+}

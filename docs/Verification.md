@@ -175,6 +175,16 @@ Run before release:
   - Cost on the Mac harness: m5 13.17 to 13.30, colour noise on m5 sand 0.40 to 0.77 and coral 2.14 to 2.71. On iOS the smoothing never worked as intended.
   - Check on the iPhone: export the challenge clip and a bright reef photo with sand (reference adaptation), and look for corner rings and noise.
 
+## Water calm and depth image clamp (8 Oct 2026)
+
+See [Water calm](ColorAlgorithm.md#water-calm-8-oct-2026).
+
+- **Done on the iPhone 17 (iOS 27.0.1).** `testRestoredVideoFrameKeepsItsEdges` and the two detail kernel tests pass. A temporary test rendered IMG_7260 and O3 at 1600 px. On IMG_7260 the water noise fell from 0.0137 to 0.0021 (gamma luma), and the brightness ratio against the old path was 1.004. The edge rows matched the old path within 0.01.
+- **Full-size photo export.** The radii scale with the short side. Check a 12 MP and a 48 MP export at 100%: clean open water, no line along a subject, small bubbles kept.
+- **Real video.** The weight is computed per frame. Watch open water and a fish edge for flicker in `challenge_video/original.MP4` and `video2`.
+- **Export time.** The calm adds five blurs per photo and per video frame. Export time is unmeasured.
+- **Video halo, pre-existing.** The video path has no subject mask. There a bright subject has a broad dark halo: about -8 L* on IMG_7260, before and after this change.
+
 ## HDR photo export (28 Sep 2026)
 
 29 Sep 2026: the real HDR photo and video checks are not done. There is no HDR source yet.

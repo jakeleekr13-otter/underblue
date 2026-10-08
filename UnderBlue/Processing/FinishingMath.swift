@@ -112,7 +112,8 @@ enum FinishingMath {
     ///   detailShadowLow to detailShadowHigh) fade in: they carry the most noise and show the least detail.
     /// - The pixel is scaled by one factor, so its hue and chroma stay. No channel crosses one, and a
     ///   pixel at or above luminance one (an HDR peak) is unchanged.
-    static func detail(_ c: SIMD3<Float>, blurred: SIMD3<Float>, reference: SIMD3<Float>, correction v: ColorCorrection) -> SIMD3<Float> {
+    /// `sourceSubject` is the subject weight of the unrestored source pixel (1 - calmShare of it, unblurred).
+    static func detail(_ c: SIMD3<Float>, blurred: SIMD3<Float>, reference: SIMD3<Float>, correction v: ColorCorrection, sourceSubject: Float = 1) -> SIMD3<Float> {
         func smoothstep(_ low: Float, _ high: Float, _ x: Float) -> Float {
             let t = min(1, max(0, (x - low) / max(1e-5, high - low)))
             return t * t * (3 - 2 * t)
@@ -123,7 +124,7 @@ enum FinishingMath {
         let band = smoothstep(v.detailFloor, max(3 * v.detailFloor, v.detailFloor + 1e-5), a) * (1 - smoothstep(detailEdgeLow, detailEdgeHigh, a))
         let lit = smoothstep(detailShadowLow, detailShadowHigh, l)
         let subject = neutralWeight(pointwiseMax(reference, .zero) * pointwiseMax(v.castGains, .zero), correction: v)
-        let weight = max(0, v.detail) * band * subject * lit
+        let weight = max(0, v.detail) * band * min(subject, min(1, max(0, sourceSubject))) * lit
         let y = max(0, x + weight * d)
         let peak = c.max()
         let out = c * min(pow(y, 2.2) / l, max(1, peak) / max(peak, 1e-5))
@@ -202,6 +203,36 @@ enum FinishingMath {
     static let lightDetailAmount: Float = 1.3, lightDetailRadius: Float = 0.018
     static let lightDetailLow: Float = 0.5, lightDetailHigh: Float = 0.7
     static let lightDetailEdgeLow: Float = 0.06, lightDetailEdgeHigh: Float = 0.15
+
+    /// Water calm. Correction lifts the water's noise, and the sharpening steps lift it again. On
+    /// IMG_7260 (8 Oct 2026) the open water went from L* noise 1.00 in the source to 1.67; the fine
+    /// detail and light detail added most of it beside the turtle. Open water has no detail to keep.
+    /// - The weight is the water share times the flatness. Both read the blurred source with the
+    ///   source's values, so the restored path uses the same weight: read on the restored image the
+    ///   water share was 0.65 in far water and below 0.2 near the turtle, and left a noisy band.
+    /// - Flatness is the mean distance of the gamma luminance from its local mean, over water pixels
+    ///   only (calmWindowRadius), so a subject next to the water does not count. On O3 the water lies
+    ///   below 0.0045 (99th percentile), the mola's spots above 0.0104 (5th): a mola lit by blue
+    ///   water is water-coloured but not flat, so it keeps its texture.
+    /// - Before the colour stage the pixel moves toward a blur of water pixels only (calmBlurRadius),
+    ///   so no subject colour spreads into the water. After the light and fine detail the weight takes
+    ///   the pixel back to its value before them. The unsharp masks stay (see FilterEngine.finishing).
+    static func calmShare(_ basis: SIMD3<Float>, correction v: ColorCorrection) -> Float {
+        1 - neutralWeight(pointwiseMax(basis, .zero) * pointwiseMax(v.castGains, .zero), correction: v)
+    }
+    static func calmFlatness(_ spread: Float) -> Float {
+        let t = min(1, max(0, (spread - calmFlatLow) / max(1e-5, calmFlatHigh - calmFlatLow)))
+        return 1 - t * t * (3 - 2 * t)
+    }
+    static func waterCalm(_ c: SIMD3<Float>, waterBlur: SIMD3<Float>, weight: Float) -> SIMD3<Float> {
+        let w = min(1, max(0, weight))
+        return c + (waterBlur - c) * w
+    }
+    static let calmBlurRadius: Float = 3.0 / 1200, calmWindowRadius: Float = 7.0 / 1200
+    /// 0.004 to 0.007 is a middle setting (8 Oct 2026). Now r10's small bubbles keep 75% of their
+    /// detail; at 0.005 to 0.009 they kept 65%. Beside the IMG_7260 turtle (8-12 px) the noise is 0.61
+    /// L*; it was 1.60 before the calm. Lower settings keep more bubbles and leave more noise at edges.
+    static let calmFlatLow: Float = 0.004, calmFlatHigh: Float = 0.007
     static let paleLow: Float = 0.65, paleHigh: Float = 0.9
     /// Linear BT.2020 (the working space) to linear BT.709 / sRGB primaries. Standard colorimetry.
     static func display(_ c: SIMD3<Float>) -> SIMD3<Float> {

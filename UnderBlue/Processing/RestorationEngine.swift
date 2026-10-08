@@ -227,10 +227,13 @@ final class RestorationEngine: Sendable {
         let data = map.values.withUnsafeBytes { Data($0) }
         let depth = CIImage(bitmapData: data, bytesPerRow: map.width * MemoryLayout<Float>.size,
                             size: CGSize(width: map.width, height: map.height), format: .Rf, colorSpace: nil)
-        let scaled = depth.transformed(by: CGAffineTransform(scaleX: extent.width / CGFloat(map.width),
-                                                             y: extent.height / CGFloat(map.height)))
-        return scaled.transformed(by: CGAffineTransform(translationX: extent.minX - scaled.extent.minX,
-                                                        y: extent.minY - scaled.extent.minY))
+        // Clamped, then cropped: the scaled map is sampled between pixels, so at the border it read
+        // the empty space outside the map. How much depended on the region the later filters asked
+        // for, so a blur anywhere after the restoration changed the restored edge rows. The 2x2 test
+        // plan's bottom rows lost 5% (VideoRestorationTests edge test 0.948 with the water calm, 8 Oct 2026).
+        let scaled = depth.clampedToExtent().transformed(by: CGAffineTransform(scaleX: extent.width / CGFloat(map.width),
+                                                                               y: extent.height / CGFloat(map.height)))
+        return scaled.transformed(by: CGAffineTransform(translationX: extent.minX, y: extent.minY)).cropped(to: extent)
     }
 
     private func vector(_ value: SIMD3<Float>) -> CIVector {
@@ -249,9 +252,12 @@ final class RestorationEngine: Sendable {
                   settings: FilterSettings, filter: FilterEngine) throws -> CIImage {
         let amount = min(1, max(0, settings.appliedIntensity))
         guard settings.preset != .original, amount > 0 else { return image }
-        let current = filter.apply(image, correction: values.current, intensity: amount)
+        // Both paths calm the water the source shows. On the restored image the water test read 0.65
+        // in far water and below 0.2 near a subject, which left a noisy band (IMG_7260, 8 Oct 2026).
+        let calm = filter.waterCalmWeight(image, correction: values.current)
+        let current = filter.apply(image, correction: values.current, intensity: amount, calmWeight: calm)
         let physicallyRestored = try restore(image, plan: plan)
-        let finished = filter.finishing(physicallyRestored, correction: values.restored, reference: image)
+        let finished = filter.finishing(physicallyRestored, correction: values.restored, reference: image, calmWeight: calm)
         let depthAware = filter.blend(image, finished, amount: amount)
         // Low-confidence fits approach the exact current UnderBlue output. So do the nearest pixels
         // (depth 0 to nearDepth): the restoration leaves them almost as they are, but the restored

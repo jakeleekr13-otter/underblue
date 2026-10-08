@@ -233,6 +233,32 @@ The two unsharp masks change luminance only (kernel `UnderBlueLumaTransfer`). Th
 
 Fine texture and water noise have the same size at this scale. On the mola, both have a median difference of 0.006 and a 75th percentile of 0.012. So no noise floor can tell them apart. The subject gate does that. The floor only drops the flattest pixels.
 
+### Water calm (8 Oct 2026)
+
+Correction lifts the noise in open water, and the sharpening steps lift it again. On IMG_7260 the far water has L* noise 0.88 in the source and 1.57 after correction. Open water has no detail to keep. So the water is smoothed before the colour stage, and it gets no light detail or fine detail.
+
+- Kernels: `UnderBlueCalmShare`, `UnderBlueCalmSpread`, `UnderBlueCalmWeight`, `UnderBlueCalmPremultiply`, `UnderBlueWaterCalm`, `UnderBlueCalmKeep`. CPU mirrors: `FinishingMath.calmShare`, `calmFlatness`, `waterCalm`.
+- The weight is the water share times the flatness. The water share is 1 - `neutralWeight`, the white reference's test.
+- Flatness is the mean distance of the gamma luminance from its local mean (`calmWindowRadius`, 7/1200 of the short side). Only water pixels count, so a subject next to the water does not make the water look textured.
+- Flatness is full below `calmFlatLow` (0.004) and off above `calmFlatHigh` (0.007). On O3 the water lies below 0.0045 (99th percentile) and the mola's spots above 0.0104 (5th percentile). A pale fish lit by blue water is water-coloured, but it is not flat, so it keeps its texture.
+- Both inputs are the source, blurred by `calmBlurRadius` (3/1200), with the source's values. The restored path uses the same weight. Read on the restored image, the water share was 0.65 in far water and below 0.2 within 12 px of the turtle.
+- Before the colour stage, a pixel moves toward a blur of water pixels only. So no subject colour spreads into the water.
+- After the light detail and the fine detail, the weight takes the pixel back to its value before them.
+- The unsharp masks still run on the water. Their dark fringe beside a subject is broad and soft. When it was removed from the open water only, its last few pixels became a sharp dark line along the subject (IMG_7261). Water noise is the same with or without them, because the water is already calm.
+- The fine detail also takes the source's own subject test (the weight's blue channel), as the smaller of the two. On the restored image the water beside a bright subject tested as subject, and the layer drew a dark line there.
+- 0.004 to 0.007 is a middle setting (Jake, 8 Oct 2026). The tuning run came before the unsharp masks were kept. There, the small bubbles in r10 kept 65% of their detail at 0.005 to 0.009, and 74% at 0.004 to 0.007. Lower settings keep more bubbles and leave more noise beside subjects. With the final code the bubbles keep 75% and O3's far seabed 90%.
+
+| Measure, Mac harness at 1600 px | Before | After |
+|---|---|---|
+| IMG_7260 far water, L* noise | 1.57 | 0.22 |
+| IMG_7260 water 8 to 12 px from the turtle | 1.60 | 0.61 |
+| IMG_7260 lightness 3 px from the turtle, against far water | -3.8 | -1.3 |
+| O5 / O3 / r14 flat water noise (source flatness below 0.004) | 2.13 / 1.11 / 1.58 | 0.27 / 0.36 / 0.58 |
+| O3 mola / belly texture | 6.47 / 6.97 | 6.39 / 6.92 |
+| AquaColorFix gate, photo / video | 13.14 / 13.05 | 13.20 / 13.09 |
+
+**Depth image clamp.** `RestorationEngine.depthImage` now clamps the depth map before scaling. Before, the border sampled the empty space outside the map. How much depended on the region that the later filters asked for. So any blur after the restoration changed the restored edge rows. With the water calm, `testRestoredVideoFrameKeepsItsEdges` read 0.948 on the iPhone, the simulator and the Mac. With the clamp it passes. The image interior is unchanged. The border now matches the old output.
+
 ### Highlight shoulder
 
 Every finishing step can push a highlight past white, and none rolls it off. Before this rule, bright sand clipped in one channel and turned flat mint (r14). So the last finishing step is a shoulder: kernel `UnderBlueHighlightShoulder`, CPU mirror `FinishingMath.shoulder`.
@@ -470,6 +496,7 @@ No separate figure is recorded here for these four. The scorecard shows the comb
 | Water hue goal 240 in full, bounds 0.35 to 2.2, solver polish | Water hue on pairs 1 and 5: 246 and 257 to 238 and 247 (target 240). The polish took pair 5 from 16.2 to 13.9. |
 | Murky chroma floor 0.14 to 0.22 | Pair 2 water chroma 0.17 to 0.20 (AquaColorFix 0.23). |
 | Tone: shadow lift 0.28 + 0.22 haze to 0.2 + 0.15 haze; highlights 0.92 - 0.2 haze; highlight rule down to -0.12 | Gate 13.60 to 12.50; median L* on pairs 1 to 3 within 2 of AquaColorFix (before +3 to +7). Shadows kept the black level: brightness stayed at exposure x 0.45. |
+| Water calm and depth image clamp (8 Oct 2026) | See [Water calm](#water-calm-8-oct-2026). Far water noise on IMG_7260 1.57 to 0.22; mola texture 6.47 to 6.39; gate 13.14 to 13.20. |
 | Fine detail layer, strength 1.3, floor 0.004, band to 0.15 to 0.30, gated by the neutral weight | Pair 3 detail energy 5.07 to 6.79 (AquaColorFix 8.10); subject detail up on every pair; water detail on pair 3 stays under AquaColorFix's (5.59 against 6.52). Gate 12.50 to 12.54. No visible halo on the mola or the manta edge at 100%. |
 
 ### Rejected
@@ -492,6 +519,9 @@ No separate figure is recorded here for these four. The scorecard shows the comb
 | Murky lift goal 1.2 + 0.9 murky^2 to 1.1 + 0.4 murky^2 | No change on pair 2 (its lift is capped either way); market m2 lost 8 deltaE. |
 | Old shadow lift kept with the rest of the tone change | m2 23.7 to 23.1 only; gate 12.50 to 13.02. |
 | Detail layer gated by the plain water-like weight, floor 0.012 | Pair 3 detail 5.07 to 5.19: the mola is water-like, so it got nothing. |
+| Water calm weight from colour alone (8 Oct 2026) | It blurred the O3 mola and the O4 manta and its reef: both are water-coloured. |
+| Water calm weight read on the restored image | Its water share was 0.65 in far water and below 0.2 within 12 px of a subject. That left a band of noise around the IMG_7260 turtle, about 60 px wide. |
+| Water calm also taking back the unsharp masks | It turned their soft dark fringe into a sharp dark line along the IMG_7261 wrasse. |
 | Detail strength 1.6, or radius 2.0/480 | Pair 3 reached 7.19, but the gate rose to 12.57 to 12.65 and pair 4 went past AquaColorFix (9.1 against 7.7). |
 
 ## Comparison with AquaColorFix
@@ -538,6 +568,7 @@ What we cannot take into a one-photo app:
 
 Limits:
 
+- The water calm smooths small bubbles and low-contrast far texture that are as flat as water noise. r10's bubbles keep 75% of their detail and O3's far seabed 90% (8 Oct 2026). A dark fringe of 1 to 3 px stays beside bright subjects; it comes from the unsharp masks.
 - A diver's hand in teal water stays grey-green. Its red is about 10/255, and it is green-family.
 - Near subjects on the constant-depth video path go darker and greener. `keepBlueFamily` covers only blue-family pixels.
 - On an iPhone 17 (iOS 27.0), both kernel/CPU-mirror tests and the two device-only depth tests pass (4 test suites, 65 tests, 0 failures). One depth inference took 22 ms. Full video export speed on an iPhone is unmeasured.

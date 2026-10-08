@@ -185,6 +185,14 @@ See [Water calm](ColorAlgorithm.md#water-calm-8-oct-2026).
 - **Export time.** The calm adds five blurs per photo and per video frame. Export time is unmeasured.
 - **Video halo, pre-existing.** The video path has no subject mask. There a bright subject has a broad dark halo: about -8 L* on IMG_7260, before and after this change.
 
+## Violet calm (8 Oct 2026)
+
+See [Violet calm](ColorAlgorithm.md#violet-calm-8-oct-2026).
+
+- **iPhone.** Run `RestorationTests/testVioletCalmKernelMatchesCPUMirror` on the device. Check a reef behind blue water (O5) and a magenta anemone (r04) by eye.
+- **Deep blue water.** Violet water turns back to blue at its own chroma. On r05 the water chroma stayed (23.9 to 23.7) and the hue moved from 270 to 267. Check by eye that deep water does not turn grey or indigo.
+- **Real video.** The rule is per pixel. Watch a reef edge for flicker.
+
 ## HDR photo export (28 Sep 2026)
 
 29 Sep 2026: the real HDR photo and video checks are not done. There is no HDR source yet.

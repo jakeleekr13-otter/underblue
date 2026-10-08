@@ -12,6 +12,7 @@ final class FilterEngine: Sendable {
     private let lumaKernel: CIColorKernel?
     private let offsetKernel: CIColorKernel?
     private let lightDetailKernel: CIColorKernel?
+    private let calmKernels: [String: CIColorKernel]
     /// False when the finishing kernel failed to load. Output then uses the weaker colour-matrix
     /// fallback, so owners with a DiagnosticRecorder report it.
     var finishingKernelAvailable: Bool { colorKernel != nil }
@@ -19,6 +20,7 @@ final class FilterEngine: Sendable {
     var detailKernelForTesting: CIColorKernel? { detailKernel }
     var lumaKernelForTesting: CIColorKernel? { lumaKernel }
     var offsetKernelForTesting: CIColorKernel? { offsetKernel }
+    func calmKernelForTesting(_ name: String) -> CIColorKernel? { calmKernels[name] }
     static let workingSpace = CGColorSpace(name: CGColorSpace.extendedLinearITUR_2020)!
     static let photoSpace = CGColorSpace(name: CGColorSpace.displayP3)!
     init() {
@@ -31,6 +33,10 @@ final class FilterEngine: Sendable {
         lumaKernel = MetalKernels.color("UnderBlueLumaTransfer")
         offsetKernel = MetalKernels.color("UnderBlueBlackOffset")
         lightDetailKernel = MetalKernels.color("UnderBlueLightDetail")
+        var calm: [String: CIColorKernel] = [:]
+        for name in ["UnderBlueCalmShare", "UnderBlueCalmSpread", "UnderBlueCalmWeight", "UnderBlueCalmPremultiply",
+                     "UnderBlueWaterCalm", "UnderBlueCalmKeep"] { calm[name] = MetalKernels.color(name) }
+        calmKernels = calm
     }
 
     func apply(_ image: CIImage, settings: FilterSettings) -> CIImage {
@@ -38,10 +44,10 @@ final class FilterEngine: Sendable {
         return apply(image, correction: .make(analysis: settings.analysis, preset: settings.preset, adjustments: settings.adjustments),
                      intensity: settings.appliedIntensity)
     }
-    func apply(_ image: CIImage, correction: ColorCorrection, intensity: Float) -> CIImage {
+    func apply(_ image: CIImage, correction: ColorCorrection, intensity: Float, calmWeight: CIImage? = nil) -> CIImage {
         let amount = min(1, max(0, intensity.isFinite ? intensity : 0))
         guard amount > 0 else { return image }
-        return blend(image, finishing(image, correction: correction), amount: amount)
+        return blend(image, finishing(image, correction: correction, calmWeight: calmWeight), amount: amount)
     }
     /// Applies a preset at full strength. Callers choose what the final intensity blends against.
     func finishing(_ image: CIImage, settings: FilterSettings) -> CIImage {
@@ -51,9 +57,13 @@ final class FilterEngine: Sendable {
     /// Applies correction values at full strength. No values are derived here.
     /// `reference` is the source image the highlight shoulder takes its ceiling from; it defaults to
     /// `image`. The restored path passes the unrestored source, so restoration cannot raise the ceiling.
-    func finishing(_ image: CIImage, correction v: ColorCorrection, reference: CIImage? = nil) -> CIImage {
+    /// `calmWeight` is waterCalmWeight of the source; it defaults to the weight of `image` itself.
+    func finishing(_ image: CIImage, correction v: ColorCorrection, reference: CIImage? = nil, calmWeight: CIImage? = nil) -> CIImage {
         guard v != .identity else { return image }
-        var corrected = colorStage(image, v)
+        let side = Float(min(image.extent.width, image.extent.height))
+        let short = side.isFinite && side > 0 ? side : 480
+        let calm = calmWeight ?? waterCalmWeight(image, correction: v)
+        var corrected = colorStage(waterCalm(image, weight: calm, short: short), v)
 
         let controls = CIFilter.colorControls()
         controls.inputImage = corrected
@@ -81,8 +91,6 @@ final class FilterEngine: Sendable {
         shadows.highlightAmount = v.highlightAmount
         corrected = (shadows.outputImage ?? corrected).cropped(to: image.extent)
 
-        let side = Float(min(image.extent.width, image.extent.height))
-        let short = side.isFinite && side > 0 ? side : 480
         let unsharpened = corrected
         for (amount, radius) in [(v.clarity, v.clarityRadius), (v.definition, v.definitionRadius)] where amount > 0 {
             let mask = CIFilter.unsharpMask()
@@ -97,6 +105,7 @@ final class FilterEngine: Sendable {
             corrected = lumaKernel.apply(extent: image.extent, arguments: [unsharpened, corrected]) ?? corrected
         }
 
+        let sharpened = corrected
         // Light rays inside bright light keep their contrast (FinishingMath.lightDetail). The kernel
         // gets the blur back from an unsharp mask (sharp = pixel + (pixel - blur)), as clarity does.
         // It runs here, before the fine detail. Placed last (after vibrance), with a blur or an unsharp
@@ -116,20 +125,32 @@ final class FilterEngine: Sendable {
             ]) ?? corrected
         }
         // Fine detail: the pixel against its own small blur, on subjects only (UnderBlueDetail). The blur
-        // reads a clamped image, so the border gets no dark rim.
+        // reads a clamped image, so the border gets no dark rim. It also takes the source's own subject
+        // test (calm.b): on the restored image the water beside a bright subject tested as subject, and
+        // the layer drew a dark line there (IMG_7260 turtle, 1 px out: -3.6 L* against the far water; the
+        // source +1.8; without the layer +1.1. 8 Oct 2026).
         if v.detail > 0, let detailKernel {
             let blur = CIFilter.gaussianBlur()
             blur.inputImage = corrected.clampedToExtent()
             blur.radius = max(0.5, v.detailRadius * short)
             let blurred = (blur.outputImage ?? corrected).cropped(to: image.extent)
             corrected = detailKernel.apply(extent: image.extent, arguments: [
-                corrected, blurred, image,
+                corrected, blurred, image, calm ?? CIImage(color: .white).cropped(to: image.extent),
                 CIVector(x: CGFloat(v.castGains.x), y: CGFloat(v.castGains.y), z: CGFloat(v.castGains.z), w: 0),
                 CIVector(x: CGFloat(v.waterRedness), y: CGFloat(v.waterChroma), z: 0, w: 0),
                 CIVector(x: CGFloat(v.waterLit.x), y: CGFloat(v.waterLit.y), z: CGFloat(v.waterLit.z), w: 0),
                 CIVector(x: CGFloat(v.detail), y: CGFloat(v.detailFloor), z: CGFloat(FinishingMath.detailEdgeLow), w: CGFloat(FinishingMath.detailEdgeHigh)),
                 CIVector(x: CGFloat(FinishingMath.detailShadowLow), y: CGFloat(FinishingMath.detailShadowHigh), z: 0, w: 0)
             ]) ?? corrected
+        }
+
+        // Open water drops the light detail and the fine detail: they sharpened its noise, most of it
+        // beside a subject (FinishingMath.calmShare). The unsharp masks stay. Their dark fringe beside a
+        // subject is broad and soft; with it gone from the open water only, its last few pixels became a
+        // sharp dark line along the subject (IMG_7261 wrasse, 8 Oct 2026). Water noise is the same either
+        // way, because the water is already calm before the colour stage.
+        if let calm, let keep = calmKernels["UnderBlueCalmKeep"] {
+            corrected = keep.apply(extent: image.extent, arguments: [sharpened, corrected, calm]) ?? corrected
         }
 
         if v.warmth != 0 {
@@ -157,6 +178,40 @@ final class FilterEngine: Sendable {
             ]) ?? corrected
         }
         return corrected.cropped(to: image.extent)
+    }
+    /// The water calm weight (r) and water share (g) of `basis`, read with its values `v`. Nil when a
+    /// kernel failed to load; the finishing then runs without the calm. See FinishingMath.calmShare.
+    func waterCalmWeight(_ basis: CIImage, correction v: ColorCorrection) -> CIImage? {
+        guard v != .identity, let shareKernel = calmKernels["UnderBlueCalmShare"],
+              let spreadKernel = calmKernels["UnderBlueCalmSpread"], let weightKernel = calmKernels["UnderBlueCalmWeight"] else { return nil }
+        let extent = basis.extent
+        let side = Float(min(extent.width, extent.height))
+        let short = side.isFinite && side > 0 ? side : 480
+        func blurred(_ image: CIImage, _ radius: Float) -> CIImage {
+            let blur = CIFilter.gaussianBlur()
+            blur.inputImage = image.clampedToExtent()
+            blur.radius = max(0.5, radius * short)
+            return (blur.outputImage ?? image).cropped(to: extent)
+        }
+        let smooth = blurred(basis, FinishingMath.calmBlurRadius)
+        let gains = CIVector(x: CGFloat(v.castGains.x), y: CGFloat(v.castGains.y), z: CGFloat(v.castGains.z), w: 0)
+        let water = CIVector(x: CGFloat(v.waterRedness), y: CGFloat(v.waterChroma), z: 0, w: 0)
+        let waterLit = CIVector(x: CGFloat(v.waterLit.x), y: CGFloat(v.waterLit.y), z: CGFloat(v.waterLit.z), w: CGFloat(v.lightGradient))
+        guard let share = shareKernel.apply(extent: extent, arguments: [smooth, gains, water, waterLit]),
+              let spread = spreadKernel.apply(extent: extent, arguments: [smooth, blurred(share, FinishingMath.calmWindowRadius), share])
+        else { return nil }
+        return weightKernel.apply(extent: extent, arguments: [share, blurred(spread, FinishingMath.calmWindowRadius), basis, gains, water, waterLit,
+            CIVector(x: CGFloat(FinishingMath.calmFlatLow), y: CGFloat(FinishingMath.calmFlatHigh), z: 0, w: 0)])
+    }
+    /// Open water moves toward a blur of water pixels only, before the colour stage. See waterCalmWeight.
+    private func waterCalm(_ image: CIImage, weight: CIImage?, short: Float) -> CIImage {
+        guard let weight, let premultiply = calmKernels["UnderBlueCalmPremultiply"], let calm = calmKernels["UnderBlueWaterCalm"],
+              let water = premultiply.apply(extent: image.extent, arguments: [image, weight]) else { return image }
+        let blur = CIFilter.gaussianBlur()
+        blur.inputImage = water.clampedToExtent()
+        blur.radius = max(0.5, FinishingMath.calmBlurRadius * short)
+        let waterBlur = (blur.outputImage ?? water).cropped(to: image.extent)
+        return calm.apply(extent: image.extent, arguments: [image, waterBlur, weight]) ?? image
     }
     private func colorStage(_ image: CIImage, _ v: ColorCorrection) -> CIImage {
         guard let colorKernel else {

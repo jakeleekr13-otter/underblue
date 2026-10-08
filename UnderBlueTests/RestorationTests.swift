@@ -1202,6 +1202,8 @@ final class RestorationTests: XCTestCase {
         let greyOut = FinishingMath.detail(grey * 1.1, blurred: grey, reference: grey, correction: v)
         XCTAssertEqual(greyOut.x, greyOut.y, accuracy: 1e-6); XCTAssertEqual(greyOut.y, greyOut.z, accuracy: 1e-6)
         // detail 0 is a no-op, and an HDR pixel at or above luminance one is unchanged.
+        // Water in the unrestored source (sourceSubject 0) gets nothing, even if the reference reads as subject.
+        assertEqual(FinishingMath.detail(brighter, blurred: blurred, reference: subject, correction: v, sourceSubject: 0), brighter, accuracy: 1e-6)
         var off = v; off.detail = 0
         assertEqual(FinishingMath.detail(brighter, blurred: blurred, reference: subject, correction: off), brighter, accuracy: 1e-6)
         let peak = SIMD3<Float>(1.2, 1.1, 1.0)
@@ -1225,7 +1227,7 @@ final class RestorationTests: XCTestCase {
             // no-op there. So drive the kernel directly with the three solid inputs instead.
             guard let kernel = engine.detailKernelForTesting else { XCTFail("no detail kernel"); return }
             let out = kernel.apply(extent: CGRect(x: 0, y: 0, width: 4, height: 4), arguments: [
-                solid(c), solid(b), solid(r),
+                solid(c), solid(b), solid(r), solid(.one),
                 CIVector(x: CGFloat(v.castGains.x), y: CGFloat(v.castGains.y), z: CGFloat(v.castGains.z), w: 0),
                 CIVector(x: CGFloat(v.waterRedness), y: CGFloat(v.waterChroma), z: 0, w: 0),
                 CIVector(x: CGFloat(v.waterLit.x), y: CGFloat(v.waterLit.y), z: CGFloat(v.waterLit.z), w: 0),
@@ -1261,6 +1263,74 @@ final class RestorationTests: XCTestCase {
         assertEqual(out / out.sum(), base / base.sum(), accuracy: 0.002)
         // A black pixel has no colour to keep, so it takes the sharpened pixel.
         assertEqual(try render(.zero, .init(0.01, 0.02, 0.03)), .init(0.01, 0.02, 0.03), accuracy: 0.001)
+    }
+
+    func testWaterCalmWeightMatchesCPUMirror() throws {
+        let engine = FilterEngine()
+        let v = detailValues()
+        let water = SIMD3<Float>(0.012, 0.19, 0.58) / v.castGains, subject = SIMD3<Float>(0.30, 0.25, 0.20)
+        let extent = CGRect(x: 0, y: 0, width: 32, height: 32)
+        func solid(_ c: SIMD3<Float>) -> CIImage {
+            CIImage(color: CIColor(red: CGFloat(c.x), green: CGFloat(c.y), blue: CGFloat(c.z), colorSpace: FilterEngine.workingSpace)!)
+                .cropped(to: extent)
+        }
+        func centre(_ image: CIImage) -> SIMD3<Float> {
+            var pixel = [Float](repeating: 0, count: 4)
+            engine.context.render(image, toBitmap: &pixel, rowBytes: 16, bounds: CGRect(x: 16, y: 16, width: 1, height: 1),
+                                  format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+            return SIMD3(pixel[0], pixel[1], pixel[2])
+        }
+        // A solid colour is flat: the weight is its water share, and b is its own subject weight.
+        for c in [water, subject, water * 0.5 + subject * 0.5] {
+            let weight = centre(try XCTUnwrap(engine.waterCalmWeight(solid(c), correction: v)))
+            let share = FinishingMath.calmShare(c, correction: v)
+            XCTAssertEqual(weight.x, share * FinishingMath.calmFlatness(0), accuracy: 0.005)
+            XCTAssertEqual(weight.y, share, accuracy: 0.005)
+            XCTAssertEqual(weight.z, 1 - share, accuracy: 0.005)
+        }
+        XCTAssertGreaterThan(FinishingMath.calmShare(water, correction: v), 0.95)
+        XCTAssertLessThan(FinishingMath.calmShare(subject, correction: v), 0.05)
+        // Water-coloured stripes (a pattern like the mola's spots) are not flat, so they get no calm.
+        let w = 32, rows = (0..<w).flatMap { y -> [Float] in
+            let c = water * (y / 3 % 2 == 0 ? 0.8 : 1.25)
+            return (0..<w).flatMap { _ in [c.x, c.y, c.z, 1] }
+        }
+        let stripes = CIImage(bitmapData: rows.withUnsafeBytes { Data($0) }, bytesPerRow: w * 16, size: CGSize(width: w, height: w),
+                              format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+        XCTAssertLessThan(centre(try XCTUnwrap(engine.waterCalmWeight(stripes, correction: v))).x, 0.05)
+        // The flatness ramp: full below calmFlatLow, none above calmFlatHigh.
+        XCTAssertEqual(FinishingMath.calmFlatness(FinishingMath.calmFlatLow), 1, accuracy: 1e-6)
+        XCTAssertEqual(FinishingMath.calmFlatness(FinishingMath.calmFlatHigh), 0, accuracy: 1e-6)
+    }
+
+    func testWaterCalmAndKeepKernelsMatchCPUMirror() throws {
+        let engine = FilterEngine()
+        let calm = try XCTUnwrap(engine.calmKernelForTesting("UnderBlueWaterCalm"))
+        let premultiply = try XCTUnwrap(engine.calmKernelForTesting("UnderBlueCalmPremultiply"))
+        let keep = try XCTUnwrap(engine.calmKernelForTesting("UnderBlueCalmKeep"))
+        let extent = CGRect(x: 0, y: 0, width: 4, height: 4)
+        func solid(_ c: SIMD3<Float>) -> CIImage {
+            CIImage(color: CIColor(red: CGFloat(c.x), green: CGFloat(c.y), blue: CGFloat(c.z), colorSpace: FilterEngine.workingSpace)!)
+                .cropped(to: extent)
+        }
+        func pixel(_ image: CIImage?) throws -> SIMD3<Float> {
+            var p = [Float](repeating: 0, count: 4)
+            engine.context.render(try XCTUnwrap(image), toBitmap: &p, rowBytes: 16, bounds: CGRect(x: 1, y: 1, width: 1, height: 1),
+                                  format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+            return SIMD3(p[0], p[1], p[2])
+        }
+        let source = SIMD3<Float>(0.03, 0.2, 0.6), blur = SIMD3<Float>(0.02, 0.18, 0.55)
+        // weight = (calm weight, water share, source subject weight).
+        for (w, share) in [(Float(0), Float(1)), (0.4, 1), (1, 1), (1, 0)] {
+            let weight = solid(.init(w, share, 1 - share))
+            let waterBlur = premultiply.apply(extent: extent, arguments: [solid(blur), weight])
+            let out = try pixel(calm.apply(extent: extent, arguments: [solid(source), try XCTUnwrap(waterBlur), weight]))
+            // No water share means no water blur: the pixel stays.
+            let expected = share > 0 ? FinishingMath.waterCalm(source, waterBlur: blur, weight: w) : source
+            assertEqual(out, expected, accuracy: 0.002)
+            let kept = try pixel(keep.apply(extent: extent, arguments: [solid(blur), solid(source), weight]))
+            assertEqual(kept, source + (blur - source) * w, accuracy: 0.002)
+        }
     }
 
     // MARK: Black offset

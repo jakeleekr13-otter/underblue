@@ -125,7 +125,8 @@ using namespace metal;
 // floor, edgeLow, edgeHigh), shadow = (shadowLow, shadowHigh). Luminance only, in a band, where the
 // white reference lands (the colour kernel's neutral weight): subjects and pale surfaces brighter
 // than the water. Open water gets nothing.
-[[stitchable]] float4 UnderBlueDetail(coreimage::sample_t source, coreimage::sample_t blurred, coreimage::sample_t reference, float4 gains, float4 water, float4 waterLit, float4 detail, float4 shadow) {
+// calm.b is the subject weight of the unrestored source (UnderBlueCalmWeight); 1 without a source.
+[[stitchable]] float4 UnderBlueDetail(coreimage::sample_t source, coreimage::sample_t blurred, coreimage::sample_t reference, coreimage::sample_t calm, float4 gains, float4 water, float4 waterLit, float4 detail, float4 shadow) {
     const float3 c = source.rgb;
     const float3 luma = float3(0.2126f, 0.7152f, 0.0722f);
     const float l = dot(max(c, float3(0.0f)), luma), lb = dot(max(blurred.rgb, float3(0.0f)), luma);
@@ -151,7 +152,7 @@ using namespace metal;
         bright = smoothstep(2.2f, 3.2f, dot(r, luma) / waterLum) * smoothstep(0.08f, 0.2f, diff.r + diff.g + diff.b);
     }
     const float subject = 1.0f - waterLike * (1.0f - bright);
-    const float weight = max(detail.x, 0.0f) * band * subject * lit;
+    const float weight = max(detail.x, 0.0f) * band * min(subject, clamp(calm.b, 0.0f, 1.0f)) * lit;
     const float y = max(0.0f, x + weight * d);
     const float peak = max(c.r, max(c.g, c.b));
     const float3 out = c * min(pow(y, 2.2f) / l, max(1.0f, peak) / max(peak, 1e-5f));
@@ -217,4 +218,76 @@ using namespace metal;
     const float shaped = min(max(y + d * shape.x * w, 0.0f), max(1.0f, y));
     const float3 out = source.rgb * (pow(shaped, 2.2f) / l);
     return all(isfinite(out)) ? float4(out, source.a) : source;
+}
+
+// Water calm (FilterEngine.waterCalmWeight and finishing). FinishingMath.calmShare, calmFlatness and
+// waterCalm are the CPU mirrors. Water noise and the sharpening on it rise with the correction; open
+// water has no detail to keep, so it is smoothed before the colour stage and gets no sharpening.
+
+// The water share of a pixel: 1 - the colour kernel's neutral weight (FinishingMath.neutralWeight).
+static float calmWaterShare(float3 c, float4 gains, float4 water, float4 waterLit) {
+    const float3 luma = float3(0.2126f, 0.7152f, 0.0722f);
+    const float3 r = max(c, float3(0.0f)) * max(gains.rgb, float3(0.0f));
+    const float redness = r.r / max(r.g + r.b, 1e-4f);
+    const float top = max(r.r, max(r.g, r.b));
+    const float pixelChroma = top > 1e-4f ? (top - min(r.r, min(r.g, r.b))) / top : 0.0f;
+    const float chromaConfidence = smoothstep(0.55f, 0.8f, water.y);
+    const float chromaMatch = smoothstep(water.y * 0.5f, max(water.y * 0.85f, water.y * 0.5f + 1e-5f), pixelChroma);
+    const float waterLike = (1.0f - smoothstep(water.x, water.x + max(0.3f, water.x * 0.6f), redness))
+        * (1.0f - (1.0f - chromaMatch) * chromaConfidence);
+    const float3 lw = max(waterLit.rgb, float3(0.0f));
+    const float waterLum = dot(lw, luma);
+    const float total = r.r + r.g + r.b;
+    float bright = 0.0f;
+    if (waterLum > 1e-4f && total > 1e-5f) {
+        const float3 diff = abs(r / total - lw / (lw.r + lw.g + lw.b));
+        // waterLit.w is ColorCorrection.lightGradient, as in the colour kernel (FinishingMath.neutralWeight).
+        const float g = clamp(waterLit.w, 0.0f, 1.0f);
+        bright = smoothstep(mix(2.2f, 2.5f, g), mix(3.2f, 8.0f, g), dot(r, luma) / waterLum) * smoothstep(0.08f, 0.2f, diff.r + diff.g + diff.b);
+    }
+    return waterLike * (1.0f - bright);
+}
+
+static float calmGamma(float3 c) {
+    return pow(max(dot(c, float3(0.2126f, 0.7152f, 0.0722f)), 0.0f), 1.0f / 2.2f);
+}
+
+// basis = the blurred source. Gamma luminance times the water share, and the share in alpha.
+[[stitchable]] float4 UnderBlueCalmShare(coreimage::sample_t basis, float4 gains, float4 water, float4 waterLit) {
+    const float s = calmWaterShare(basis.rgb, gains, water, waterLit);
+    const float y = calmGamma(basis.rgb) * s;
+    return float4(y, y, y, s);
+}
+
+// The distance of the luminance from its water-only mean, times the water share.
+[[stitchable]] float4 UnderBlueCalmSpread(coreimage::sample_t basis, coreimage::sample_t mean, coreimage::sample_t share) {
+    const float m = mean.a > 1e-3f ? mean.r / mean.a : calmGamma(basis.rgb);
+    const float d = fabs(calmGamma(basis.rgb) - m) * share.a;
+    return float4(d, d, d, share.a);
+}
+
+// weight (r) = share x flatness; the share (g) for the water-only blur; the subject weight of the
+// unblurred source pixel (b) for the fine detail. flat = (low, high).
+[[stitchable]] float4 UnderBlueCalmWeight(coreimage::sample_t share, coreimage::sample_t spread, coreimage::sample_t basis, float4 gains, float4 water, float4 waterLit, float4 flat) {
+    const float s = spread.a > 1e-3f ? spread.r / spread.a : 1.0f;
+    const float w = share.a * (1.0f - smoothstep(flat.x, max(flat.y, flat.x + 1e-5f), s));
+    return float4(w, share.a, 1.0f - calmWaterShare(basis.rgb, gains, water, waterLit), 1.0f);
+}
+
+// The pixel times its water share, share in alpha, for a blur of water pixels only.
+[[stitchable]] float4 UnderBlueCalmPremultiply(coreimage::sample_t source, coreimage::sample_t weight) {
+    return float4(source.rgb * weight.g, weight.g);
+}
+
+// The pixel moves toward the water-only blur by the weight. A subject's colour never enters the blur.
+[[stitchable]] float4 UnderBlueWaterCalm(coreimage::sample_t source, coreimage::sample_t waterBlur, coreimage::sample_t weight) {
+    if (!(waterBlur.a > 1e-3f)) { return source; }
+    const float3 out = mix(source.rgb, waterBlur.rgb / waterBlur.a, clamp(weight.r, 0.0f, 1.0f));
+    return all(isfinite(out)) ? float4(out, source.a) : source;
+}
+
+// The sharpened pixel goes back to the unsharpened one by the weight.
+[[stitchable]] float4 UnderBlueCalmKeep(coreimage::sample_t before, coreimage::sample_t after, coreimage::sample_t weight) {
+    const float3 out = mix(after.rgb, before.rgb, clamp(weight.r, 0.0f, 1.0f));
+    return all(isfinite(out)) ? float4(out, after.a) : after;
 }

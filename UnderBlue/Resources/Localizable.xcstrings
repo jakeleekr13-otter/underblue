@@ -5604,6 +5604,41 @@
         }
       }
     },
+    "Only the first 10 seconds were exported. Pro exports the full video." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only the first 10 seconds were exported. Pro exports the full video."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "冒頭10秒のみ書き出しました。Proでは動画の全編を書き出せます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "처음 10초만 내보냈습니다. Pro에서는 전체 영상을 내보낼 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅导出了前 10 秒。升级 Pro 可导出完整视频。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "僅匯出前 10 秒。升級 Pro 即可匯出完整影片。"
+          }
+        }
+      }
+    },
     "Your export has been checked and is ready for Photos." : {
       "extractionState" : "manual",
       "localizations" : {

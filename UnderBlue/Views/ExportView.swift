@@ -8,6 +8,14 @@ struct ExportView: View {
     var body: some View {
         NavigationStack {
             Form {
+                // First, so the 10-second limit is seen before the options.
+                if !purchases.isPro {
+                    Section("Free trial") {
+                        Text(model.media.kind == .photo ? String(localized: "1 photo export. This uses your free photo.") : String(localized: "1 video export · first 10 seconds · up to 1080p SDR. This uses your free video."))
+                            .accessibilityIdentifier(model.media.kind == .photo ? "photo-trial-description" : "video-trial-description")
+                        Text("Failed or cancelled exports don’t use your trial.").font(.footnote).foregroundStyle(.secondary)
+                    }
+                }
                 if let metadata = model.metadata {
                     Section("Resolution") {
                         Picker("Resolution", selection: $model.options.resolution) {
@@ -57,13 +65,6 @@ struct ExportView: View {
                         }
                     }
                 }
-                if !purchases.isPro {
-                    Section("Free trial") {
-                        Text(model.media.kind == .photo ? String(localized: "1 photo export. This uses your free photo.") : String(localized: "1 video export · first 10 seconds · up to 1080p SDR. This uses your free video."))
-                            .accessibilityIdentifier(model.media.kind == .photo ? "photo-trial-description" : "video-trial-description")
-                        Text("Failed or cancelled exports don’t use your trial.").font(.footnote).foregroundStyle(.secondary)
-                    }
-                }
             }.navigationTitle("Export").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
                 // Pinned so the action stays visible however far the options scroll.
@@ -92,12 +93,18 @@ struct ExportView: View {
 }
 struct ExportCompleteView: View {
     @Bindable var model: EditorModel
+    /// A free video export cuts the clip at the trial limit. Say so when the clip was longer.
+    private var trimmed: Bool {
+        guard model.media.kind == .video, let limit = model.options.durationLimit, let duration = model.metadata?.duration else { return false }
+        return duration > limit + 0.05
+    }
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
                 Image(systemName: "checkmark.circle").font(.system(size: 54)).foregroundStyle(.mint)
                 Text("Ready to save").font(.title2.bold())
                 Text("Your export has been checked and is ready for Photos.").foregroundStyle(.secondary).multilineTextAlignment(.center)
+                if trimmed { Text("Only the first 10 seconds were exported. Pro exports the full video.").font(.subheadline).multilineTextAlignment(.center) }
                 Button("Save to Photos") { Task { await model.saveCompleted() } }.buttonStyle(.borderedProminent).disabled(model.saving)
                 if model.saving { ProgressView("Saving…") }
                 Button("Discard export", role: .destructive) { model.discardCompleted() }.disabled(model.saving)

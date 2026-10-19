@@ -94,8 +94,8 @@ price, Restore Purchase and Redeem Code. It is a flattened RGB PNG without alpha
 1206 × 2622 iPhone screenshot size. If a promoted-IAP image is used, prepare a flattened
 1024 × 1024 RGB JPG/PNG without rounded corners.
 
-The optional promoted-IAP image is ready at `AppStoreAssets/IAP/UnderBluePro-1024.png`. It is separate
-from the review-only purchase-screen screenshot above.
+The optional promoted-IAP image is not used. Leave **App Store Image** empty and do not enable
+**Promote on the App Store**. The review-only purchase-screen screenshot above must remain uploaded.
 
 ## Public URLs
 

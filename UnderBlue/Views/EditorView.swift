@@ -18,12 +18,13 @@ struct EditorView: View {
             } else if Self.usesSidePanel(geometry.size, regularWidth: widthClass == .regular) {
                 HStack(spacing: 16) {
                     previewPanel
-                    ScrollView { controls() }.frame(width: min(330, geometry.size.width * 0.42))
+                    paneControls(minHeight: geometry.size.height, grid: widthClass == .regular).frame(width: min(330, geometry.size.width * 0.42))
                 }
             } else {
                 VStack(spacing: 16) {
                     previewPanel
-                    ScrollView { controls() }.frame(maxHeight: min(350, geometry.size.height * 0.48))
+                    // The controls ask for their height first. Without this the preview and the controls split the space in half and Export is cut off.
+                    ScrollView { controls() }.frame(maxHeight: min(350, geometry.size.height * 0.55)).layoutPriority(1)
                 }
             }
         }.disabled(model.exporting).padding(.bottom, 8)
@@ -59,11 +60,11 @@ struct EditorView: View {
     }
     /// Preview on the first pane, controls on the second, nothing on the fold itself.
     private func foldedLayout(_ fold: FoldSplit, height: CGFloat) -> some View {
-        FoldPanes(fold: fold, height: height, first: previewPanel) { foldControls(minHeight: $0, grid: fold.axis == .horizontal) }
+        FoldPanes(fold: fold, height: height, first: previewPanel) { paneControls(minHeight: $0, grid: fold.axis == .horizontal) }
     }
     /// A short control stack sits in the middle of its pane. A tall one scrolls.
     /// `grid` is for a narrow pane. A wide pane keeps the sideways row, which leaves room for Export.
-    private func foldControls(minHeight: CGFloat, grid: Bool) -> some View {
+    private func paneControls(minHeight: CGFloat, grid: Bool) -> some View {
         ScrollView { controls(presetGrid: grid).frame(maxWidth: .infinity, minHeight: minHeight, alignment: .center) }
     }
     private var previewPanel: some View {

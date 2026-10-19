@@ -2,10 +2,12 @@ import SwiftUI
 
 struct BatchView: View {
     @Environment(PurchaseStore.self) private var purchases
+    @Environment(\.horizontalSizeClass) private var widthClass
     @State var model: BatchModel
     @State private var pressed: BatchModel.Item.ID?
     @State private var detail: BatchModel.Item.ID?
-    private let columns = [GridItem(.adaptive(minimum: 104), spacing: 6)]
+    /// Larger tiles on a wide screen, so a few photos do not sit as a thin row in a mostly empty canvas.
+    private var columns: [GridItem] { [GridItem(.adaptive(minimum: widthClass == .regular ? 200 : 104), spacing: 6)] }
 
     var body: some View {
         @Bindable var model = model

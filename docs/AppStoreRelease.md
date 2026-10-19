@@ -110,6 +110,13 @@ captures in `en-US/source` by `scripts/app_store_screenshots/render.js`. The old
 
 The first image is an authentic same-frame before/after comparison. The source capture and the corrected capture were produced by the app from developer-owned media. UIEB benchmark images are excluded because the dataset is academic/non-commercial and forbids redistribution.
 
+iPhone Duo screenshots are in `AppStoreAssets/Screenshots/iphone-duo-en-US` (19 Oct 2026). They are raw
+captures from the iPhone Duo simulator (iOS 27.1), flattened to RGB PNG without alpha, with the clock fixed at 9:41.
+Inner display, 2853×2007: `inner-1-corrected`, `inner-2-original`, `inner-3-batch`. Cover display, 1398×2034:
+`outer-1-editor`, `outer-2-home`. The photos come from `DeveloperMedia/new`; confirm they are developer-owned before upload.
+There is no video shot: video playback fails on the Duo simulator (see `docs/iPhoneDuoSupportPlan.md`).
+The need for Duo-size screenshots is from the plan document and is not checked against App Store Connect.
+
 An App Preview video is optional and is intentionally omitted from the first submission.
 
 The optional 1024×1024 promoted-IAP image is `AppStoreAssets/IAP/UnderBluePro-1024.png`. It is not the

@@ -9,12 +9,16 @@ struct BatchView: View {
 
     var body: some View {
         @Bindable var model = model
-        ScrollView {
-            LazyVGrid(columns: columns, spacing: 6) {
-                ForEach(model.items) { item in cell(item) }
-            }.padding(.horizontal, 6)
+        GeometryReader { geometry in
+            if let fold = EditorView.foldSplit(in: geometry) {
+                // Partly folded: the grid on one side of the fold, the controls on the other.
+                FoldPanes(fold: fold, height: geometry.size.height, first: grid) { paneHeight in
+                    ScrollView { controls(presetGrid: fold.axis == .horizontal).frame(maxWidth: .infinity, minHeight: paneHeight, alignment: .center) }
+                }
+            } else {
+                grid.safeAreaInset(edge: .bottom) { controls().background(.bar) }
+            }
         }
-        .safeAreaInset(edge: .bottom) { controls.background(.bar) }
         .navigationTitle(String(localized: "\(model.items.count) Photos")).navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(model.saving)
         .disabled(model.saving)
@@ -33,6 +37,14 @@ struct BatchView: View {
         .alert("Couldn’t save", isPresented: Binding(get: { model.error != nil && !model.saving }, set: { if !$0 { model.error = nil } })) {
             Button("OK") { model.error = nil }
         } message: { Text(model.error ?? "") }
+    }
+
+    private var grid: some View {
+        ScrollView {
+            LazyVGrid(columns: columns, spacing: 6) {
+                ForEach(model.items) { item in cell(item) }
+            }.padding(.horizontal, 6)
+        }
     }
 
     private func cell(_ item: BatchModel.Item) -> some View {
@@ -73,7 +85,7 @@ struct BatchView: View {
         }
     }
 
-    private var controls: some View {
+    private func controls(presetGrid: Bool = false) -> some View {
         @Bindable var model = model
         return VStack(spacing: 12) {
             HStack {
@@ -91,7 +103,7 @@ struct BatchView: View {
                     .buttonStyle(.bordered).frame(minHeight: 44)
                     .accessibilityValue(model.comparing ? "Original" : "Corrected")
             }
-            LookControls(look: $model.shared)
+            LookControls(look: $model.shared, grid: presetGrid)
             if model.shared.preset == .custom {
                 // The bar sits over the grid, so the five sliders scroll instead of covering it.
                 ScrollView { CustomAdjustmentControls(adjustments: $model.adjustments) }.frame(maxHeight: 200)
@@ -119,20 +131,17 @@ private struct ThumbnailKey: Equatable { let look: BatchModel.Look; let adjustme
 /// Custom has no intensity, so its slider is hidden.
 struct LookControls: View {
     @Binding var look: BatchModel.Look
+    /// A two-column grid instead of one row that scrolls sideways. Used in a narrow, tall pane.
+    var grid = false
     var body: some View {
         VStack(spacing: 12) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(DivePreset.allCases) { preset in
-                        Button { look.preset = preset } label: {
-                            VStack(spacing: 6) {
-                                Image(systemName: preset.symbolName).font(.title3)
-                                Text(preset.localizedName).font(.caption.weight(.medium))
-                            }.frame(minWidth: 84, minHeight: 60).padding(.horizontal, 4)
-                                .background(look.preset == preset ? Color.mint.opacity(0.2) : Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
-                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(look.preset == preset ? Color.mint : .clear))
-                        }.buttonStyle(.plain).accessibilityAddTraits(look.preset == preset ? .isSelected : [])
-                    }
+            if grid {
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                    ForEach(DivePreset.allCases) { presetButton($0) }
+                }
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) { ForEach(DivePreset.allCases) { presetButton($0) } }
                 }
             }
             if look.preset != .custom {
@@ -144,6 +153,17 @@ struct LookControls: View {
                 }
             }
         }
+    }
+
+    private func presetButton(_ preset: DivePreset) -> some View {
+        Button { look.preset = preset } label: {
+            VStack(spacing: 6) {
+                Image(systemName: preset.symbolName).font(.title3)
+                Text(preset.localizedName).font(.caption.weight(.medium))
+            }.frame(minWidth: grid ? 0 : 84, maxWidth: grid ? .infinity : nil, minHeight: 60).padding(.horizontal, 4)
+                .background(look.preset == preset ? Color.mint.opacity(0.2) : Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(look.preset == preset ? Color.mint : .clear))
+        }.buttonStyle(.plain).accessibilityAddTraits(look.preset == preset ? .isSelected : [])
     }
 }
 
@@ -162,42 +182,58 @@ struct BatchDetailView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 12) {
-                TabView(selection: $selection) {
-                    ForEach(ready) { page in
-                        ZStack {
-                            Color.black
-                            // A failed render must not fall back to the thumbnail: it may show an older look.
-                            if page.id == selection, previewFailed, !comparing {
-                                Label("Preview unavailable", systemImage: "exclamationmark.triangle").foregroundStyle(.secondary)
-                            } else if page.id == selection, let image = comparing ? (originalPreview ?? page.original) : (preview ?? page.corrected) {
-                                Image(decorative: image, scale: 1).resizable().scaledToFit().accessibilityLabel("Photo preview")
-                            }
-                        }.tag(page.id)
+            GeometryReader { geometry in
+                if let fold = EditorView.foldSplit(in: geometry) {
+                    FoldPanes(fold: fold, height: geometry.size.height, first: pager) { paneHeight in
+                        ScrollView { detailControls(grid: fold.axis == .horizontal).frame(maxWidth: .infinity, minHeight: paneHeight, alignment: .center) }
                     }
-                }.tabViewStyle(.page(indexDisplayMode: .never))
-                if let item {
+                } else {
                     VStack(spacing: 12) {
-                        HStack {
-                            if item.override != nil {
-                                Button("Reset to batch settings") { model.setOverride(nil, for: item.id) }
-                            }
-                            Spacer()
-                            Button { comparing.toggle() } label: {
-                                Label("Compare", systemImage: comparing ? "eye.fill" : "eye").lineLimit(1).fixedSize()
-                            }
-                                .buttonStyle(.bordered).frame(minHeight: 44)
-                                .accessibilityValue(comparing ? "Original" : "Corrected")
-                        }
-                        LookControls(look: Binding(get: { model.look(for: item) },
-                                                   set: { model.setOverride($0, for: item.id) }))
-                    }.padding(.horizontal).padding(.bottom, 8)
+                        pager
+                        detailControls(grid: false)
+                    }
                 }
             }
             .navigationTitle(position).navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             .task(id: RenderKey(id: selection, look: item.map(model.look(for:)))) { await render() }
             .task(id: selection) { await renderOriginal() }
+        }
+    }
+
+    private var pager: some View {
+        TabView(selection: $selection) {
+            ForEach(ready) { page in
+                ZStack {
+                    Color.black
+                    // A failed render must not fall back to the thumbnail: it may show an older look.
+                    if page.id == selection, previewFailed, !comparing {
+                        Label("Preview unavailable", systemImage: "exclamationmark.triangle").foregroundStyle(.secondary)
+                    } else if page.id == selection, let image = comparing ? (originalPreview ?? page.original) : (preview ?? page.corrected) {
+                        Image(decorative: image, scale: 1).resizable().scaledToFit().accessibilityLabel("Photo preview")
+                    }
+                }.tag(page.id)
+            }
+        }.tabViewStyle(.page(indexDisplayMode: .never))
+    }
+
+    @ViewBuilder private func detailControls(grid: Bool) -> some View {
+        if let item {
+            VStack(spacing: 12) {
+                HStack {
+                    if item.override != nil {
+                        Button("Reset to batch settings") { model.setOverride(nil, for: item.id) }
+                    }
+                    Spacer()
+                    Button { comparing.toggle() } label: {
+                        Label("Compare", systemImage: comparing ? "eye.fill" : "eye").lineLimit(1).fixedSize()
+                    }
+                        .buttonStyle(.bordered).frame(minHeight: 44)
+                        .accessibilityValue(comparing ? "Original" : "Corrected")
+                }
+                LookControls(look: Binding(get: { model.look(for: item) },
+                                           set: { model.setOverride($0, for: item.id) }), grid: grid)
+            }.padding(.horizontal).padding(.bottom, 8)
         }
     }
 

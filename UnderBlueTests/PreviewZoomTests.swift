@@ -19,6 +19,31 @@ final class PreviewZoomTests: XCTestCase {
         XCTAssertTrue(PreviewZoom(scale: 2).isZoomed)
     }
 
+    func testResizeKeepsScaleAndCentrePointInsideTheNewFrame() {
+        // Unfolding: the frame grows from 400x300 to 800x600, so the fitted image doubles and so does the offset.
+        let zoomed = PreviewZoom(scale: 2, offset: CGSize(width: 100, height: -50))
+        let grown = zoomed.resized(from: CGSize(width: 400, height: 300), to: CGSize(width: 800, height: 600),
+                                   container: CGSize(width: 800, height: 600))
+        XCTAssertEqual(grown, PreviewZoom(scale: 2, offset: CGSize(width: 200, height: -100)))
+        // Folding into a narrow frame: the offset shrinks and is clamped, so no gap opens at the edge.
+        let shrunk = PreviewZoom(scale: 2, offset: CGSize(width: 200, height: 150))
+            .resized(from: CGSize(width: 400, height: 300), to: CGSize(width: 200, height: 150), container: CGSize(width: 200, height: 400))
+        XCTAssertEqual(shrunk.scale, 2)
+        XCTAssertEqual(shrunk.offset, CGSize(width: 100, height: 0))
+        // An empty old size (first layout) leaves the zoom unchanged.
+        XCTAssertEqual(zoomed.resized(from: .zero, to: CGSize(width: 400, height: 300), container: container), zoomed)
+    }
+
+    func testEditorUsesSidePanelInLandscapeAndOnWideNearSquareScreens() {
+        XCTAssertTrue(EditorView.usesSidePanel(CGSize(width: 852, height: 393), regularWidth: false))
+        XCTAssertFalse(EditorView.usesSidePanel(CGSize(width: 393, height: 760), regularWidth: false))
+        // Near square: only a regular-width screen gets the side panel.
+        XCTAssertTrue(EditorView.usesSidePanel(CGSize(width: 700, height: 760), regularWidth: true))
+        XCTAssertFalse(EditorView.usesSidePanel(CGSize(width: 700, height: 760), regularWidth: false))
+        // A tall regular-width screen keeps the bottom panel, so a wide photo is not squeezed beside it.
+        XCTAssertFalse(EditorView.usesSidePanel(CGSize(width: 820, height: 1100), regularWidth: true))
+    }
+
     func testPanStopsAtTheImageEdgesSoNoGapOpens() {
         // 400x300 content at 2x is 800x600, so it may move at most 200 horizontally and 150 vertically.
         let content = CGSize(width: 400, height: 300)

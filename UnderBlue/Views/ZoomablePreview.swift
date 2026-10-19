@@ -17,6 +17,14 @@ struct PreviewZoom: Equatable {
         return PreviewZoom(scale: s, offset: CGSize(width: clamp(offset.width, limitX), height: clamp(offset.height, limitY)))
     }
 
+    /// Keeps the same image point at the centre when the frame changes size (rotation, fold, unfold).
+    /// The scale stays; the offset follows the new fitted size and is clamped to the new frame.
+    func resized(from old: CGSize, to new: CGSize, container: CGSize) -> PreviewZoom {
+        let r = old.width > 0 && new.width > 0 ? new.width / old.width : 1
+        return PreviewZoom(scale: scale, offset: CGSize(width: offset.width * r, height: offset.height * r))
+            .clamped(content: new, container: container)
+    }
+
     /// Size of an image with `pixels` fitted inside `container` (aspect fit).
     static func fitted(_ pixels: CGSize, in container: CGSize) -> CGSize {
         guard pixels.width > 0, pixels.height > 0, container.width > 0, container.height > 0 else { return .zero }
@@ -42,6 +50,10 @@ struct ZoomablePreview: View {
                 .scaleEffect(zoom.scale)
                 .offset(zoom.offset)
                 .frame(width: container.width, height: container.height)
+                .onChange(of: content) { old, new in
+                    zoom = zoom.resized(from: old, to: new, container: container)
+                    base = zoom
+                }
                 .contentShape(Rectangle())
                 .gesture(MagnifyGesture()
                     .onChanged { value in

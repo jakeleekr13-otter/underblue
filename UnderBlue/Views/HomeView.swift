@@ -5,6 +5,7 @@ struct HomeView: View {
     @Environment(PurchaseStore.self) private var purchases
     @Environment(DiagnosticsCenter.self) private var diagnostics
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.horizontalSizeClass) private var widthClass
     @State private var showDiagnostics = false
     @State private var showPro = false
     @State private var selection: PhotosPickerItem?
@@ -18,34 +19,33 @@ struct HomeView: View {
     @State private var error: String?
     @State private var errorTitle = String(localized: "Couldn’t import")
     var body: some View {
-        let pro = purchases.isPro
         NavigationStack {
-            VStack(alignment: .leading, spacing: 24) {
-                Spacer()
-                Image(systemName: "water.waves").font(.system(size: 54)).foregroundStyle(.mint).accessibilityHidden(true)
-                // Keeps every line: with three import buttons the Spacers shrink instead of the text.
-                Text("Bring back\nthe dive.").font(.largeTitle.bold()).fixedSize(horizontal: false, vertical: true)
-                Text("Natural color for your underwater photos and videos.").font(.title3).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer()
-                // Pro can pick up to BatchModel.maxPhotos; one photo still opens the single editor.
-                PhotosPicker(selection: $photoSelection, maxSelectionCount: purchases.isPro ? BatchModel.maxPhotos : 1,
-                             selectionBehavior: .ordered, matching: .images, preferredItemEncoding: .current) {
-                    Label(pro ? "Select Photos" : "Select Photo", systemImage: "photo").frame(maxWidth: .infinity, minHeight: 44)
-                }.buttonStyle(.borderedProminent)
-                PhotosPicker(selection: $selection, matching: .videos, preferredItemEncoding: .current) {
-                    Label("Select Video", systemImage: "video").frame(maxWidth: .infinity, minHeight: 44)
-                }.buttonStyle(.bordered)
-                Button { showFileImporter = true } label: {
-                    Label("Import from Files", systemImage: "folder").frame(maxWidth: .infinity, minHeight: 44)
-                }.buttonStyle(.bordered)
-                if !purchases.isPro {
-                    Button { showPro = true } label: {
-                        Label(String(localized: "Batch correct up to \(BatchModel.maxPhotos) photos with Pro"), systemImage: "square.grid.2x2")
-                            .font(.footnote)
-                    }.frame(maxWidth: .infinity)
+            Group {
+                if widthClass == .regular {
+                    // A wide screen (an unfolded foldable, a large iPhone in landscape) puts the title beside
+                    // the buttons, so the buttons do not stretch across the whole width.
+                    GeometryReader { geometry in
+                        if let fold = EditorView.foldSplit(in: geometry) {
+                            // Partly folded: nothing sits on the fold. The title takes one pane, the buttons the other.
+                            FoldPanes(fold: fold, height: geometry.size.height, first: heroColumn.padding(.trailing, 16)) { _ in
+                                VStack(spacing: 24) { actions }.frame(maxWidth: 420).padding(.leading, 16)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            }
+                        } else {
+                            HStack(spacing: 48) {
+                                heroColumn
+                                VStack(spacing: 24) { actions }.frame(maxWidth: 420)
+                            }.frame(maxHeight: .infinity)
+                        }
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 24) {
+                        Spacer()
+                        hero
+                        Spacer()
+                        actions
+                    }
                 }
-                Text("Your media stays on your iPhone.").font(.footnote).foregroundStyle(.secondary).frame(maxWidth: .infinity)
             }.padding(28).navigationTitle("UnderBlue")
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) { Button { showDiagnostics = true } label: { Image(systemName: "questionmark.circle").accessibilityLabel("Help") } }
@@ -89,6 +89,41 @@ struct HomeView: View {
                 }
                 .alert(errorTitle, isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) { Button("OK") { error = nil } } message: { Text(error ?? "") }
         }
+    }
+
+    private var heroColumn: some View {
+        VStack(alignment: .leading, spacing: 24) { hero }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder private var hero: some View {
+        Image(systemName: "water.waves").font(.system(size: 54)).foregroundStyle(.mint).accessibilityHidden(true)
+        // Keeps every line: with three import buttons the Spacers shrink instead of the text.
+        Text("Bring back\nthe dive.").font(.largeTitle.bold()).fixedSize(horizontal: false, vertical: true)
+        Text("Natural color for your underwater photos and videos.").font(.title3).foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    @ViewBuilder private var actions: some View {
+        let pro = purchases.isPro
+        // Pro can pick up to BatchModel.maxPhotos; one photo still opens the single editor.
+        PhotosPicker(selection: $photoSelection, maxSelectionCount: pro ? BatchModel.maxPhotos : 1,
+                     selectionBehavior: .ordered, matching: .images, preferredItemEncoding: .current) {
+            Label(pro ? "Select Photos" : "Select Photo", systemImage: "photo").frame(maxWidth: .infinity, minHeight: 44)
+        }.buttonStyle(.borderedProminent)
+        PhotosPicker(selection: $selection, matching: .videos, preferredItemEncoding: .current) {
+            Label("Select Video", systemImage: "video").frame(maxWidth: .infinity, minHeight: 44)
+        }.buttonStyle(.bordered)
+        Button { showFileImporter = true } label: {
+            Label("Import from Files", systemImage: "folder").frame(maxWidth: .infinity, minHeight: 44)
+        }.buttonStyle(.bordered)
+        if !pro {
+            Button { showPro = true } label: {
+                Label(String(localized: "Batch correct up to \(BatchModel.maxPhotos) photos with Pro"), systemImage: "square.grid.2x2")
+                    .font(.footnote)
+            }.frame(maxWidth: .infinity)
+        }
+        Text("Your media stays on your iPhone.").font(.footnote).foregroundStyle(.secondary).frame(maxWidth: .infinity)
     }
 
     /// One photo opens the single editor. Two or more open the batch screen.

@@ -29,15 +29,18 @@ struct QueueSidebar: View {
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if !model.engine.items.isEmpty {
-                let total = model.engine.items.count, done = model.engine.doneCount
+            // The queue is empty after a relaunch, but the output folder is still there. So the link does not wait for items.
+            let total = model.engine.items.count, done = model.engine.doneCount
+            if total > 0 || model.canShowResults {
                 VStack(alignment: .leading, spacing: 4) {
-                    ProgressView(value: Double(done), total: Double(max(1, total)))
-                    Text(summary(done: done, total: total, failed: model.engine.failedCount)).font(.caption).foregroundStyle(.secondary)
-                    if done > 0, model.canShowResults {
+                    if total > 0 {
+                        ProgressView(value: Double(done), total: Double(max(1, total)))
+                        Text(summary(done: done, total: total, failed: model.engine.failedCount)).font(.caption).foregroundStyle(.secondary)
+                    }
+                    if model.canShowResults {
                         Button(model.showResultsTitle) { model.showResults() }.buttonStyle(.link).font(.caption)
                     }
-                }.padding(10).background(.bar)
+                }.frame(maxWidth: .infinity, alignment: .leading).padding(10).background(.bar)
             }
         }
     }

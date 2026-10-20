@@ -61,6 +61,14 @@ Each stage ends with one artifact that can fail.
 
 Stages 1–2 change only build setup and seams. Stages 3 and 4 can run in parallel after stage 2.
 
+## Shared with the iPhone app
+
+The Mac app reuses the iPhone code wherever the behaviour is the same:
+- Processing, export, models, commerce, diagnostics: the same files.
+- Screens: `CustomAdjustmentControls`, `ZoomablePreview`, `LicensesView`, and the Help view (`DiagnosticsView`) and the Pro screen (`ProView`) with `#if os(...)` for the few differences.
+- Text: one string catalog (`UnderBlue/Resources/Localizable.xcstrings`) for both apps. Mac text reuses the iPhone keys where the meaning is the same.
+- Only the window layout (queue, preview, look panel, Settings, menus) is Mac-only.
+
 ## Progress (20 Oct 2026)
 
 | # | Stage | State | Evidence |
@@ -69,15 +77,14 @@ Stages 1–2 change only build setup and seams. Stages 3 and 4 can run in parall
 | 2 | Platform seams | Done | `BackgroundTask`, `#if os(iOS)` in two shared files. `Processing/` unchanged. |
 | 3 | Batch engine | Done, plus `MemoryGovernor` | `BatchEngineTests`, `MemoryGovernorTests` |
 | 4 | Mac UI | Built: window, queue, preview, look controls, Settings, Help, About, drop, menus, Dock count, notification | A 20-item mixed batch ran in the app. Not clicked through: menu shortcuts, drop, Settings, paywall. |
-| 5 | Commerce | Partly: product ID, paywall, trial reuse, local StoreKit file `StoreKit/UnderBlueMac.storekit` | Not done: the manual sandbox check. Mac paywall has no Redeem Code button (not checked whether macOS offers one). |
+| 5 | Commerce | Partly: product ID, paywall (the shared `ProView`, with Redeem Code), trial reuse, local StoreKit file `StoreKit/UnderBlueMac.storekit` | Not done: the manual sandbox check. Redeem Code compiles on macOS but was not run against the store. |
 | 6 | Mac colour numbers | Not started | |
 | 7 | Performance | Memory only. Speed tuning waits for the algorithm. | Memory peak table in the `MemoryGovernor` commit message |
 | 8 | Release | Checklist in `MacAppStoreRelease.md`. Icon is a **draft**. | `scripts/make_mac_icon.py` |
 
 Open items:
 - The Mac icon is generated from the iPhone icon. Jake decides the final design.
-- Mac screen text has no translations yet (ko, ja, zh-Hans, zh-Hant).
-- The app has no copyright line in About. The owner name is not known here.
+- The app has no copyright line in About. It needs the owner name, as entered in App Store Connect.
 - Signed-build checks: sandbox bookmark after relaunch, app group, share menu, purchase.
 - Long 4K video and 8 GB Macs are not measured for memory.
 

@@ -26,7 +26,7 @@ struct MainWindow: View {
             ToolbarItem {
                 if model.engine.running {
                     Button { model.cancel() } label: { Label("Stop", systemImage: "stop.fill") }
-                        .help("Stop after the current items (⌘.)")
+                        .help("Stop the batch. Finished items are kept (⌘.)")
                 } else {
                     Button { model.start() } label: { Label("Start", systemImage: "play.fill") }
                         .help("Correct everything in the queue (⌘R)")
@@ -56,13 +56,13 @@ struct MainWindow: View {
         .fileImporter(isPresented: $model.showImporter, allowedContentTypes: [.image, .movie, .folder], allowsMultipleSelection: true) { result in
             if case .success(let urls) = result { Task { await model.add(urls) } }
         }
-        .sheet(isPresented: $model.showPaywall) { MacPaywallView(reason: model.paywallReason) }
+        .sheet(isPresented: $model.showPaywall) { ProView(reason: model.paywallReason) }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if let notice = model.notice {
                 HStack {
                     Text(notice).font(.callout)
                     Spacer()
-                    Button("Dismiss") { model.notice = nil }.buttonStyle(.link)
+                    Button("OK") { model.notice = nil }.buttonStyle(.link)
                 }.padding(.horizontal, 14).padding(.vertical, 8).background(.bar)
             }
         }
@@ -71,7 +71,7 @@ struct MainWindow: View {
 
     private var outputLabel: String {
         switch model.saveTarget {
-        case .photos: String(localized: "Photos Library")
+        case .photos: String(localized: "Photos library")
         case .folder: model.folderURL?.lastPathComponent ?? String(localized: "Choose Folder")
         }
     }

@@ -39,7 +39,7 @@ for scope in ['project', 'app', 'tests', 'uitests', 'share', 'mac', 'macshare', 
         refs.append(add(scope+config,f'isa = XCBuildConfiguration; buildSettings = {{ {body} }}; name = {config};'))
     configs[scope] = add(scope+'configlist',f'isa = XCConfigurationList; buildConfigurations = ({",".join(refs)},); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;')
 # Files in UnderBlue/ that the Mac target does not compile (iOS-only, or replaced by UnderBlueMac/). Per file, not per folder.
-MAC_EXCLUDED = ['App/UnderBlueApp.swift','Resources/Info.plist','Resources/UnderBlue.entitlements'] + [f'Views/{n}.swift' for n in ['BatchView','DiagnosticsView','EditorView','ExportView','HomeView','ProView']]
+MAC_EXCLUDED = ['App/UnderBlueApp.swift','Resources/Info.plist','Resources/UnderBlue.entitlements'] + [f'Views/{n}.swift' for n in ['BatchView','EditorView','ExportView','HomeView']]
 products=[]; groups=[]; targets=[]
 share_target=ident('sharetarget')
 for scope,name,kind in [('app','UnderBlue','application'),('mac','UnderBlueMac','application'),('mactests','UnderBlueMacTests','bundle.unit-test'),('tests','UnderBlueTests','bundle.unit-test'),('uitests','UnderBlueUITests','bundle.ui-testing'),('share','UnderBlueShare','app-extension'),('macshare','UnderBlueMacShare','app-extension')]:

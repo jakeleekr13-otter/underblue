@@ -13,7 +13,7 @@ struct InspectorView: View {
                 }
                 .pickerStyle(.radioGroup).labelsHidden()
                 if model.preset != .original && model.preset != .custom {
-                    LabeledContent("Strength") {
+                    LabeledContent("Intensity") {
                         Slider(value: $model.intensity, in: 0...1)
                     }
                 }

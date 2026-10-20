@@ -63,14 +63,14 @@ struct QueueRow: View {
     private var status: String {
         switch item.state {
         case .queued: String(localized: "Waiting")
-        case .analyzing: String(localized: "Analyzing")
+        case .analyzing: String(localized: "Analyzing…")
         case .waiting: String(localized: "Ready to save")
         case .waitingForMemory: String(localized: "Waiting for memory")
-        case .exporting: String(localized: "Exporting")
-        case .delivering: String(localized: "Saving")
+        case .exporting: String(localized: "Exporting…")
+        case .delivering: String(localized: "Saving…")
         case .done: item.savedName ?? String(localized: "Saved")
         case .failed: item.error ?? String(localized: "Failed")
-        case .cancelled: String(localized: "Stopped")
+        case .cancelled: String(localized: "Cancelled")
         }
     }
 }

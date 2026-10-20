@@ -21,7 +21,7 @@ struct UnderBlueMacApp: App {
         .defaultSize(width: 1200, height: 760)
         .commands { MacCommands(model: model) }
         Window("UnderBlue Help", id: "help") {
-            HelpView().environment(model.purchases).environment(model.diagnostics)
+            DiagnosticsView().environment(model.purchases).environment(model.diagnostics)
                 .preferredColorScheme(.dark).tint(.mint)
         }
         .defaultSize(width: 560, height: 680)

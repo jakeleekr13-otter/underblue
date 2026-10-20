@@ -1,10 +1,12 @@
 import SwiftUI
 import StoreKit
 
+/// The Pro purchase screen, shared by the iPhone and the Mac app. `reason` says why it opened, for example that batch needs Pro.
 struct ProView: View {
     @Environment(PurchaseStore.self) private var purchases
     @Environment(\.dismiss) private var dismiss
     @State private var redeeming = false
+    var reason: String?
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -12,9 +14,14 @@ struct ProView: View {
                     Image(systemName: "water.waves").font(.system(size: 44)).foregroundStyle(.mint).accessibilityHidden(true)
                     Text("UnderBlue Pro").font(.largeTitle.bold())
                     Text("One-time purchase. Every dive.").font(.title3).foregroundStyle(.secondary)
+                    if let reason { Text(reason).font(.callout).foregroundStyle(.orange) }
                     VStack(alignment: .leading, spacing: 16) {
                         Label("Unlimited photo exports", systemImage: "photo")
+                        #if os(iOS)
                         Label(String(localized: "Batch correct up to \(BatchModel.maxPhotos) photos"), systemImage: "square.grid.2x2")
+                        #else
+                        Label("Batch: many photos and videos in one run", systemImage: "square.grid.2x2")
+                        #endif
                         Label("Full-length video exports", systemImage: "video")
                         Label("4K export", systemImage: "4k.tv")
                         Label("HDR export where supported", systemImage: "sun.max")
@@ -36,9 +43,16 @@ struct ProView: View {
                     }
                     if purchases.busy { ProgressView() }
                     if let message = purchases.message { Text(message).font(.callout).accessibilityAddTraits(.updatesFrequently) }
+                    #if os(iOS)
                     Text("All processing stays on your iPhone. No account or subscription.").font(.footnote).foregroundStyle(.secondary)
+                    #else
+                    Text("All processing stays on your Mac. No account or subscription.").font(.footnote).foregroundStyle(.secondary)
+                    #endif
                 }.padding(28).disabled(purchases.busy)
             }.toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }.task { await purchases.load() }
+        #if os(macOS)
+        .frame(minWidth: 440, minHeight: 520)
+        #endif
     }
 }

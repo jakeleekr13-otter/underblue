@@ -26,7 +26,7 @@ struct PreviewPane: View {
     @ViewBuilder private var content: some View {
         if let item = model.selectedItem {
             if let error = model.previewError {
-                ContentUnavailableView("Can’t show this preview", systemImage: "exclamationmark.triangle", description: Text(error))
+                ContentUnavailableView("Preview unavailable", systemImage: "exclamationmark.triangle", description: Text(error))
             } else if item.kind == .photo {
                 if let image = model.showingOriginal ? model.originalImage : model.correctedImage {
                     ZoomablePreview(image: image, zoom: $zoom)

@@ -29,8 +29,8 @@ struct SettingsView: View {
                 Toggle("Keep HDR when possible", isOn: $model.preferHDR)
             }
             Section("Speed") {
-                Stepper("Photos at the same time: \(model.parallelPhotos)", value: $model.parallelPhotos, in: 1...4)
-                Text("More photos at once is faster but uses more memory. It applies to the next batch.")
+                Stepper("Most photos at the same time: \(model.parallelPhotos)", value: $model.parallelPhotos, in: 1...4)
+                Text("This is a limit. UnderBlue starts fewer when the Mac is low on memory, and waits when a large photo needs most of it. It applies to the next batch.")
                     .font(.caption).foregroundStyle(.secondary)
             }
         }

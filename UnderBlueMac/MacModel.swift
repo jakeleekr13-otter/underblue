@@ -98,10 +98,12 @@ final class MacModel {
     /// `--ui-demo-folder <path>` queues a folder, `--ui-demo-output <path>` sets the output folder,
     /// `--ui-demo-pro` lets Start run without a purchase, and `--ui-demo-start` presses Start.
     private var demoPro = false
+    private var demoNoPreview = false
     private func applyDemoArguments() {
         let arguments = ProcessInfo.processInfo.arguments
         func value(_ flag: String) -> String? { arguments.firstIndex(of: flag).flatMap { arguments.indices.contains($0 + 1) ? arguments[$0 + 1] : nil } }
         demoPro = arguments.contains("--ui-demo-pro")
+        demoNoPreview = arguments.contains("--ui-demo-nopreview")
         if let parallel = value("--ui-demo-parallel").flatMap(Int.init) { parallelPhotos = min(4, max(1, parallel)) }
         if let output = value("--ui-demo-output") { folderURL = URL(fileURLWithPath: output, isDirectory: true); saveTarget = .folder }
         if let folder = value("--ui-demo-folder") {
@@ -131,7 +133,7 @@ final class MacModel {
         let known = Set(engine.items.map { $0.url.standardizedFileURL.path })
         let fresh = result.media.filter { !known.contains($0.url.standardizedFileURL.path) }
         engine.add(fresh)
-        if selection == nil { selection = engine.items.first?.id }
+        if selection == nil, !isDemoNoPreview { selection = engine.items.first?.id }
         if fresh.isEmpty && result.skipped > 0 {
             notice = String(localized: "No photos or videos found in what you added.")
         } else if result.skipped > 0 {
@@ -191,6 +193,14 @@ final class MacModel {
     }
 
     // MARK: Running
+
+    private var isDemoNoPreview: Bool {
+        #if DEBUG
+        return demoNoPreview
+        #else
+        return false
+        #endif
+    }
 
     private var isProOrDemo: Bool {
         #if DEBUG

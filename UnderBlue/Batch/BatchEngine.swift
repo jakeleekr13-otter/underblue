@@ -1,4 +1,5 @@
 import Foundation
+import ImageIO
 
 /// Runs many photos and videos through analyse → export → deliver.
 ///
@@ -9,7 +10,7 @@ import Foundation
 /// The engine does not check Pro access and does not ask for permissions. The screen that owns it does.
 @MainActor @Observable
 final class BatchEngine {
-    enum State: Equatable, Sendable { case queued, analyzing, waiting, exporting, delivering, done, failed, cancelled }
+    enum State: Equatable, Sendable { case queued, analyzing, waiting, waitingForMemory, exporting, delivering, done, failed, cancelled }
 
     struct Item: Identifiable, Sendable {
         let id = UUID()
@@ -42,11 +43,13 @@ final class BatchEngine {
     /// Where results go. Set it before `start()`. A run keeps the sink it started with.
     var sink: BatchSink
     private let diagnostics: DiagnosticRecorder
+    private let memory: MemoryGovernor
     private var runTask: Task<Void, Never>?
     private var itemTasks: [Task<Void, Never>] = []
 
-    init(limits: Limits = Limits(), sink: BatchSink, diagnostics: DiagnosticRecorder) {
+    init(limits: Limits = Limits(), sink: BatchSink, diagnostics: DiagnosticRecorder, memory: MemoryGovernor = MemoryGovernor()) {
         self.limits = limits
+        self.memory = memory
         self.sink = sink
         self.diagnostics = diagnostics
     }
@@ -106,6 +109,7 @@ final class BatchEngine {
         let format: ExportOptions.PhotoFormat
         let trial: Bool
         let preferHDR: Bool
+        let memory: MemoryGovernor
         let sink: BatchSink
     }
 
@@ -117,7 +121,8 @@ final class BatchEngine {
             processors: (0..<max(1, limits.photoExport)).map { _ in PhotoProcessor(diagnostics: diagnostics) },
             analyzer: VideoRestorationAnalyzer(diagnostics: diagnostics),
             exporters: (0..<max(1, limits.videoExport)).map { _ in VideoExporter(diagnostics: diagnostics) },
-            base: settings, format: photoFormat, trial: trial, preferHDR: preferHDR, sink: sink)
+            base: settings, format: photoFormat, trial: trial, preferHDR: preferHDR, memory: memory, sink: sink)
+        await memory.startObservingPressure()
         var previous: Task<Void, Never>?
         do {
             for id in ids {
@@ -132,6 +137,7 @@ final class BatchEngine {
             }
         } catch { /* cancelled while waiting for admission */ }
         for task in itemTasks { await task.value }
+        await memory.stopObservingPressure()
         // Items that were never admitted because of a cancel go back to a state a new run can pick up.
         for id in ids { update(id) { if $0.state == .queued { $0.state = .cancelled } } }
     }
@@ -183,13 +189,20 @@ final class BatchEngine {
         catch { await workers.analysis.release(analysisSlot); await processor.forget(item.url); throw error }
         await workers.analysis.release(analysisSlot)
         update(item.id) { $0.state = .waiting }
-        let chosen = settings, format = workers.format, url = item.url
+        let chosen = settings, format = workers.format, url = item.url, id = item.id
+        let cost = workers.memory.cost(megapixels: Self.megapixels(ofPhoto: url))
         do {
             let output = try await workers.photo.run { slot in
-                await self.update(item.id) { $0.state = .exporting }
-                try StorageCheck.require(bytes: 100_000_000)
-                // Batch has no SDR/HDR choice: HDR photos stay HDR, SDR photos stay SDR.
-                return try await workers.processors[slot].export(url, settings: chosen, keepHDR: !workers.trial && workers.preferHDR, format: format)
+                await self.update(id) { $0.state = .waitingForMemory }
+                let reservation = try await workers.memory.acquire(cost: cost)
+                do {
+                    await self.update(id) { $0.state = .exporting }
+                    try StorageCheck.require(bytes: 100_000_000)
+                    // Batch has no SDR/HDR choice: HDR photos stay HDR, SDR photos stay SDR.
+                    let file = try await workers.processors[slot].export(url, settings: chosen, keepHDR: !workers.trial && workers.preferHDR, format: format)
+                    await workers.memory.release(reservation)
+                    return file
+                } catch { await workers.memory.release(reservation); throw error }
             }
             await processor.forget(url)
             return (output, settings)
@@ -223,14 +236,31 @@ final class BatchEngine {
         await workers.analysis.release(analysisSlot)
         update(item.id) { $0.state = .waiting }
         let chosen = settings, chosenOptions = options, found = analysis, id = item.id, url = item.url
+        let size = metadata.displaySize
+        let cost = workers.memory.cost(megapixels: Double(size.width * size.height) / 1_000_000)
         let result = try await workers.video.run { slot in
-            await self.update(id) { $0.state = .exporting }
-            return try await workers.exporters[slot].export(url: url, metadata: metadata, settings: chosen, options: chosenOptions,
-                                                             restorationAnalysis: found) { value in
-                await self.update(id) { $0.progress = value }
-            }
+            await self.update(id) { $0.state = .waitingForMemory }
+            let reservation = try await workers.memory.acquire(cost: cost)
+            do {
+                await self.update(id) { $0.state = .exporting }
+                let done = try await workers.exporters[slot].export(url: url, metadata: metadata, settings: chosen, options: chosenOptions,
+                                                                     restorationAnalysis: found) { value in
+                    await self.update(id) { $0.progress = value }
+                }
+                await workers.memory.release(reservation)
+                return done
+            } catch { await workers.memory.release(reservation); throw error }
         }
         return (result.url, settings)
+    }
+
+    /// The pixel count of a photo in megapixels, read from the file header. A file that cannot be read counts as 12 MP.
+    nonisolated static func megapixels(ofPhoto url: URL) -> Double {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let width = properties[kCGImagePropertyPixelWidth] as? Double, let height = properties[kCGImagePropertyPixelHeight] as? Double,
+              width > 0, height > 0 else { return 12 }
+        return width * height / 1_000_000
     }
 
     private func update(_ id: Item.ID, _ change: (inout Item) -> Void) {

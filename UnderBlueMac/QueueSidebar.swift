@@ -65,6 +65,7 @@ struct QueueRow: View {
         case .queued: String(localized: "Waiting")
         case .analyzing: String(localized: "Analyzing")
         case .waiting: String(localized: "Ready to save")
+        case .waitingForMemory: String(localized: "Waiting for memory")
         case .exporting: String(localized: "Exporting")
         case .delivering: String(localized: "Saving")
         case .done: item.savedName ?? String(localized: "Saved")

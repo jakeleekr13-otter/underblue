@@ -208,6 +208,38 @@ final class MacModel {
         return url
     }
 
+    /// Label for the action that shows the results: Finder for a folder, the Photos app for the library.
+    var showResultsTitle: String {
+        saveTarget == .photos ? String(localized: "Open Photos") : String(localized: "Show in Finder")
+    }
+    var canShowResults: Bool { saveTarget == .photos || folderURL != nil }
+
+    /// Opens the output folder in Finder, or the Photos app. Results saved under an earlier target are not tracked.
+    func showResults() {
+        switch saveTarget {
+        case .folder:
+            if let folderURL { NSWorkspace.shared.open(folderURL) }
+        case .photos:
+            if let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Photos") {
+                NSWorkspace.shared.openApplication(at: app, configuration: NSWorkspace.OpenConfiguration())
+            }
+        }
+    }
+
+    /// Selects one finished file in Finder. Falls back to the folder when the file is gone.
+    func reveal(_ id: UUID) {
+        guard saveTarget == .folder, let folderURL,
+              let name = engine.items.first(where: { $0.id == id })?.savedName else { showResults(); return }
+        let scoped = folderURL.startAccessingSecurityScopedResource()
+        defer { if scoped { folderURL.stopAccessingSecurityScopedResource() } }
+        let file = folderURL.appendingPathComponent(name)
+        if FileManager.default.fileExists(atPath: file.path) {
+            NSWorkspace.shared.activateFileViewerSelecting([file])
+        } else {
+            NSWorkspace.shared.open(folderURL)
+        }
+    }
+
     private func makeSink() -> BatchSink? {
         switch saveTarget {
         case .photos: return PhotosSink()

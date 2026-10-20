@@ -10,6 +10,10 @@ struct QueueSidebar: View {
                 QueueRow(item: item)
                     .tag(item.id)
                     .contextMenu {
+                        if item.state == .done, model.canShowResults {
+                            Button(model.showResultsTitle) { model.reveal(item.id) }
+                            Divider()
+                        }
                         Button("Remove") { model.remove(item.id) }.disabled(model.engine.running)
                     }
             }
@@ -30,6 +34,9 @@ struct QueueSidebar: View {
                 VStack(alignment: .leading, spacing: 4) {
                     ProgressView(value: Double(done), total: Double(max(1, total)))
                     Text(summary(done: done, total: total, failed: model.engine.failedCount)).font(.caption).foregroundStyle(.secondary)
+                    if done > 0, model.canShowResults {
+                        Button(model.showResultsTitle) { model.showResults() }.buttonStyle(.link).font(.caption)
+                    }
                 }.padding(10).background(.bar)
             }
         }

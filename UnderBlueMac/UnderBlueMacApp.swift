@@ -62,6 +62,9 @@ struct MacCommands: Commands {
                 .keyboardShortcut(".")
                 .disabled(!model.engine.running)
             Divider()
+            Button(model.showResultsTitle) { model.showResults() }
+                .keyboardShortcut("o", modifiers: [.command, .shift])
+                .disabled(!model.canShowResults)
             Button("Retry Failed") { model.retryFailed() }
                 .disabled(model.engine.running || model.engine.failedCount == 0)
             Button("Remove Finished") { model.clearFinished() }

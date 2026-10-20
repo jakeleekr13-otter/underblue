@@ -35,8 +35,12 @@ final class BatchEngine {
 
     private(set) var items: [Item] = []
     private(set) var running = false
-    let limits: Limits
-    private let sink: BatchSink
+    /// Change these only while no run is active. A run reads them once, when it starts.
+    var limits: Limits
+    /// Keep HDR in photos and videos when the source and the Mac allow it. Off exports SDR.
+    var preferHDR = true
+    /// Where results go. Set it before `start()`. A run keeps the sink it started with.
+    var sink: BatchSink
     private let diagnostics: DiagnosticRecorder
     private var runTask: Task<Void, Never>?
     private var itemTasks: [Task<Void, Never>] = []
@@ -70,14 +74,15 @@ final class BatchEngine {
     }
 
     /// Starts every queued or cancelled item. It does nothing while a run is active.
-    func start(settings: FilterSettings, photoFormat: ExportOptions.PhotoFormat = .jpeg) {
+    /// `trial` applies the free-trial limits to every item: photos export as SDR, videos as 1080p SDR for the first seconds only.
+    func start(settings: FilterSettings, photoFormat: ExportOptions.PhotoFormat = .jpeg, trial: Bool = false) {
         guard !running else { return }
         let ids = items.filter { $0.state == .queued || $0.state == .cancelled }.map(\.id)
         guard !ids.isEmpty else { return }
         for id in ids { update(id) { $0.state = .queued; $0.progress = 0; $0.error = nil } }
         running = true
         runTask = Task {
-            await run(ids, settings: settings, photoFormat: photoFormat)
+            await run(ids, settings: settings, photoFormat: photoFormat, trial: trial)
             running = false; runTask = nil; itemTasks = []
         }
     }
@@ -99,9 +104,12 @@ final class BatchEngine {
         let exporters: [VideoExporter]
         let base: FilterSettings
         let format: ExportOptions.PhotoFormat
+        let trial: Bool
+        let preferHDR: Bool
+        let sink: BatchSink
     }
 
-    private func run(_ ids: [Item.ID], settings: FilterSettings, photoFormat: ExportOptions.PhotoFormat) async {
+    private func run(_ ids: [Item.ID], settings: FilterSettings, photoFormat: ExportOptions.PhotoFormat, trial: Bool) async {
         let workers = Workers(
             analysis: StageGate(limit: limits.analysis), video: StageGate(limit: limits.videoExport),
             photo: StageGate(limit: limits.photoExport), window: StageGate(limit: limits.inFlight),
@@ -109,7 +117,7 @@ final class BatchEngine {
             processors: (0..<max(1, limits.photoExport)).map { _ in PhotoProcessor(diagnostics: diagnostics) },
             analyzer: VideoRestorationAnalyzer(diagnostics: diagnostics),
             exporters: (0..<max(1, limits.videoExport)).map { _ in VideoExporter(diagnostics: diagnostics) },
-            base: settings, format: photoFormat)
+            base: settings, format: photoFormat, trial: trial, preferHDR: preferHDR, sink: sink)
         var previous: Task<Void, Never>?
         do {
             for id in ids {
@@ -149,7 +157,7 @@ final class BatchEngine {
             update(id) { $0.state = .delivering }
             operation = .save
             let name = ExportNaming.fileName(source: item.originalName, preset: settings.preset, extension: produced.pathExtension)
-            let saved = try await sink.deliver(produced, fileName: name, kind: item.kind)
+            let saved = try await workers.sink.deliver(produced, fileName: name, kind: item.kind)
             update(id) { $0.state = .done; $0.progress = 1; $0.savedName = saved }
         } catch is CancellationError {
             update(id) { $0.state = .cancelled }
@@ -181,7 +189,7 @@ final class BatchEngine {
                 await self.update(item.id) { $0.state = .exporting }
                 try StorageCheck.require(bytes: 100_000_000)
                 // Batch has no SDR/HDR choice: HDR photos stay HDR, SDR photos stay SDR.
-                return try await workers.processors[slot].export(url, settings: chosen, keepHDR: true, format: format)
+                return try await workers.processors[slot].export(url, settings: chosen, keepHDR: !workers.trial && workers.preferHDR, format: format)
             }
             await processor.forget(url)
             return (output, settings)
@@ -204,8 +212,13 @@ final class BatchEngine {
                 await diagnostics.record(Failure.restorationFallback(.videoSceneAnalysis), operation: .videoRestoration)
             }
             settings.analysis = analysis?.legacyAnalysis ?? .neutral
-            options.resolution = .source
-            options.range = await ExportCapability.evaluate(url: url, metadata: metadata).hdrAvailable ? .hdr : .sdr
+            if workers.trial {
+                options.resolution = .hd; options.range = .sdr; options.durationLimit = TrialStore.videoSeconds
+            } else {
+                options.resolution = .source
+                let hdr = workers.preferHDR ? await ExportCapability.evaluate(url: url, metadata: metadata).hdrAvailable : false
+                options.range = hdr ? .hdr : .sdr
+            }
         } catch { await workers.analysis.release(analysisSlot); throw error }
         await workers.analysis.release(analysisSlot)
         update(item.id) { $0.state = .waiting }

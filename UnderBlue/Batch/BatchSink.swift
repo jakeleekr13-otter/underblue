@@ -22,3 +22,11 @@ struct DirectorySink: BatchSink {
         return name
     }
 }
+
+/// Saves finished files to the Photos library. The temporary file stays where it is; the engine removes it.
+struct PhotosSink: BatchSink {
+    func deliver(_ file: URL, fileName: String, kind: ImportedMedia.Kind) async throws -> String {
+        try await PhotoLibrarySaver().save(file, kind: kind, fileName: fileName)
+        return fileName
+    }
+}

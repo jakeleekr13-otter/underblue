@@ -4,7 +4,11 @@ import StoreKit
 
 @MainActor @Observable
 final class PurchaseStore {
+    #if os(macOS)
+    static let productID = "com.underblue.mac.pro"
+    #else
     static let productID = "com.underblue.pro"
+    #endif
     private(set) var product: Product?
     private(set) var isPro = false
     private(set) var busy = false

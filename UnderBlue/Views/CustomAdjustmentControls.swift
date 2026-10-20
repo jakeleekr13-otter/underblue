@@ -44,7 +44,7 @@ struct CustomAdjustmentControls: View {
                         Spacer()
                         Text(text).monospacedDigit().foregroundStyle(.secondary)
                     }.accessibilityHidden(true)
-                    Slider(value: $adjustments[dynamicMember: control.keyPath], in: -1...1, step: 0.01)
+                    slider(for: control)
                         .frame(maxWidth: .infinity)
                         .accessibilityLabel(Text(control.title))
                         .accessibilityValue(Text(text))
@@ -55,6 +55,17 @@ struct CustomAdjustmentControls: View {
                 .disabled(atZero)
         }
     }
+    @ViewBuilder private func slider(for control: Control) -> some View {
+        let value = $adjustments[dynamicMember: control.keyPath]
+        #if os(macOS)
+        // A stepped slider draws one tick mark per step on macOS, and 200 marks look like noise under the track.
+        // So the slider is smooth and the value is rounded to the same 0.01 step.
+        Slider(value: Binding(get: { value.wrappedValue }, set: { value.wrappedValue = ($0 * 100).rounded() / 100 }), in: -1...1)
+        #else
+        Slider(value: value, in: -1...1, step: 0.01)
+        #endif
+    }
+
     /// Slider steps can leave a tiny remainder near zero, so "all at zero" means every shown value is 0.
     private var atZero: Bool { Control.allCases.allSatisfy { Self.valueText(adjustments[keyPath: $0.keyPath]) == "0" } }
 }

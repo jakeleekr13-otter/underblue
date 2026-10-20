@@ -41,9 +41,10 @@ enum FileImport {
 
     /// Takes the newest share from the extension's inbox and moves its files into the temporary folder.
     /// Returns nothing when the inbox is empty or the App Group is unavailable.
-    static func takeShared() async -> (media: [ImportedMedia], failed: Int)? {
+    /// `inbox` is the App Group inbox. Tests pass a temporary folder.
+    static func takeShared(inbox: URL? = nil) async -> (media: [ImportedMedia], failed: Int)? {
         await Task.detached(priority: .userInitiated) { () -> (media: [ImportedMedia], failed: Int)? in
-            guard let root = try? SharedInbox.root(), let share = SharedInbox.takeNewest(at: root) else { return nil }
+            guard let root = inbox ?? (try? SharedInbox.root()), let share = SharedInbox.takeNewest(at: root) else { return nil }
             defer { SharedInbox.remove(share.folder) }
             var media: [ImportedMedia] = []
             for item in share.items {

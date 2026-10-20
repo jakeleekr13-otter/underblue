@@ -69,6 +69,7 @@ final class MacModel {
     private var runTask: Task<Void, Never>?
     private var openedScopes: [URL] = []
     private var askedForNotifications = false
+    private var importingShared = false
 
     init() {
         let recorder = diagnostics.recorder
@@ -104,6 +105,7 @@ final class MacModel {
         func value(_ flag: String) -> String? { arguments.firstIndex(of: flag).flatMap { arguments.indices.contains($0 + 1) ? arguments[$0 + 1] : nil } }
         demoPro = arguments.contains("--ui-demo-pro")
         demoNoPreview = arguments.contains("--ui-demo-nopreview")
+        if let name = value("--ui-demo-preset"), let chosen = DivePreset.allCases.first(where: { $0.rawValue.lowercased() == name.lowercased() }) { preset = chosen }
         if let parallel = value("--ui-demo-parallel").flatMap(Int.init) { parallelPhotos = min(4, max(1, parallel)) }
         if let output = value("--ui-demo-output") { folderURL = URL(fileURLWithPath: output, isDirectory: true); saveTarget = .folder }
         if let folder = value("--ui-demo-folder") {
@@ -141,14 +143,37 @@ final class MacModel {
         }
     }
 
+    /// Adds the newest share from the Mac share menu. The share extension copies files into the App Group inbox
+    /// and opens `underblue://share`. UnderBlue also looks when it becomes active, so a refused open is not lost.
+    /// While a batch runs the share waits in the inbox for the next call. `takeShared` is replaceable for tests.
+    func importShared(takeShared: () async -> (media: [ImportedMedia], failed: Int)? = { await FileImport.takeShared() }) async {
+        guard !engine.running, !importingShared else { return }
+        importingShared = true
+        defer { importingShared = false }
+        guard let shared = await takeShared() else { return }
+        let known = Set(engine.items.map { $0.url.standardizedFileURL.path })
+        let fresh = shared.media.filter { !known.contains($0.url.standardizedFileURL.path) }
+        engine.add(fresh)
+        if let first = fresh.first { selection = engine.items.first { $0.url == first.url }?.id }
+        if fresh.isEmpty, shared.failed == 0 { return }
+        notice = shared.failed == 0 ? String(localized: "Added \(fresh.count) from the share menu.")
+            : String(localized: "Added \(fresh.count) from the share menu. Couldn’t add \(shared.failed).")
+    }
+
     func remove(_ id: BatchEngine.Item.ID) {
+        let url = engine.items.first { $0.id == id }?.url
         guard engine.remove(id) else { return }
+        // Files that came from the share menu were moved into the temporary folder. Files you added stay where they are.
+        TemporaryFiles.remove(url)
         photoAnalysis[id] = nil; videoAnalysis[id] = nil
         if selection == id { selection = engine.items.first?.id }
     }
 
     func clearFinished() {
-        for item in engine.items where item.state == .done { _ = engine.remove(item.id) }
+        for item in engine.items where item.state == .done {
+            let url = item.url
+            if engine.remove(item.id) { TemporaryFiles.remove(url) }
+        }
         if selectedItem == nil { selection = engine.items.first?.id }
     }
 

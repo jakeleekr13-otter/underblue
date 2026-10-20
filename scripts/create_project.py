@@ -9,11 +9,11 @@ def add(name, text):
     return ident(name)
 project = ident('project')
 configs = {}
-for scope in ['project', 'app', 'tests', 'uitests', 'share', 'mac', 'mactests']:
+for scope in ['project', 'app', 'tests', 'uitests', 'share', 'mac', 'macshare', 'mactests']:
     refs = []
     for config in ['Debug', 'Release']:
         settings = {'SWIFT_VERSION':'6.0','IPHONEOS_DEPLOYMENT_TARGET':'26.0','SDKROOT':'iphoneos','SUPPORTED_PLATFORMS':'iphoneos iphonesimulator','TARGETED_DEVICE_FAMILY':'1','SUPPORTS_MACCATALYST':'NO','SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD':'NO','SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD':'NO','CLANG_ENABLE_MODULES':'YES','SWIFT_APPROACHABLE_CONCURRENCY':'YES'}
-        if scope in ('mac', 'mactests'):
+        if scope in ('mac', 'macshare', 'mactests'):
             # Native macOS, not Catalyst. Drop every iOS platform key, then set the Mac ones.
             for key in ['IPHONEOS_DEPLOYMENT_TARGET','TARGETED_DEVICE_FAMILY','SUPPORTS_MACCATALYST','SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD','SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD']: settings.pop(key)
             settings.update({'SDKROOT':'macosx','SUPPORTED_PLATFORMS':'macosx','MACOSX_DEPLOYMENT_TARGET':'26.0','ARCHS':'arm64'})
@@ -22,11 +22,13 @@ for scope in ['project', 'app', 'tests', 'uitests', 'share', 'mac', 'mactests']:
             if config == 'Debug': settings['COPY_PHASE_STRIP'] = 'NO'  # the embedded extension is signed; stripping it only warns
             if config == 'Release': settings.update({'SWIFT_COMPILATION_MODE':'wholemodule','VALIDATE_PRODUCT':'YES','DEAD_CODE_STRIPPING':'YES','COPY_PHASE_STRIP':'YES','ENABLE_NS_ASSERTIONS':'NO'})
         else:
-            settings.update({'PRODUCT_NAME':'$(TARGET_NAME)','PRODUCT_BUNDLE_IDENTIFIER':{'app':'com.underblue.app','tests':'com.underblue.tests','uitests':'com.underblue.uitests','share':'com.underblue.app.share','mac':'com.underblue.mac','mactests':'com.underblue.mactests'}[scope], 'GENERATE_INFOPLIST_FILE':'YES','CODE_SIGN_STYLE':'Automatic','DEVELOPMENT_TEAM':'M3HJ7YK7N7'})
+            settings.update({'PRODUCT_NAME':'$(TARGET_NAME)','PRODUCT_BUNDLE_IDENTIFIER':{'app':'com.underblue.app','tests':'com.underblue.tests','uitests':'com.underblue.uitests','share':'com.underblue.app.share','mac':'com.underblue.mac','macshare':'com.underblue.mac.share','mactests':'com.underblue.mactests'}[scope], 'GENERATE_INFOPLIST_FILE':'YES','CODE_SIGN_STYLE':'Automatic','DEVELOPMENT_TEAM':'M3HJ7YK7N7'})
         if scope == 'app':
             settings.update({'INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription':'Save your finished photos and videos to your library.','INFOPLIST_KEY_ITSAppUsesNonExemptEncryption':'NO','INFOPLIST_KEY_LSApplicationCategoryType':'public.app-category.photography','INFOPLIST_KEY_UILaunchScreen_Generation':'YES','INFOPLIST_KEY_UIApplicationSceneManifest_Generation':'YES','INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone':'UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight','CODE_SIGN_ENTITLEMENTS':'UnderBlue/Resources/UnderBlue.entitlements','ASSETCATALOG_COMPILER_APPICON_NAME':'AppIcon','MARKETING_VERSION':'1.1','CURRENT_PROJECT_VERSION':'6','INFOPLIST_KEY_CFBundleDisplayName':'UnderBlue','INFOPLIST_FILE':'UnderBlue/Resources/Info.plist'})
         # `import AVKit` links only the _AVKit_SwiftUI overlay. SwiftUI's VideoPlayer then aborts at runtime because AVKit itself is not loaded.
-        if scope == 'mac': settings.update({'INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription':'Save your finished photos and videos to your library.','INFOPLIST_KEY_ITSAppUsesNonExemptEncryption':'NO','INFOPLIST_KEY_LSApplicationCategoryType':'public.app-category.photography','INFOPLIST_KEY_CFBundleDisplayName':'UnderBlue','PRODUCT_NAME':'UnderBlue','CODE_SIGN_ENTITLEMENTS':'UnderBlueMac/UnderBlueMac.entitlements','ENABLE_HARDENED_RUNTIME':'YES','OTHER_LDFLAGS':'-framework AVKit','ASSETCATALOG_COMPILER_APPICON_NAME':'AppIcon','MARKETING_VERSION':'1.0','CURRENT_PROJECT_VERSION':'1'})
+        if scope == 'mac': settings.update({'INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription':'Save your finished photos and videos to your library.','INFOPLIST_KEY_ITSAppUsesNonExemptEncryption':'NO','INFOPLIST_KEY_LSApplicationCategoryType':'public.app-category.photography','INFOPLIST_KEY_CFBundleDisplayName':'UnderBlue','PRODUCT_NAME':'UnderBlue','INFOPLIST_FILE':'UnderBlueMac/Info.plist','CODE_SIGN_ENTITLEMENTS':'UnderBlueMac/UnderBlueMac.entitlements','ENABLE_HARDENED_RUNTIME':'YES','OTHER_LDFLAGS':'-framework AVKit','ASSETCATALOG_COMPILER_APPICON_NAME':'AppIcon','MARKETING_VERSION':'1.0','CURRENT_PROJECT_VERSION':'1'})
+        # The Mac share extension. Its versions must match the Mac app's (1.0, build 1).
+        if scope == 'macshare': settings.update({'CODE_SIGN_ENTITLEMENTS':'UnderBlueMacShare/UnderBlueMacShare.entitlements','INFOPLIST_FILE':'UnderBlueMacShare/Info.plist','INFOPLIST_KEY_CFBundleDisplayName':'UnderBlue','MARKETING_VERSION':'1.0','CURRENT_PROJECT_VERSION':'1','SKIP_INSTALL':'YES','ENABLE_HARDENED_RUNTIME':'YES','LD_RUNPATH_SEARCH_PATHS':'$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks'})
         if scope == 'tests': settings.update({'TEST_HOST':'$(BUILT_PRODUCTS_DIR)/UnderBlue.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/UnderBlue','BUNDLE_LOADER':'$(TEST_HOST)'})
         if scope == 'uitests': settings['TEST_TARGET_NAME']='UnderBlue'
         # The Mac host app is also named UnderBlue.app, so the module is UnderBlue for both hosts.
@@ -40,21 +42,25 @@ for scope in ['project', 'app', 'tests', 'uitests', 'share', 'mac', 'mactests']:
 MAC_EXCLUDED = ['App/UnderBlueApp.swift','Resources/Info.plist','Resources/UnderBlue.entitlements'] + [f'Views/{n}.swift' for n in ['BatchView','DiagnosticsView','EditorView','ExportView','HomeView','ProView']]
 products=[]; groups=[]; targets=[]
 share_target=ident('sharetarget')
-for scope,name,kind in [('app','UnderBlue','application'),('mac','UnderBlueMac','application'),('mactests','UnderBlueMacTests','bundle.unit-test'),('tests','UnderBlueTests','bundle.unit-test'),('uitests','UnderBlueUITests','bundle.ui-testing'),('share','UnderBlueShare','app-extension')]:
+for scope,name,kind in [('app','UnderBlue','application'),('mac','UnderBlueMac','application'),('mactests','UnderBlueMacTests','bundle.unit-test'),('tests','UnderBlueTests','bundle.unit-test'),('uitests','UnderBlueUITests','bundle.ui-testing'),('share','UnderBlueShare','app-extension'),('macshare','UnderBlueMacShare','app-extension')]:
     # Developer media (dive clips, owner photos, market pairs) lives in DeveloperMedia/ at the repo root, outside every
     # synchronized group. Anything under UnderBlueTests/ ships in the test bundle, git-ignored or not.
     exceptions=''
     # The share extension also compiles SharedInbox.swift from the app folder. An Info.plist is not a resource.
-    exception_sets={'app':[('exceptions','Import/SharedInbox.swift',share_target),('plistexceptions','Resources/Info.plist',ident('apptarget')),('macexceptions',','.join(MAC_EXCLUDED),ident('mactarget'))],
-                    'share':[('exceptions','Info.plist',share_target)]}.get(scope,[])
+    macshare_target=ident('macsharetarget')
+    # Both extensions compile SharedInbox.swift and ShareModel.swift from the app folder. The Mac extension also shares the string catalog of the iPhone one.
+    exception_sets={'app':[('exceptions','Import/SharedInbox.swift,Import/ShareModel.swift',share_target),('plistexceptions','Resources/Info.plist',ident('apptarget')),('macexceptions',','.join(MAC_EXCLUDED),ident('mactarget')),('macshareexceptions','Import/SharedInbox.swift,Import/ShareModel.swift',macshare_target)],
+                    'share':[('exceptions','Info.plist',share_target),('macexceptions','ShareViewController.swift,Info.plist,UnderBlueShare.entitlements',macshare_target)],
+                    'mac':[('plistexceptions','Info.plist',ident('mactarget'))],
+                    'macshare':[('plistexceptions','Info.plist',macshare_target)]}.get(scope,[])
     if exception_sets:
         sets=[add(scope+key,f'isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = ({files},); target = {target};') for key,files,target in exception_sets]
         exceptions=f'exceptions = ({",".join(sets)},); '
     group=add(scope+'group',f'isa = PBXFileSystemSynchronizedRootGroup; {exceptions}path = {name}; sourceTree = "<group>";')
     groups.append(group)
-    target_groups=[group]+([ident('appgroup')] if scope=='mac' else [])
-    ext={'app':'app','share':'appex'}.get(scope,'xctest')
-    filetype={'app':'wrapper.application','share':'"wrapper.app-extension"'}.get(scope,'wrapper.cfbundle')
+    target_groups=[group]+([ident('appgroup')] if scope=='mac' else [ident('sharegroup')] if scope=='macshare' else [])
+    ext={'app':'app','share':'appex','macshare':'appex'}.get(scope,'xctest')
+    filetype={'app':'wrapper.application','share':'"wrapper.app-extension"','macshare':'"wrapper.app-extension"'}.get(scope,'wrapper.cfbundle')
     product=add(scope+'product',f'isa = PBXFileReference; explicitFileType = {filetype}; path = {"UnderBlue" if scope=="mac" else name}.{ext}; sourceTree = BUILT_PRODUCTS_DIR;')
     products.append(product)
     phases=[add(scope+p,f'isa = PBX{p}BuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0;') for p in ['Sources','Frameworks','Resources']]
@@ -65,10 +71,16 @@ for scope,name,kind in [('app','UnderBlue','application'),('mac','UnderBlueMac',
         phases.append(add('appembed',f'isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = ""; dstSubfolderSpec = 13; files = ({embedded},); name = "Embed Foundation Extensions"; runOnlyForDeploymentPostprocessing = 0;'))
         proxy=add('appshareproxy',f'isa = PBXContainerItemProxy; containerPortal = {project}; proxyType = 1; remoteGlobalIDString = {share_target}; remoteInfo = UnderBlueShare;')
         deps.append(add('appsharedep',f'isa = PBXTargetDependency; target = {share_target}; targetProxy = {proxy};'))
+    elif scope == 'mac':
+        # The Mac app embeds the Mac share extension and builds it first.
+        embedded=add('macembedfile',f'isa = PBXBuildFile; fileRef = {ident("macshareproduct")}; settings = {{ATTRIBUTES = (RemoveHeadersOnCopy, ); }};')
+        phases.append(add('macembed',f'isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = ""; dstSubfolderSpec = 13; files = ({embedded},); name = "Embed Foundation Extensions"; runOnlyForDeploymentPostprocessing = 0;'))
+        proxy=add('macshareproxy',f'isa = PBXContainerItemProxy; containerPortal = {project}; proxyType = 1; remoteGlobalIDString = {ident("macsharetarget")}; remoteInfo = UnderBlueMacShare;')
+        deps.append(add('macsharedep',f'isa = PBXTargetDependency; target = {ident("macsharetarget")}; targetProxy = {proxy};'))
     elif scope == 'mactests':
         proxy=add(scope+'proxy',f'isa = PBXContainerItemProxy; containerPortal = {project}; proxyType = 1; remoteGlobalIDString = {ident("mactarget")}; remoteInfo = UnderBlueMac;')
         deps.append(add(scope+'dep',f'isa = PBXTargetDependency; target = {ident("mactarget")}; targetProxy = {proxy};'))
-    elif scope not in ('share','mac'):
+    elif scope not in ('share','mac','macshare'):
         proxy=add(scope+'proxy',f'isa = PBXContainerItemProxy; containerPortal = {project}; proxyType = 1; remoteGlobalIDString = {ident("apptarget")}; remoteInfo = UnderBlue;')
         deps.append(add(scope+'dep',f'isa = PBXTargetDependency; target = {ident("apptarget")}; targetProxy = {proxy};'))
     targets.append(add(scope+'target',f'isa = PBXNativeTarget; buildConfigurationList = {configs[scope]}; buildPhases = ({",".join(phases)},); buildRules = (); dependencies = ({",".join(deps)}); fileSystemSynchronizedGroups = ({",".join(target_groups)},); name = {name}; productName = {name}; productReference = {product}; productType = "com.apple.product-type.{kind}";'))

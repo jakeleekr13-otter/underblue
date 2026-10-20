@@ -11,6 +11,12 @@ struct UnderBlueMacApp: App {
                 .environment(model).environment(model.purchases).environment(model.trial).environment(model.diagnostics)
                 .preferredColorScheme(.dark).tint(.mint)
                 .task { await model.purchases.load() }
+                .task { await model.importShared() }
+                // The share extension opens underblue://share. Becoming active covers a refused open.
+                .onOpenURL { url in if url.scheme == SharedInbox.openURL.scheme { Task { await model.importShared() } } }
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                    Task { await model.importShared() }
+                }
         }
         .defaultSize(width: 1200, height: 760)
         .commands { MacCommands(model: model) }

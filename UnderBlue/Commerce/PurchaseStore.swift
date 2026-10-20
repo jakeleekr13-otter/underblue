@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import StoreKit
+import os
 
 @MainActor @Observable
 final class PurchaseStore {
@@ -13,6 +14,13 @@ final class PurchaseStore {
     private(set) var isPro = false
     private(set) var busy = false
     private var entitlementGeneration = 0
+    /// Set when a verified, non-revoked purchase arrives in this session. Keeps Pro on if a later
+    /// entitlement refresh comes back empty. A revoked transaction clears it.
+    private var unlockedBySession = false
+    #if DEBUG
+    /// Debug builds log how each purchase record was judged. Filter the Xcode console by "purchase".
+    private static let logger = Logger(subsystem: "com.underblue.app", category: "purchase")
+    #endif
     var message: String?
     @ObservationIgnored private var updates: Task<Void, Never>?
     private let diagnostics: DiagnosticRecorder?
@@ -33,7 +41,11 @@ final class PurchaseStore {
     func load() async {
         await refreshEntitlement()
         do {
-            product = try await SafeReadRetry().run(operation: .productLoading) { try await Product.products(for: [Self.productID]) }.first { $0.type == .nonConsumable }
+            let found = try await SafeReadRetry().run(operation: .productLoading) { try await Product.products(for: [Self.productID]) }
+            #if DEBUG
+            Self.logger.notice("purchase: product request returned \(found.count) products: \(found.map(\.id).joined(separator: ","), privacy: .public) wanted=\(Self.productID, privacy: .public)")
+            #endif
+            product = found.first { $0.type == .nonConsumable }
             if product == nil { message = String(localized: "The purchase is currently unavailable. Please try again later.") }
         } catch { report(error, operation: .productLoading) }
     }
@@ -41,17 +53,45 @@ final class PurchaseStore {
         entitlementGeneration += 1
         let generation = entitlementGeneration
         var owned = false
+        #if DEBUG
+        var seen = 0
+        #endif
         for await result in Transaction.currentEntitlements {
+            #if DEBUG
+            seen += 1
+            switch result {
+            case .verified(let t):
+                Self.logger.notice("purchase: entitlement VERIFIED product=\(t.productID, privacy: .public) type=\(t.productType.rawValue, privacy: .public) environment=\(t.environment.rawValue, privacy: .public) revoked=\(t.revocationDate != nil) wanted=\(Self.productID, privacy: .public)")
+            case .unverified(let t, let error):
+                Self.logger.notice("purchase: entitlement UNVERIFIED product=\(t.productID, privacy: .public) error=\(String(describing: error), privacy: .public)")
+            }
+            #endif
             if case .verified(let transaction) = result,
                transaction.productID == Self.productID,
                transaction.productType == .nonConsumable,
                transaction.revocationDate == nil { owned = true }
         }
-        if generation == entitlementGeneration { isPro = owned }
+        if !owned, case .verified(let latest)? = await Transaction.latest(for: Self.productID),
+           latest.productType == .nonConsumable, latest.revocationDate == nil {
+            // Sandbox can leave currentEntitlements empty after a purchase. The latest record still shows it.
+            owned = true
+            #if DEBUG
+            Self.logger.notice("purchase: owned from Transaction.latest environment=\(latest.environment.rawValue, privacy: .public)")
+            #endif
+        }
+        #if DEBUG
+        Self.logger.notice("purchase: refresh done entitlements=\(seen) owned=\(owned) session=\(self.unlockedBySession) applied=\(generation == self.entitlementGeneration) wanted=\(Self.productID, privacy: .public)")
+        #endif
+        if generation == entitlementGeneration { isPro = owned || unlockedBySession }
     }
     private func accept(_ transaction: Transaction) {
+        #if DEBUG
+        Self.logger.notice("purchase: accept product=\(transaction.productID, privacy: .public) environment=\(transaction.environment.rawValue, privacy: .public) revoked=\(transaction.revocationDate != nil)")
+        #endif
         entitlementGeneration += 1
-        isPro = transaction.productType == .nonConsumable && transaction.revocationDate == nil
+        let unlocked = transaction.productType == .nonConsumable && transaction.revocationDate == nil
+        unlockedBySession = unlocked
+        isPro = unlocked
     }
     func purchase() async {
         guard let product, !busy else { return }
@@ -94,6 +134,10 @@ final class PurchaseStore {
         }
     }
     private func report(_ error: Error, operation: Operation) {
+        #if DEBUG
+        let bridged = error as NSError
+        Self.logger.notice("purchase: \(operation.rawValue, privacy: .public) FAILED domain=\(bridged.domain, privacy: .public) code=\(bridged.code) \(String(describing: error), privacy: .public)")
+        #endif
         let failure = Failure.classify(error, operation: operation)
         Task { await diagnostics?.record(failure, operation: operation) }
         message = failure.kind == .cancelled ? nil : Failure(kind: .storeUnavailable, domain: failure.domain, code: failure.code).message

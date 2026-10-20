@@ -12,7 +12,17 @@ struct MainWindow: View {
             QueueSidebar()
                 .navigationSplitViewColumnWidth(min: 230, ideal: 290, max: 420)
         } detail: {
+            // The notice sits in the preview column only. On the whole window it covered the queue summary.
             PreviewPane()
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    if let notice = model.notice {
+                        HStack {
+                            Text(notice).font(.callout)
+                            Spacer()
+                            Button("OK") { model.notice = nil }.buttonStyle(.link)
+                        }.padding(.horizontal, 14).padding(.vertical, 8).background(.bar)
+                    }
+                }
         }
         .inspector(isPresented: $showInspector) {
             InspectorView().inspectorColumnWidth(min: 260, ideal: 300, max: 380)
@@ -57,15 +67,6 @@ struct MainWindow: View {
             if case .success(let urls) = result { Task { await model.add(urls) } }
         }
         .sheet(isPresented: $model.showPaywall) { ProView(reason: model.paywallReason) }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if let notice = model.notice {
-                HStack {
-                    Text(notice).font(.callout)
-                    Spacer()
-                    Button("OK") { model.notice = nil }.buttonStyle(.link)
-                }.padding(.horizontal, 14).padding(.vertical, 8).background(.bar)
-            }
-        }
         .frame(minWidth: 900, minHeight: 560)
     }
 

@@ -63,12 +63,13 @@ final class VideoRestorationTests: XCTestCase {
 
     func testSceneValuesHoldInsideAScene() throws {
         let analysis = try twoScenes(firstEnd: 10, secondStart: 11)
-        for time in [-1.0, 0, 5, 10] {
+        // The fade is centred on 10.5 and lasts sceneFade seconds (9 to 12 s), so it reaches into both scenes.
+        for time in [-1.0, 0, 5, 8.9] {
             let moment = try XCTUnwrap(analysis.moment(at: time))
             XCTAssertEqual(moment.amount, 0, "t=\(time)")
             XCTAssertEqual(moment.from.start, 0, "t=\(time)")
         }
-        for time in [11.0, 15, 20, 99] {
+        for time in [12.1, 15, 20, 99] {
             let moment = try XCTUnwrap(analysis.moment(at: time))
             XCTAssertEqual(moment.amount, 0, "t=\(time)")
             XCTAssertEqual(moment.from.start, 11, "t=\(time)")
@@ -84,23 +85,51 @@ final class VideoRestorationTests: XCTestCase {
         XCTAssertTrue(plan.depth.values.allSatisfy { abs($0 - 0.5) < 1e-5 }, "Constant scene depths mix")
         XCTAssertEqual(plan.temporalConfidence, 0.6, accuracy: 1e-5, "No confidence dip in the middle of a fade")
         XCTAssertEqual(plan.confidence, 0.6, accuracy: 1e-5)
-        // Smoothstep: slow at both ends, always rising. At 11.0 the fade has ended and the next scene holds.
+        // Smoothstep: slow at both ends, always rising. The fade runs from 9 to 12 s, so it is still
+        // rising at 10.95 and the next scene holds from 12 s.
         var previous: Float = 0
         for step in 1...19 {
             let amount = try XCTUnwrap(analysis.moment(at: 10 + Double(step) / 20)).amount
             XCTAssertGreaterThanOrEqual(amount, previous)
             previous = amount
         }
-        XCTAssertLessThan(try XCTUnwrap(analysis.moment(at: 10.05)).amount, 0.05)
+        XCTAssertLessThan(try XCTUnwrap(analysis.moment(at: 9.05)).amount, 0.05)
     }
 
-    func testLongGapFadesForOneSecondAtItsMiddle() throws {
+    func testLongGapFadesForSceneFadeSecondsAtItsMiddle() throws {
         let analysis = try twoScenes(firstEnd: 30, secondStart: 60)
-        XCTAssertEqual(try XCTUnwrap(analysis.moment(at: 44.4)).amount, 0)
-        XCTAssertEqual(try XCTUnwrap(analysis.moment(at: 44.4)).from.start, 0)
+        let half = VideoRestorationAnalysis.sceneFade / 2
+        XCTAssertEqual(try XCTUnwrap(analysis.moment(at: 45 - half - 0.1)).amount, 0)
+        XCTAssertEqual(try XCTUnwrap(analysis.moment(at: 45 - half - 0.1)).from.start, 0)
         XCTAssertEqual(try XCTUnwrap(analysis.moment(at: 45)).amount, 0.5, accuracy: 1e-6)
-        XCTAssertEqual(try XCTUnwrap(analysis.moment(at: 45.6)).amount, 0)
-        XCTAssertEqual(try XCTUnwrap(analysis.moment(at: 45.6)).from.start, 60)
+        XCTAssertEqual(try XCTUnwrap(analysis.moment(at: 45 + half + 0.1)).amount, 0)
+        XCTAssertEqual(try XCTUnwrap(analysis.moment(at: 45 + half + 0.1)).from.start, 60)
+    }
+
+    /// A fade longer than the gap between two scenes may reach into the scenes, but two fades never
+    /// overlap: each one is at most half the distance to its neighbour's centre.
+    func testFadesNeverOverlapNeighbouringFades() throws {
+        let cg = try blackImage()
+        let plan = try makePlan(depth: 0.5, confidence: 0.6, direct: .init(repeating: 0.5)).sceneLevel()
+        let scenes = [VideoScene(start: 0, end: 10, analysis: .init(redLoss: 0.6), plan: plan, keyframes: 11),
+                      VideoScene(start: 11, end: 12, analysis: .init(redLoss: 0.1), plan: plan, keyframes: 3),
+                      VideoScene(start: 13, end: 30, analysis: .init(redLoss: 0.3), plan: plan, keyframes: 17)]
+        let analysis = VideoRestorationAnalysis(
+            legacyAnalysis: .neutral, representativeFrame: cg, representativeTime: 0, scenes: scenes,
+            initialEnvironment: nil, deviceProfile: device(.balanced, milliseconds: 50), sourceProfile: source(.medium),
+            previewPolicy: policy(.preview), exportPolicy: policy(.export))
+        // Fade centres 10.5 and 12.5, two seconds apart, so each fade lasts two seconds at most:
+        // 9.5 to 11.5 and 11.5 to 13.5. The middle scene holds only at one instant, 11.5.
+        for step in 0...80 {
+            let time = 9 + Double(step) * 0.05
+            let moment = try XCTUnwrap(analysis.moment(at: time))
+            XCTAssertTrue((0...1).contains(moment.amount), "t=\(time)")
+            if time < 11.5 { XCTAssertEqual(moment.to.start, time <= 9.5 ? 0 : 11, "t=\(time)") }
+            else { XCTAssertEqual(moment.from.start, 11, "t=\(time)") }
+        }
+        XCTAssertEqual(try XCTUnwrap(analysis.moment(at: 11.5)).amount, 0, accuracy: 1e-6)
+        XCTAssertEqual(try XCTUnwrap(analysis.moment(at: 10.5)).amount, 0.5, accuracy: 1e-6)
+        XCTAssertEqual(try XCTUnwrap(analysis.moment(at: 12.5)).amount, 0.5, accuracy: 1e-6)
     }
 
     /// video2 (1 Oct 2026): scenes of one or two keyframes switched the values against the light, so
@@ -174,6 +203,27 @@ final class VideoRestorationTests: XCTestCase {
         XCTAssertEqual(mixed.restored.midLift, (a.restored.midLift + b.restored.midLift) / 2, accuracy: 1e-5)
         XCTAssertEqual(mixed.current.castGains.x, (a.current.castGains.x + b.current.castGains.x) / 2, accuracy: 1e-5)
         XCTAssertEqual(mixed.restored.physicalWeight, (a.restored.physicalWeight + b.restored.physicalWeight) / 2, accuracy: 1e-5)
+    }
+
+    func testVideoSceneBlackOffsetNeverTurnsPositive() throws {
+        let plan = try makePlan(depth: 0.5, confidence: 0.7, direct: .init(repeating: 0.5)).sceneLevel()
+        var dark = WaterAnalysis(redLoss: 0.7, saturation: 0.75, meanRed: 0.06, meanGreen: 0.14, meanBlue: 0.26,
+                                 midLuminance: 0.11, waterRed: 0.03, waterGreen: 0.06, waterBlue: 0.14)
+        // The values of the 8 to 10 s scene that turned hazy (20 Oct 2026): offset +0.0032 on the photo path.
+        dark.exposure = 0.0526
+        dark.contrast = 0.484
+        dark.highShare = 0.239
+        let scene = VideoScene(start: 0, end: 10, analysis: dark, plan: plan)
+        let moment = VideoSceneMoment(from: scene, to: scene, amount: 0)
+        let engine = RestorationEngine()
+        var settings = FilterSettings(preset: .natural, intensity: 0.8)
+        settings.analysis = dark
+        func offset(_ v: ColorCorrection) -> Float { v.brightness + (1 - v.contrast) * 0.5 }
+        let photo = engine.corrections(settings: settings, plan: plan)
+        XCTAssertGreaterThan(offset(photo.restored), 0, "The photo path keeps its offset, so this test sees the case")
+        let video = moment.corrections(settings: settings, engine: engine)
+        XCTAssertLessThanOrEqual(offset(video.restored), 1e-6)
+        XCTAssertLessThanOrEqual(offset(video.current), 1e-6)
     }
 
     func testOneSceneRendersExactlyLikeThePhotoPath() throws {

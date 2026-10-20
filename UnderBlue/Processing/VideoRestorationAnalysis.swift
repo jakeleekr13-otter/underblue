@@ -41,14 +41,34 @@ struct VideoSceneMoment: Sendable, Equatable {
         var first = settings
         first.analysis = from.analysis
         first.analysis.lightShare = settings.analysis.lightShare
-        let a = engine.corrections(settings: first, plan: from.plan)
+        let a = Self.keepingBlackOffsetNegative(engine.corrections(settings: first, plan: from.plan))
         guard amount > 0 else { return a }
         var second = settings
         second.analysis = to.analysis
         second.analysis.lightShare = settings.analysis.lightShare
-        let b = engine.corrections(settings: second, plan: to.plan)
+        let b = Self.keepingBlackOffsetNegative(engine.corrections(settings: second, plan: to.plan))
         guard amount < 1 else { return b }
         return (a.current.mixed(with: b.current, amount: amount), a.restored.mixed(with: b.restored, amount: amount))
+    }
+
+    /// The black offset (brightness + (1 - contrast) / 2) never turns positive in a video scene.
+    /// A dark scene's exposure term can push it just above zero. Then UnderBlueBlackOffset stops
+    /// using its shadow toe and adds the offset to every pixel. The darkest pixels lift and the
+    /// scene turns hazy, while its neighbours are fine (20 Oct 2026: 8 to 10 s of a 13 s clip,
+    /// saturation 0.62 to 0.43). Photos keep the old values, so only a scene with a positive
+    /// offset renders differently from the photo path.
+    /// Also tried and removed: keeping each scene's brightness within 0.01 of the clip's. It cut the
+    /// jump at scene changes (9.4 to 5.7 L*), but a bright blue scene lost its veil offset and got a
+    /// pale rim around dark subjects (2025-05-03 22.12.02, 5 s: ring minus far water -2.6 to -0.9 L*).
+    static func keepingBlackOffsetNegative(
+        _ values: (current: ColorCorrection, restored: ColorCorrection)
+    ) -> (current: ColorCorrection, restored: ColorCorrection) {
+        func capped(_ value: ColorCorrection) -> ColorCorrection {
+            var v = value
+            v.brightness = min(v.brightness, (v.contrast - 1) * 0.5)
+            return v
+        }
+        return (capped(values.current), capped(values.restored))
     }
 
     func limiting(maximumOutput: Float) -> VideoSceneMoment {
@@ -79,8 +99,12 @@ struct VideoRestorationAnalysis: Sendable {
     let exportPolicy: ProcessingPolicy
 
     /// The longest cross-fade between two scenes, in seconds. The change happens somewhere between
-    /// two keyframes, so the fade is centred on the middle of that gap.
-    static let sceneFade: Double = 1
+    /// two keyframes, so the fade is centred on the middle of that gap. It may be longer than the gap:
+    /// the fade then reaches into both scenes, but never into the next fade (half of the distance to
+    /// the neighbouring fade centre at most). 1 s made scene jumps up to 9 L* on a 42 s clip; 3 s took
+    /// the same clip to 6.7 L* and cut the rms jump by 11 to 25% on three test clips, with no change
+    /// in the scene split or the colour (20 Oct 2026, Mac simulation, no cost in analysis time).
+    static let sceneFade: Double = 3
 
     /// A scene measured on fewer keyframes is a passing state, not a scene to hold. Its values come
     /// from one or two keyframes, which jitter. While the camera turned toward the surface and back
@@ -99,19 +123,28 @@ struct VideoRestorationAnalysis: Sendable {
             return held.contains(index) || index < first || index > last
         }
         guard let firstIndex = used.first else { return nil }
-        var current = scenes[firstIndex], currentIndex = firstIndex
-        for nextIndex in used.dropFirst() {
+        let middles = zip(used, used.dropFirst()).map { (scenes[$0].end + scenes[$1].start) / 2 }
+        /// Half the length of fade `t`, between used[t] and used[t + 1].
+        func halfWidth(_ t: Int) -> Double {
+            let gap = scenes[used[t + 1]].start - scenes[used[t]].end
+            // A skipped short scene: the neighbours fade across the whole gap.
+            if used[t + 1] > used[t] + 1 { return gap / 2 }
+            var room = Double.infinity
+            if t > 0 { room = min(room, middles[t] - middles[t - 1]) }
+            if t + 1 < middles.count { room = min(room, middles[t + 1] - middles[t]) }
+            return max(min(Self.sceneFade, gap) / 2, min(Self.sceneFade / 2, room / 2))
+        }
+        var current = scenes[firstIndex]
+        for (t, nextIndex) in used.dropFirst().enumerated() {
             let next = scenes[nextIndex]
-            let middle = (current.end + next.start) / 2
-            let skipped = nextIndex > currentIndex + 1
-            let half = (skipped ? next.start - current.end : min(Self.sceneFade, next.start - current.end)) / 2
+            let middle = middles[t], half = halfWidth(t)
             if time < middle + half {
                 guard half > 0, time > middle - half else { return VideoSceneMoment(from: current, to: current, amount: 0) }
                 // Smoothstep: the fade starts and ends without a jolt.
                 let x = Float((time - (middle - half)) / (2 * half))
                 return VideoSceneMoment(from: current, to: next, amount: x * x * (3 - 2 * x))
             }
-            current = next; currentIndex = nextIndex
+            current = next
         }
         return VideoSceneMoment(from: current, to: current, amount: 0)
     }

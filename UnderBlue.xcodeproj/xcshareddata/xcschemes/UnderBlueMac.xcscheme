@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "436D0079A3B0F0C56CF1A10C"
-               BuildableName = "UnderBlueMac.app"
+               BuildableName = "UnderBlue.app"
                BlueprintName = "UnderBlueMac"
                ReferencedContainer = "container:UnderBlue.xcodeproj">
             </BuildableReference>
@@ -45,7 +45,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "436D0079A3B0F0C56CF1A10C"
-            BuildableName = "UnderBlueMac.app"
+            BuildableName = "UnderBlue.app"
             BlueprintName = "UnderBlueMac"
             ReferencedContainer = "container:UnderBlue.xcodeproj">
          </BuildableReference>
@@ -62,7 +62,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "436D0079A3B0F0C56CF1A10C"
-            BuildableName = "UnderBlueMac.app"
+            BuildableName = "UnderBlue.app"
             BlueprintName = "UnderBlueMac"
             ReferencedContainer = "container:UnderBlue.xcodeproj">
          </BuildableReference>

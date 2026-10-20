@@ -15,6 +15,18 @@ enum ExportNaming {
         return "\(stem)_UnderBlue_\(look).\(ext)"
     }
 
+    /// `name` if nothing uses it, otherwise the first of `<stem>_2.<ext>`, `<stem>_3.<ext>` and so on that is free.
+    static func unique(_ name: String, isTaken: (String) -> Bool) -> String {
+        guard isTaken(name) else { return name }
+        let stem = (name as NSString).deletingPathExtension, ext = (name as NSString).pathExtension
+        var number = 2
+        while true {
+            let candidate = ext.isEmpty ? "\(stem)_\(number)" : "\(stem)_\(number).\(ext)"
+            if !isTaken(candidate) { return candidate }
+            number += 1
+        }
+    }
+
     /// The look in English without spaces, so names stay the same in every app language.
     static func token(_ preset: DivePreset) -> String { preset.rawValue.replacingOccurrences(of: " ", with: "") }
 

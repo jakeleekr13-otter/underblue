@@ -9,11 +9,11 @@ def add(name, text):
     return ident(name)
 project = ident('project')
 configs = {}
-for scope in ['project', 'app', 'tests', 'uitests', 'share', 'mac']:
+for scope in ['project', 'app', 'tests', 'uitests', 'share', 'mac', 'mactests']:
     refs = []
     for config in ['Debug', 'Release']:
         settings = {'SWIFT_VERSION':'6.0','IPHONEOS_DEPLOYMENT_TARGET':'26.0','SDKROOT':'iphoneos','SUPPORTED_PLATFORMS':'iphoneos iphonesimulator','TARGETED_DEVICE_FAMILY':'1','SUPPORTS_MACCATALYST':'NO','SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD':'NO','SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD':'NO','CLANG_ENABLE_MODULES':'YES','SWIFT_APPROACHABLE_CONCURRENCY':'YES'}
-        if scope == 'mac':
+        if scope in ('mac', 'mactests'):
             # Native macOS, not Catalyst. Drop every iOS platform key, then set the Mac ones.
             for key in ['IPHONEOS_DEPLOYMENT_TARGET','TARGETED_DEVICE_FAMILY','SUPPORTS_MACCATALYST','SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD','SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD']: settings.pop(key)
             settings.update({'SDKROOT':'macosx','SUPPORTED_PLATFORMS':'macosx','MACOSX_DEPLOYMENT_TARGET':'26.0','ARCHS':'arm64'})
@@ -22,12 +22,14 @@ for scope in ['project', 'app', 'tests', 'uitests', 'share', 'mac']:
             if config == 'Debug': settings['COPY_PHASE_STRIP'] = 'NO'  # the embedded extension is signed; stripping it only warns
             if config == 'Release': settings.update({'SWIFT_COMPILATION_MODE':'wholemodule','VALIDATE_PRODUCT':'YES','DEAD_CODE_STRIPPING':'YES','COPY_PHASE_STRIP':'YES','ENABLE_NS_ASSERTIONS':'NO'})
         else:
-            settings.update({'PRODUCT_NAME':'$(TARGET_NAME)','PRODUCT_BUNDLE_IDENTIFIER':{'app':'com.underblue.app','tests':'com.underblue.tests','uitests':'com.underblue.uitests','share':'com.underblue.app.share','mac':'com.underblue.mac'}[scope], 'GENERATE_INFOPLIST_FILE':'YES','CODE_SIGN_STYLE':'Automatic','DEVELOPMENT_TEAM':'M3HJ7YK7N7'})
+            settings.update({'PRODUCT_NAME':'$(TARGET_NAME)','PRODUCT_BUNDLE_IDENTIFIER':{'app':'com.underblue.app','tests':'com.underblue.tests','uitests':'com.underblue.uitests','share':'com.underblue.app.share','mac':'com.underblue.mac','mactests':'com.underblue.mactests'}[scope], 'GENERATE_INFOPLIST_FILE':'YES','CODE_SIGN_STYLE':'Automatic','DEVELOPMENT_TEAM':'M3HJ7YK7N7'})
         if scope == 'app':
             settings.update({'INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription':'Save your finished photos and videos to your library.','INFOPLIST_KEY_ITSAppUsesNonExemptEncryption':'NO','INFOPLIST_KEY_LSApplicationCategoryType':'public.app-category.photography','INFOPLIST_KEY_UILaunchScreen_Generation':'YES','INFOPLIST_KEY_UIApplicationSceneManifest_Generation':'YES','INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone':'UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight','CODE_SIGN_ENTITLEMENTS':'UnderBlue/Resources/UnderBlue.entitlements','ASSETCATALOG_COMPILER_APPICON_NAME':'AppIcon','MARKETING_VERSION':'1.1','CURRENT_PROJECT_VERSION':'6','INFOPLIST_KEY_CFBundleDisplayName':'UnderBlue','INFOPLIST_FILE':'UnderBlue/Resources/Info.plist'})
         if scope == 'mac': settings.update({'INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription':'Save your finished photos and videos to your library.','INFOPLIST_KEY_ITSAppUsesNonExemptEncryption':'NO','INFOPLIST_KEY_LSApplicationCategoryType':'public.app-category.photography','INFOPLIST_KEY_CFBundleDisplayName':'UnderBlue','PRODUCT_NAME':'UnderBlue','CODE_SIGN_ENTITLEMENTS':'UnderBlueMac/UnderBlueMac.entitlements','ENABLE_HARDENED_RUNTIME':'YES','ASSETCATALOG_COMPILER_APPICON_NAME':'AppIcon','MARKETING_VERSION':'1.0','CURRENT_PROJECT_VERSION':'1'})
         if scope == 'tests': settings.update({'TEST_HOST':'$(BUILT_PRODUCTS_DIR)/UnderBlue.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/UnderBlue','BUNDLE_LOADER':'$(TEST_HOST)'})
         if scope == 'uitests': settings['TEST_TARGET_NAME']='UnderBlue'
+        # The Mac host app is also named UnderBlue.app, so the module is UnderBlue for both hosts.
+        if scope == 'mactests': settings.update({'TEST_HOST':'$(BUILT_PRODUCTS_DIR)/UnderBlue.app/Contents/MacOS/UnderBlue','BUNDLE_LOADER':'$(TEST_HOST)'})
         # The share extension's versions must match the app's, or App Store validation rejects the build.
         if scope == 'share': settings.update({'CODE_SIGN_ENTITLEMENTS':'UnderBlueShare/UnderBlueShare.entitlements','INFOPLIST_FILE':'UnderBlueShare/Info.plist','INFOPLIST_KEY_CFBundleDisplayName':'UnderBlue','MARKETING_VERSION':'1.1','CURRENT_PROJECT_VERSION':'6','SKIP_INSTALL':'YES','LD_RUNPATH_SEARCH_PATHS':'$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks'})
         body=' '.join(f'{k} = "{v}";' for k,v in settings.items())
@@ -37,7 +39,7 @@ for scope in ['project', 'app', 'tests', 'uitests', 'share', 'mac']:
 MAC_EXCLUDED = ['App/UnderBlueApp.swift','Resources/Info.plist','Resources/UnderBlue.entitlements'] + [f'Views/{n}.swift' for n in ['BatchView','CustomAdjustmentControls','DiagnosticsView','EditorView','ExportView','HomeView','ProView','ZoomablePreview']]
 products=[]; groups=[]; targets=[]
 share_target=ident('sharetarget')
-for scope,name,kind in [('app','UnderBlue','application'),('mac','UnderBlueMac','application'),('tests','UnderBlueTests','bundle.unit-test'),('uitests','UnderBlueUITests','bundle.ui-testing'),('share','UnderBlueShare','app-extension')]:
+for scope,name,kind in [('app','UnderBlue','application'),('mac','UnderBlueMac','application'),('mactests','UnderBlueMacTests','bundle.unit-test'),('tests','UnderBlueTests','bundle.unit-test'),('uitests','UnderBlueUITests','bundle.ui-testing'),('share','UnderBlueShare','app-extension')]:
     # Developer media (dive clips, owner photos, market pairs) lives in DeveloperMedia/ at the repo root, outside every
     # synchronized group. Anything under UnderBlueTests/ ships in the test bundle, git-ignored or not.
     exceptions=''
@@ -62,6 +64,9 @@ for scope,name,kind in [('app','UnderBlue','application'),('mac','UnderBlueMac',
         phases.append(add('appembed',f'isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = ""; dstSubfolderSpec = 13; files = ({embedded},); name = "Embed Foundation Extensions"; runOnlyForDeploymentPostprocessing = 0;'))
         proxy=add('appshareproxy',f'isa = PBXContainerItemProxy; containerPortal = {project}; proxyType = 1; remoteGlobalIDString = {share_target}; remoteInfo = UnderBlueShare;')
         deps.append(add('appsharedep',f'isa = PBXTargetDependency; target = {share_target}; targetProxy = {proxy};'))
+    elif scope == 'mactests':
+        proxy=add(scope+'proxy',f'isa = PBXContainerItemProxy; containerPortal = {project}; proxyType = 1; remoteGlobalIDString = {ident("mactarget")}; remoteInfo = UnderBlueMac;')
+        deps.append(add(scope+'dep',f'isa = PBXTargetDependency; target = {ident("mactarget")}; targetProxy = {proxy};'))
     elif scope not in ('share','mac'):
         proxy=add(scope+'proxy',f'isa = PBXContainerItemProxy; containerPortal = {project}; proxyType = 1; remoteGlobalIDString = {ident("apptarget")}; remoteInfo = UnderBlue;')
         deps.append(add(scope+'dep',f'isa = PBXTargetDependency; target = {ident("apptarget")}; targetProxy = {proxy};'))
@@ -82,7 +87,7 @@ Path('UnderBlue.xcodeproj/xcshareddata/xcschemes/UnderBlue.xcscheme').write_text
 Path('UnderBlue.xcodeproj/xcshareddata/xcschemes/UnderBlueMac.xcscheme').write_text(f'''<?xml version="1.0" encoding="UTF-8"?>
 <Scheme LastUpgradeVersion="2700" version="1.7">
 <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES"><BuildActionEntries><BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">{ref('mac','UnderBlueMac')}</BuildActionEntry></BuildActionEntries></BuildAction>
-<TestAction buildConfiguration="Debug" shouldUseLaunchSchemeArgsEnv="YES"><Testables></Testables></TestAction>
+<TestAction buildConfiguration="Debug" shouldUseLaunchSchemeArgsEnv="YES"><Testables><TestableReference skipped="NO">{ref('mactests','UnderBlueMacTests')}</TestableReference></Testables></TestAction>
 <LaunchAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" launchStyle="0" useCustomWorkingDirectory="NO" ignoresPersistentStateOnLaunch="NO" debugDocumentVersioning="YES" allowLocationSimulation="YES"><BuildableProductRunnable runnableDebuggingMode="0">{ref('mac','UnderBlueMac')}</BuildableProductRunnable></LaunchAction>
 <ProfileAction buildConfiguration="Release" shouldUseLaunchSchemeArgsEnv="YES"><BuildableProductRunnable runnableDebuggingMode="0">{ref('mac','UnderBlueMac')}</BuildableProductRunnable></ProfileAction><AnalyzeAction buildConfiguration="Debug"/><ArchiveAction buildConfiguration="Release" revealArchiveInOrganizer="YES"/>
 </Scheme>''')

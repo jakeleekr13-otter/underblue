@@ -246,10 +246,11 @@ Still open:
      - by eye: done on 29 Sep; the three presets were distinct enough to match their names and accepted on iPhone
      - Deep Dive's lavender sea fans on r11, and Tropical's peach sun core on r10
 4. **Custom slider ranges.** The caps in `CustomAdjustments.Caps` were measured before the white reference and the highlight shoulder. Measure them again on the current code:
-   - all five sliders at -1 and +1, at full strength
+   - all five sliders at -1 and +1, at Custom strength (0.8)
    - the joint budget for Brightness, Contrast and Saturation
    - Saturation and Temperature: on 25 Sep 2026 the product owner found Saturation very weak and Temperature not visible on the iPhone. `7651372` widened both. Check on the iPhone that both are clearly visible at ±50 and ±100, that + Temperature warms and - cools, and that water never turns neon, indigo or green.
    - one SDR clip and one HDR clip
+   - 20 Oct 2026: Brightness up and Contrast up were widened after a tester said they barely show (numbers in [ColorAlgorithm](ColorAlgorithm.md)). Check on the iPhone at +50 and +100: both are clearly visible. Contrast -100 should also be clearly visible. Look at m5-like scenes (dark teal water): Contrast +100 deepens the shadows. Decide by eye if that is acceptable. Custom at 0 now equals Natural at 0.8 (it was full strength).
 5. **Real video on the iPhone.** Use 2 or 3 real dive clips, including 1 SDR and 1 HDR. Check:
    - colour stays stable from frame to frame
    - bright sand and the sun do not clip (the highlight shoulder)

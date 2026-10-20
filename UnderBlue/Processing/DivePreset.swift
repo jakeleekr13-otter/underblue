@@ -4,7 +4,7 @@ import Foundation
 enum DivePreset: String, CaseIterable, Identifiable, Sendable {
     case original = "Original", natural = "Natural Dive"
     case tropical = "Tropical", deep = "Deep Dive"
-    /// The user preset: the automatic (Natural) result plus the user's CustomAdjustments, at full strength.
+    /// The user preset: the automatic (Natural) result plus the user's CustomAdjustments, at the default intensity 0.8.
     case custom = "Custom"
     var id: String { rawValue }
     var localizedName: String { String(localized: String.LocalizationValue(rawValue)) }

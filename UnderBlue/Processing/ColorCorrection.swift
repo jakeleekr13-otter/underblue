@@ -110,8 +110,9 @@ struct ColorCorrection: Sendable, Equatable {
         v.warmth += user.temperature * Caps.temperature
         // A scene lit by a large bright subject is exposed for that subject, so its mid-tones may go a
         // little darker (the highlight rule, both paths). Brightness down lowers the mid-tones on both
-        // paths. The white reference below sees the result.
-        v.midLift = min(0.9, max(minimumMidLift, v.midLift - 0.12 * scene.highlight + min(0, user.brightness) * Caps.brightnessDown))
+        // paths; Brightness up raises them. The white reference below sees the result.
+        let userMidLift = user.brightness * (user.brightness < 0 ? Caps.brightnessDown : Caps.brightnessUpMid)
+        v.midLift = min(0.9, max(minimumMidLift, v.midLift - 0.12 * scene.highlight + userMidLift))
         let light = min(1, max(0, (analysis.lightShare - 0.012) / 0.018))
         v.lightGradient = light.isFinite ? light * light * (3 - 2 * light) : 0
         v.neutralGains = whiteReference(analysis, correction: v, plan: plan)
@@ -319,7 +320,7 @@ struct ColorCorrection: Sendable, Equatable {
         v.toneCurve = min(0.3, max(0, v.toneCurve + user.contrast * (user.contrast < 0 ? Caps.contrastDown : Caps.contrastUp)))
         // The highlight rule (scene.highlight): such scenes get less brightness, haze shadow lift and mid-tone lift.
         v.brightness = analysis.exposure * 0.45 * (1 - 0.5 * highlight)
-        v.contrast = preset.contrast + haze * 0.05
+        v.contrast = preset.contrast + haze * 0.05 + min(0, user.contrast) * Caps.contrastGain
         // Global contrast alone can bury a dark diver or reef, so lift the lower tones. The lift
         // reaches the mid-tones too, so it stays moderate: the market look sits 3 to 6 L* below the
         // earlier values in the mid-tones, with the same shadows.

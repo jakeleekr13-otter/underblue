@@ -192,7 +192,7 @@ The kernel applies the gains by `FinishingMath.neutralWeight`. Water-like pixels
 | Value | Meaning |
 |---|---|
 | `midLift` | Restored path: gives back light lost with the veil, the backscatter haze that the water adds. It never lifts the median luminance above 0.22. The highlight rule lowers that ceiling to 0.132, and on both paths it may take the lift down to -0.12: the scene is exposed for its bright subject. |
-| `toneCurve`, `tonePivot` | S-curve on gamma luminance around the scene median. Weaker for bright scenes. The automatic value is halved (`curveSoftening` 0.5, 28 Sep 2026), so it is at most 0.15. Custom Contrast can take it up to 0.3. |
+| `toneCurve`, `tonePivot` | S-curve on gamma luminance around the scene median. Weaker for bright scenes. The automatic value is halved (`curveSoftening` 0.5, 28 Sep 2026), so it is at most 0.15. Custom Contrast up adds 0.15, up to 0.3. |
 | `brightness` | `exposure` x 0.45 (`CIColorControls`). The highlight rule halves it. Minus the veil offset: `veilOffset` (0.08) x (1 - `waterType`) x a ramp of the median luminance (0 at 0.2, 1 at 0.3 and above). |
 | `contrast` | Preset contrast (1.04) plus 0.05 x haze (`CIColorControls`). |
 | `saturation` | Preset saturation plus haze. Neon water gets a little less. |
@@ -318,22 +318,24 @@ Natural values: `restoration` 0.45, `saturation` 1.08, `vibrance` 0.18, `clarity
 
 ## Custom preset
 
-Custom is the user preset (gear tile). It starts from the Natural values and renders at full strength (`FilterSettings.customStrength` = 1), so it has no intensity slider. Five sliders change the automatic result. Each is a position from -1 to 1, shown as -100 to +100. `ColorCorrection.make` takes them as `adjustments`; every other preset ignores them.
+Custom is the user preset (gear tile). It starts from the Natural values and renders at the default intensity (`FilterSettings.customStrength` = `defaultIntensity` = 0.8), so it has no intensity slider. With every slider at 0 it equals Natural at 0.8. Five sliders change the automatic result. Each is a position from -1 to 1, shown as -100 to +100. `ColorCorrection.make` takes them as `adjustments`; every other preset ignores them.
 
 | Slider | Value it changes | Change at -1 / +1 |
 |---|---|---|
-| Brightness | `midLift` down, `shadowLift` up | -0.25 / +0.075 |
-| Contrast | `toneCurve` | -0.10 / +0.02 |
+| Brightness | `midLift` down; `midLift` and `shadowLift` up | -0.25 / +0.15 (`midLift`) and +0.075 (`shadowLift`) |
+| Contrast | `toneCurve`; Contrast down also lowers the global gain `contrast` | `toneCurve` -0.10 / +0.15; gain -0.05 / 0 |
 | Saturation | `saturation`; the water chroma ceiling ignores it, so the water shows it too | -0.45 / +0.35 x (1 - 0.6 x neon) |
 | Clarity | `clarity` and `definition`, as a factor | x0 / x1.75 |
 | Temperature | `warmth`; a cool shift gets no tint | -1500 K / +1500 K |
 
-- The up moves of Brightness, Contrast and Saturation share one budget. When their sum is above 1, each is scaled down (`CustomAdjustments.budgeted`).
+- The up moves of Brightness, Contrast and Saturation share one budget of 1.5 (`CustomAdjustments.upBudget`). When their sum is above 1.5, each is scaled by 1.5 / sum (`CustomAdjustments.budgeted`).
 - The offsets enter before the guards and the white reference that read them. The highlight shoulder still runs last.
 - Saturation does not move the water tone, the red gate or `subjectRed`. It acts at the `CIColorControls` step, on the water too: at +1 the water gains at most about a third more chroma.
+- 20 Oct 2026: testers said Brightness and Contrast showed little change. Measured at 960 px on m2, m5, m6, r01 and r14 (Custom at 0.8, one slider at +1 or -1; mean L* and L* spread against all sliders at 0). Before (strength 1): Brightness +1 raised mean L* by only +1.3 to +3.4; Contrast +1 changed the spread by +0.1 to +0.2; Contrast -1 changed it by -0.1 to -1.2. After: Brightness +1 gives +3.1 to +6.2 and -1 gives -3.1 to -5.3. Contrast +1 gives a spread change of +0.7 to +1.4, and -1 gives -2.0 to -4.2.
+- Contrast + uses the S-curve only. A gain boost (pivot at mid-grey) was tried and crushed dark scenes: pixels under L* 10 went from 1.9% to 19.5% on m2. Contrast - lowers the gain by 0.05 and also lifts the mean L* by +3.1 to +5.4. Side effects at +1: m5 pixels under L* 10 go from 9.5% to 16.6% with Contrast +1; the top water hue stays at 257 to 262 (OKLab) with Brightness +1. Clipped pixels rise at most 1.0 point (r14 with Contrast +1, 1.2% to 2.2%). Open for a check by eye, see [Verification](Verification.md).
 - The caps are provisional (`CustomAdjustments.Caps`). Brightness, Contrast and Clarity were measured before the white reference and the highlight shoulder landed. Saturation and Temperature were widened on 25 Sep 2026 after an iPhone test, without a render measurement. See [Verification](Verification.md).
 - One saved slot in UserDefaults (`customAdjustments.v1`) holds the five positions. The editor, batch and video share it.
-- Custom gets no preset terms, so with every slider at 0 it equals Natural at full strength.
+- Custom gets no preset terms, so with every slider at 0 it equals Natural at the default intensity 0.8.
 
 ## Restoration kernel
 

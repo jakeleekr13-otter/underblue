@@ -100,17 +100,20 @@ final class CustomPresetTests: XCTestCase {
         }
     }
 
-    func testCustomRendersAtFullStrength() {
+    func testCustomRendersAtDefaultIntensity() {
         XCTAssertEqual(FilterSettings(preset: .custom, intensity: 0.3).appliedIntensity, FilterSettings.customStrength)
-        XCTAssertEqual(FilterSettings.customStrength, 1)
+        XCTAssertEqual(FilterSettings.customStrength, FilterSettings.defaultIntensity)
+        XCTAssertEqual(FilterSettings.defaultIntensity, 0.8)
         for preset in [DivePreset.original, .natural, .tropical, .deep] {
             XCTAssertEqual(FilterSettings(preset: preset, intensity: 0.3).appliedIntensity, 0.3)
         }
-        // A low intensity slider value does not weaken Custom; it does weaken Natural.
+        // A low intensity slider value does not weaken Custom; it does weaken Natural. Custom at 0 equals Natural at the default.
         let engine = FilterEngine(), image = solid(.init(0.05, 0.3, 0.4)), analysis = scenes[0]
         let customSettings = FilterSettings(preset: .custom, intensity: 0.2, analysis: analysis)
+        // With every slider at 0, Custom equals Natural at the default intensity.
+        let naturalDefault = FilterSettings(preset: .natural, intensity: FilterSettings.defaultIntensity, analysis: analysis)
         assertEqual(pixel(engine.apply(image, settings: customSettings), engine),
-                    pixel(engine.finishing(image, settings: customSettings), engine), accuracy: 1e-3)
+                    pixel(engine.apply(image, settings: naturalDefault), engine), accuracy: 1e-3)
         let naturalSettings = FilterSettings(preset: .natural, intensity: 0.2, analysis: analysis)
         let weak = pixel(engine.apply(image, settings: naturalSettings), engine)
         let full = pixel(engine.finishing(image, settings: naturalSettings), engine)
@@ -145,9 +148,11 @@ final class CustomPresetTests: XCTestCase {
             XCTAssertEqual(darker.shadowLift, base.shadowLift)
             let brighter = custom(analysis, adjust(\.brightness, 1), plan: plan)
             XCTAssertEqual(brighter.shadowLift, base.shadowLift + 0.075, accuracy: 1e-6)
-            XCTAssertEqual(brighter.midLift, base.midLift)
+            XCTAssertEqual(brighter.midLift, min(0.9, base.midLift + 0.15), accuracy: 1e-6)
             XCTAssertEqual(custom(analysis, adjust(\.contrast, -1), plan: plan).toneCurve, max(0, base.toneCurve - 0.10), accuracy: 1e-6)
-            XCTAssertEqual(custom(analysis, adjust(\.contrast, 1), plan: plan).toneCurve, base.toneCurve + 0.02, accuracy: 1e-6)
+            XCTAssertEqual(custom(analysis, adjust(\.contrast, -1), plan: plan).contrast, base.contrast - 0.05, accuracy: 1e-6)
+            XCTAssertEqual(custom(analysis, adjust(\.contrast, 1), plan: plan).contrast, base.contrast, accuracy: 1e-6)
+            XCTAssertEqual(custom(analysis, adjust(\.contrast, 1), plan: plan).toneCurve, min(0.3, base.toneCurve + 0.15), accuracy: 1e-6)
             XCTAssertEqual(custom(analysis, adjust(\.saturation, -1), plan: plan).saturation, base.saturation - CustomAdjustments.Caps.saturationDown, accuracy: 1e-6)
             XCTAssertGreaterThan(custom(analysis, adjust(\.saturation, 1), plan: plan).saturation, base.saturation + 0.01)
             let soft = custom(analysis, adjust(\.clarity, -1), plan: plan), sharp = custom(analysis, adjust(\.clarity, 1), plan: plan)
@@ -218,20 +223,19 @@ final class CustomPresetTests: XCTestCase {
 
     func testJointBudgetScalesPositiveBrightnessContrastSaturation() {
         let all = CustomAdjustments(brightness: 1, contrast: 1, saturation: 1).budgeted
-        XCTAssertEqual(all.brightness, 1 / 3, accuracy: 1e-6)
-        XCTAssertEqual(all.contrast, 1 / 3, accuracy: 1e-6)
-        XCTAssertEqual(all.saturation, 1 / 3, accuracy: 1e-6)
+        XCTAssertEqual(all.brightness, 0.5, accuracy: 1e-6)
+        XCTAssertEqual(all.contrast, 0.5, accuracy: 1e-6)
+        XCTAssertEqual(all.saturation, 0.5, accuracy: 1e-6)
         // At or below the budget nothing changes. Negative parts, clarity and temperature never scale.
-        let within = CustomAdjustments(brightness: 0.5, contrast: 0.5, saturation: -1, clarity: 1, temperature: 1)
+        let within = CustomAdjustments(brightness: 0.8, contrast: 0.7, saturation: -1, clarity: 1, temperature: 1)
         XCTAssertEqual(within.budgeted, within)
-        let over = CustomAdjustments(brightness: 0.8, contrast: -0.5, saturation: 0.6, clarity: 1, temperature: -1).budgeted
-        XCTAssertEqual(over.brightness, 0.8 / 1.4, accuracy: 1e-6)
-        XCTAssertEqual(over.saturation, 0.6 / 1.4, accuracy: 1e-6)
+        let over = CustomAdjustments(brightness: 1, contrast: -0.5, saturation: 1, clarity: 1, temperature: -1).budgeted
+        XCTAssertEqual(over.brightness, 0.75, accuracy: 1e-6)
+        XCTAssertEqual(over.saturation, 0.75, accuracy: 1e-6)
         XCTAssertEqual(over.contrast, -0.5); XCTAssertEqual(over.clarity, 1); XCTAssertEqual(over.temperature, -1)
         // make() applies the budget.
-        let third: Float = 1 / 3
         XCTAssertEqual(custom(scenes[0], .init(brightness: 1, contrast: 1, saturation: 1)),
-                       custom(scenes[0], .init(brightness: third, contrast: third, saturation: third)))
+                       custom(scenes[0], .init(brightness: 0.5, contrast: 0.5, saturation: 0.5)))
     }
 
     // MARK: Guards
@@ -426,7 +430,7 @@ final class CustomPresetTests: XCTestCase {
         XCTAssertEqual(model.adjustments, saved)
         model.shared.preset = .custom
         XCTAssertEqual(model.settings(for: model.items[0]).adjustments, saved)
-        XCTAssertEqual(model.settings(for: model.items[0]).appliedIntensity, 1)
+        XCTAssertEqual(model.settings(for: model.items[0]).appliedIntensity, FilterSettings.defaultIntensity)
         // A photo overridden to a built-in preset gets no adjustments; one overridden to Custom gets the saved ones.
         model.setOverride(.init(preset: .tropical, intensity: 0.5), for: model.items[1].id)
         XCTAssertEqual(model.settings(for: model.items[1]).adjustments, .zero)

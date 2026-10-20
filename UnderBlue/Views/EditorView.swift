@@ -125,7 +125,7 @@ struct EditorView: View {
             }.padding(.horizontal)
             presetPicker(grid: presetGrid)
             if model.settings.preset == .custom {
-                // Custom has no intensity: it renders at full strength and has its own sliders.
+                // Custom has no intensity: it renders at the default intensity (0.8) and has its own sliders.
                 CustomAdjustmentControls(adjustments: $model.settings.adjustments).padding(.horizontal)
             } else {
                 VStack {

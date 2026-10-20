@@ -11,7 +11,7 @@ final class BatchModel: Identifiable {
     struct Look: Equatable, Sendable {
         var preset: DivePreset = .natural
         var intensity: Float = 0.8
-        /// Custom renders at full strength, so two Custom looks match whatever their intensity.
+        /// Custom renders at the default intensity, so two Custom looks match whatever their intensity.
         static func == (a: Self, b: Self) -> Bool { a.preset == b.preset && (a.preset == .custom || a.intensity == b.intensity) }
     }
     enum State: Equatable { case loading, ready, failed, saved, saveFailed }

@@ -28,7 +28,7 @@ struct MainWindow: View {
                     Button { model.cancel() } label: { Label("Stop", systemImage: "stop.fill") }
                         .help("Stop the batch. Finished items are kept (⌘.)")
                 } else {
-                    Button { model.start() } label: { Label("Start", systemImage: "play.fill") }
+                    Button { model.start() } label: { Label("Start", systemImage: "wand.and.stars") }
                         .help("Correct everything in the queue (⌘R)")
                         .disabled(!model.canStart)
                 }

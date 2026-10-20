@@ -32,11 +32,12 @@ final class MacModel {
     var format: ExportOptions.PhotoFormat { didSet { formatStore.save(format) } }
     var preferHDR: Bool { didSet { defaults.set(preferHDR, forKey: Keys.hdr); engine.preferHDR = preferHDR } }
     /// Photos exported at the same time, 1 to 4. Applies from the next run.
+    /// Do not assign to this property inside its own didSet: with @Observable that calls didSet again, without end.
     var parallelPhotos: Int {
         didSet {
-            parallelPhotos = min(4, max(1, parallelPhotos))
-            defaults.set(parallelPhotos, forKey: Keys.parallel)
-            engine.limits.photoExport = parallelPhotos
+            let clamped = min(4, max(1, parallelPhotos))
+            defaults.set(clamped, forKey: Keys.parallel)
+            engine.limits.photoExport = clamped
         }
     }
     var saveTarget: SaveTarget { didSet { defaults.set(saveTarget.rawValue, forKey: Keys.saveTarget) } }
@@ -101,6 +102,7 @@ final class MacModel {
         let arguments = ProcessInfo.processInfo.arguments
         func value(_ flag: String) -> String? { arguments.firstIndex(of: flag).flatMap { arguments.indices.contains($0 + 1) ? arguments[$0 + 1] : nil } }
         demoPro = arguments.contains("--ui-demo-pro")
+        if let parallel = value("--ui-demo-parallel").flatMap(Int.init) { parallelPhotos = min(4, max(1, parallel)) }
         if let output = value("--ui-demo-output") { folderURL = URL(fileURLWithPath: output, isDirectory: true); saveTarget = .folder }
         if let folder = value("--ui-demo-folder") {
             Task {

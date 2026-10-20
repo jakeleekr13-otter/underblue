@@ -55,7 +55,7 @@ struct MacCommands: Commands {
                 .disabled(model.engine.running)
         }
         CommandMenu("Batch") {
-            Button("Start") { model.start() }
+            Button("Correct") { model.start() }
                 .keyboardShortcut("r")
                 .disabled(!model.canStart)
             Button("Stop") { model.cancel() }

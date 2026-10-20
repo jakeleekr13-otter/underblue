@@ -88,7 +88,7 @@ Not final. Claims marked **confirm** depend on work that does not exist yet.
 
 UnderBlue for Mac brings believable colour and clarity back to underwater photos and videos. It works on a whole folder at once.
 
-Drag in files or folders from Finder. Pick a look. Press Start. UnderBlue processes the queue and saves each result to the folder you choose.
+Drag in files or folders from Finder. Pick a look. Press Correct. UnderBlue processes the queue and saves each result to the folder you choose.
 
 Features:
 

@@ -35,7 +35,7 @@ Status: decisions made 1 Oct 2026. Nothing built yet.
 SwiftUI on macOS draws native Mac controls. The Mac app gets:
 
 - One main window: sidebar with the queue, centre with a before/after preview, right inspector with Look, preset and Custom sliders.
-- Toolbar: Add, Start, Pause, Stop, output folder.
+- Toolbar: Add, Correct, Pause, Stop, output folder.
 - Drag and drop from Finder: files and whole folders.
 - Menu bar commands and keyboard shortcuts (⌘O add, ⌘R start, ⌘. stop, ⌘, settings).
 - A Settings window: output folder, photo format, HDR, parallel jobs.

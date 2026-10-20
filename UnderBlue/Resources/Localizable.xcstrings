@@ -5322,37 +5322,37 @@
         }
       }
     },
-    "Press Start (⌘R). UnderBlue corrects every item in the list and saves each result. Stop (⌘.) keeps the finished ones." : {
+    "Press Correct (⌘R). UnderBlue corrects every item in the list and saves each result. Stop (⌘.) keeps the finished ones." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Press Start (⌘R). UnderBlue corrects every item in the list and saves each result. Stop (⌘.) keeps the finished ones."
+            "value" : "Press Correct (⌘R). UnderBlue corrects every item in the list and saves each result. Stop (⌘.) keeps the finished ones."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "開始（⌘R）を押すと、UnderBlueがリストのすべてを補正して結果を保存します。停止（⌘.）しても、完了した分はそのまま残ります。"
+            "value" : "補正（⌘R）を押すと、UnderBlueがリストのすべてを補正して結果を保存します。停止（⌘.）しても、完了した分はそのまま残ります。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "시작(⌘R)을 누르면 UnderBlue가 목록의 모든 항목을 보정하고 결과를 저장합니다. 정지(⌘.)해도 끝난 항목은 그대로 남습니다."
+            "value" : "보정(⌘R)을 누르면 UnderBlue가 목록의 모든 항목을 보정하고 결과를 저장합니다. 정지(⌘.)해도 끝난 항목은 그대로 남습니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "按“开始”（⌘R），UnderBlue 会校正列表中的所有项目并保存每个结果。按“停止”（⌘.）后，已完成的项目会保留。"
+            "value" : "按“校正”（⌘R），UnderBlue 会校正列表中的所有项目并保存每个结果。按“停止”（⌘.）后，已完成的项目会保留。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "按「開始」（⌘R），UnderBlue 會校正列表中的所有項目並儲存每個結果。按「停止」（⌘.）後，已完成的項目會保留。"
+            "value" : "按「校正」（⌘R），UnderBlue 會校正列表中的所有項目並儲存每個結果。按「停止」（⌘.）後，已完成的項目會保留。"
           }
         }
       }
@@ -6689,37 +6689,37 @@
         }
       }
     },
-    "Start" : {
+    "Correct" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start"
+            "value" : "Correct"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "開始"
+            "value" : "補正"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "시작"
+            "value" : "보정"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "开始"
+            "value" : "校正"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "開始"
+            "value" : "校正"
           }
         }
       }

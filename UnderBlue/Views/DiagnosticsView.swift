@@ -120,7 +120,7 @@ struct DiagnosticsView: View {
          "Pick a look: Natural Dive, Tropical or Deep Dive. Intensity sets how strong it is.",
          "Custom starts from the Natural Dive result. Adjust it with five sliders.",
          "Choose Original or Corrected above the preview to compare. ⌘\\ switches between them.",
-         "Press Start (⌘R). UnderBlue corrects every item in the list and saves each result. Stop (⌘.) keeps the finished ones.",
+         "Press Correct (⌘R). UnderBlue corrects every item in the list and saves each result. Stop (⌘.) keeps the finished ones.",
          "Choose where results go, a folder or the Photos library, in Settings (⌘,)."]
         #endif
     }

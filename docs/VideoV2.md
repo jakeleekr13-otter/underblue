@@ -16,7 +16,7 @@ Video V2 is a SeaThru-inspired depth-aware restoration path, not SeaThru or SeaT
   6. `WaterAnalysis.sceneMean` and `RestorationPlan.sceneAverage` average the kept keyframes. Both use the same kept list.
   7. `sceneLevel()` replaces the depth map with one constant value in a 2×2 map.
   8. A scene whose fits all failed borrows the whole clip's plan.
-- `VideoRestorationAnalysis.moment(at:)` gives each frame its scene. Between two scenes the values cross-fade over at most 1 s, centred between the two keyframes (smoothstep). Each scene gets its own `make()` result, and the results mix.
+- `VideoRestorationAnalysis.moment(at:)` gives each frame its scene. Between two scenes the values cross-fade over `sceneFade` (3 s since 20 Oct 2026), centred between the two keyframes (smoothstep). The fade may be longer than the gap between the keyframes, but two fades never overlap. Each scene gets its own `make()` result, and the results mix. Each result keeps its black offset at or below zero (`VideoSceneMoment.keepingBlackOffsetNegative`).
 - For HDR, `RestorationEngine.combined(_:moment:settings:filter:preservesHDR:)` raises the output limit to 8.
 - Export runs no depth inference. The only depth inferences happen during analysis.
 - If no keyframe has a usable plan, the clip uses only the UnderBlue correction (`legacyAnalysis`, the whole clip's mean).

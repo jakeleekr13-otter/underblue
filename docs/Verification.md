@@ -31,6 +31,20 @@ Still open, by hand with a sandbox offer code (PurchaseTests are not run):
 | `7651372` | Custom Saturation and Temperature made visible (wider ranges) |
 | `8b9f278` | Tropical and Deep Dive made clearly distinct from Natural Dive; accepted on iPhone in `7b1a015` |
 
+## Video haze and scene fade (20 Oct 2026, `11d3c7d`)
+
+Two changes in the video path. Photos are unchanged.
+- The black offset of a video scene stays at or below zero. Before, one scene turned hazy: saturation 0.43, against 0.62 in the source. After, about 0.6.
+- The scene fade is 3 s and may be longer than the keyframe gap. The brightness jump at scene changes fell (rms 1.38 to 1.03, 1.56 to 1.17, 2.14 to 1.91 L* on three clips). Jake saw no large difference by eye.
+
+Test clips are in `DeveloperMedia/Tune_20_Oct`. All numbers come from the Mac simulation (`videosim`), not from an app export.
+
+Still open:
+- **Pale rim around dark subjects in video.** On `2025-05-03 22.12.02.MOV` at 14.4 s, the water beside a manta is about 2 L* brighter than the water further out. 51% of the edge rows show it. The band is 3 to 4% of the frame height at any size. The local veil causes it: with `veilLevel` set to 0 the rim is gone, but the whole clip gets 2 to 6 L* brighter and one clip loses 0.12 saturation. So do not switch it off. Video plans have no subject mask (photos only, since 1 Oct 2026). Whether that is the cause is untested. Whether photos show the same rim is unmeasured.
+- **Brightness jumps at scene changes are not gone.** With every correction frozen, 5.1 and 6.1 L* of jump remain on two clips. Limiting each scene's brightness to 0.01 around the clip's value cut the largest jump (9.4 to 5.7 L*), but it gave a pale rim around a manta (`2025-05-03` at 5 s). It was removed.
+- **Measuring more often did not help.** Keyframes every 0.5 s or 0.25 s made the jumps larger while the fade was tied to the keyframe gap. A scene split threshold of 0.08 gave lower numbers only because scenes merged. So no "deep scan" mode was added.
+- **Not checked:** the export from the app, the analysis time on the iPhone, and an eye check of the 3 s fade at real cuts.
+
 ## Long-video notice (28 Sep 2026)
 
 A video of 45 s or more shows "Analysis and correction can take longer for longer videos." above "Analyzing…" (`EditorModel.longVideoSeconds`).

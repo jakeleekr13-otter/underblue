@@ -42,7 +42,8 @@ If there is no plan, or the restoration render fails, the output is `FilterEngin
   - Scenes: `VideoSceneSplitter` starts a new scene when a keyframe's mean colour is far from the running scene mean: more than 0.04 in OKLab distance. The next keyframe must be that far too, so one odd keyframe never starts a scene.
   - Each scene drops odd keyframes (`sceneInliers`) and averages the rest (`sceneMean`). Depth and the water fit run on at most 10 keyframes per scene. Each scene gets one analysis, one plan and one constant depth.
   - A scene whose fits all failed borrows the whole clip's plan.
-  - Between two scenes the values cross-fade over at most 1 s (`VideoRestorationAnalysis.moment(at:)`, smoothstep). Each scene gets its own `make()` result, and the results mix.
+  - Between two scenes the values cross-fade over `sceneFade`, 3 s since 20 Oct 2026 (`VideoRestorationAnalysis.moment(at:)`, smoothstep). The fade is centred between the two keyframes and may be longer than the gap between them. Two fades never overlap: each lasts at most half the distance to the next fade's centre. A skipped short scene still fades across its whole gap. Each scene gets its own `make()` result, and the results mix.
+  - In video, each `make()` result also passes through `VideoSceneMoment.keepingBlackOffsetNegative` (see the black offset note under the tone rules).
 
 ## Analysis values
 
@@ -212,6 +213,7 @@ The kernel applies the gains by `FinishingMath.neutralWeight`. Water-like pixels
 - `contrast` pivots at linear 0.5, not at the mid-tones. So 1.08 takes every pixel below linear 0.037 to zero.
 - So `contrast` and `brightness` together are a linear gain plus a black offset. On market pair m2, contrast 1.09 subtracts 0.045 and brightness adds 0.046, so they nearly cancel.
 - The names do not say this. It explains the rejected "brightness 0.45 to 0.3" test: without the offset, the contrast step crushed the shadows.
+- **Video: the black offset stays at or below zero (20 Oct 2026).** The offset is `brightness + (1 - contrast) / 2`. At or below zero, `UnderBlueBlackOffset` uses its shadow toe. Above zero, it adds the offset to every pixel. A dark scene's exposure term can push the offset just above zero (+0.003 on the 8 to 10 s scene of a 13 s clip). The darkest pixels then lifted and saturation fell from 0.62 to 0.43. In video, `VideoSceneMoment.keepingBlackOffsetNegative` caps `brightness` at `(contrast - 1) / 2`. Photos keep the old values. A photo with a positive offset has not been checked.
 - No visible black crush was measured: m5 has 4.44% of pixels at or below 3/255, Sea-thru 4.15%.
 
 ### Clarity

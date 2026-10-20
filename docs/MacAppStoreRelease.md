@@ -16,7 +16,7 @@ Rules for this file:
 | Share extension bundle ID | `com.underblue.mac.share` (proposed) | MacApp.md decision 6 |
 | App price | Free download | MacApp.md decision 2 |
 | Pro product | Non-consumable, one-time, lifetime. `com.underblue.mac.pro` (proposed). | Jake, 20 Oct 2026 |
-| Pro price | **Not decided.** Jake will decide. iPhone Pro is 25,000 KRW. | Jake, 20 Oct 2026 |
+| Pro price | 19.99 USD (base price). iPhone Pro is 25,000 KRW. Check the KRW and other prices that App Store Connect generates. | Jake, 20 Oct 2026 |
 | Minimum OS | macOS 26, Apple silicon only | MacApp.md decision 3 |
 | Store | Mac App Store only, sandboxed | MacApp.md decision 4 |
 | Target user | Mac users who may own an Android phone and no iPhone | Jake, 20 Oct 2026 |
@@ -125,6 +125,6 @@ Korean text: write after Jake approves the English text.
 
 ## Open items for Jake
 
-1. Mac Pro price (and KRW price point).
+1. Check the generated KRW price against the iPhone price (25,000 KRW).
 2. Approve the English metadata draft.
 3. Free Offer codes for friends? (iOS method: IAP → Offer Codes, only after the app is approved.)

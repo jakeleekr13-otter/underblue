@@ -7,6 +7,13 @@ import XCTest
 /// - On the simulator set UB_PARITY_IN (and optionally UB_PARITY_OUT) as TEST_RUNNER_UB_PARITY_IN.
 /// Results go to the output folder as `<name>_ios.jpg`.
 final class PhotoParityTests: XCTestCase {
+    /// Removes the parity folders from the app's Documents. Run it with TEST_RUNNER_UB_PARITY_CLEAN=1 after a device check.
+    func testRemoveParityFolders() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["UB_PARITY_CLEAN"] == "1", "UB_PARITY_CLEAN is not set")
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        for name in ["parity-in", "parity-out"] { try? FileManager.default.removeItem(at: documents.appendingPathComponent(name)) }
+    }
+
     func testExportPhotosForParityCheck() async throws {
         let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let environment = ProcessInfo.processInfo.environment

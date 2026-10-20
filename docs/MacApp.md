@@ -69,6 +69,27 @@ The Mac app reuses the iPhone code wherever the behaviour is the same:
 - Text: one string catalog (`UnderBlue/Resources/Localizable.xcstrings`) for both apps. Mac text reuses the iPhone keys where the meaning is the same.
 - Only the window layout (queue, preview, look panel, Settings, menus) is Mac-only.
 
+## Same look as the iPhone app
+
+Decision (Jake, 20 Oct 2026): the Mac app must correct to about the same level as the iPhone app. So there is one colour algorithm for both. No Mac-only branch.
+- The reference smoothing (a slightly blurred copy of the image as the colour kernel's reference input) stays off on both. It broke the iPhone render (commit 46958c3). Turning it on for the Mac only would reduce Mac colour noise (m5 sand 0.40 to 0.77 when it was dropped) but would make the two apps differ.
+- Measured on 20 Oct 2026, same six photos, default look (Natural Dive, 0.8), Mac app export against an iPhone 17 (real device) export, CIE76 after conversion to sRGB:
+
+| Photo | mean dE | 95% of pixels below |
+|---|---|---|
+| IMG_7255 | 1.75 | 4.09 |
+| O2 | 1.92 | 3.61 |
+| O3 | 1.39 | 2.82 |
+| O4 | 0.70 | 1.99 |
+| O5 | 0.68 | 2.10 |
+| m5 | 4.61 | 13.68 |
+| Mean of six | 1.84 | |
+
+- m5 differs most. The difference is smooth and sits in the far water (top right cells 13 to 16 against 2 to 3 elsewhere) and near the horizon. It looks the same by eye. Cause not checked; a different result of the depth model on each chip is the guess.
+- The iOS **simulator is not a stand-in for the iPhone**: it differed from the device by 7.79 on average (m5 14.26). Always use the device.
+- How to repeat: `UnderBlueTests/PhotoParityTests` exports a folder of photos with the app's photo path. On the device, copy the photos to `Documents/parity-in` of the app container with `xcrun devicectl device copy to ... --domain-type appDataContainer --domain-identifier com.underblue.app`, run the test with `-destination id=<device>`, and copy `Documents/parity-out` back. On the Mac, run the Mac app with `--ui-demo-folder <dir> --ui-demo-output <dir> --ui-demo-pro --ui-demo-start`.
+- Not measured: videos, HDR photos, the Custom look, other iPhone models.
+
 ## Progress (20 Oct 2026)
 
 | # | Stage | State | Evidence |
@@ -80,14 +101,12 @@ The Mac app reuses the iPhone code wherever the behaviour is the same:
 | 5 | Commerce | Partly: product ID, paywall (the shared `ProView`, with Redeem Code), trial reuse, local StoreKit file `StoreKit/UnderBlueMac.storekit` | Not done: the manual sandbox check. Redeem Code compiles on macOS but was not run against the store. |
 | 6 | Mac colour numbers | Measured on the Mac harness, which compiles the app's own `Processing` sources. Gate (pairs 2, 4, 5, photo path): **13.02**; mean of all five pairs 10.91. m5 `combined`: full image dE **13.26**, panel 22.19, sand 15.46, coral 15.97, water 10.20 (CIE76). The Mac app's export of m5 matches the harness `combined` render: mean dE 0.97, 95% of pixels below 2.58, max 7.24. | `aquacolorfix_eval.sh` and `m5_eval.sh` on 20 Oct 2026, `Processing/` last changed in 25aca62. Only one photo (m5) was compared app against harness. |
 | 7 | Performance | Memory only. Speed tuning waits for the algorithm. | Memory peak table in the `MemoryGovernor` commit message |
-| 8 | Release | Checklist in `MacAppStoreRelease.md`. Icon is a **draft**. | `scripts/make_mac_icon.py` |
+| 8 | Release | Checklist in `MacAppStoreRelease.md`. Icon is a **draft**. Copyright is `2026 Enheart`. | `scripts/make_mac_icon.py` |
 
 Open items:
 - The Mac icon is generated from the iPhone icon. Jake decides the final design.
-- The app has no copyright line in About. It needs the owner name, as entered in App Store Connect.
 - Signed-build checks: sandbox bookmark after relaunch, app group, share menu, purchase.
 - Long 4K video and 8 GB Macs are not measured for memory.
-- Open decision: whether the reference smoothing should come back on the Mac only (it raised colour noise in the harness when dropped: m5 sand 0.40 to 0.76).
 
 ## Batch engine design (stage 3)
 

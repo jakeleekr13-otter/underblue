@@ -47,7 +47,7 @@ final class BatchModel: Identifiable {
     var showPro = false
     var saveTask: Task<Void, Never>?
     private var interruption: String?
-    private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+    private var backgroundTask = BackgroundTask()
 
     init(media: [ImportedMedia], diagnostics: DiagnosticRecorder, adjustmentStore: CustomAdjustmentsStore = .init(),
          formatStore: PhotoFormatStore = .init()) {
@@ -133,13 +133,13 @@ final class BatchModel: Identifiable {
         savedCount = 0
         saveTotal = pendingCount
         interruption = nil
-        backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Finish batch save") { [weak self] in
+        backgroundTask.begin("Finish batch save") { [weak self] in
             Task { @MainActor in self?.saveTask?.cancel() }
         }
         saveTask = Task {
             defer {
                 saving = false; saveTask = nil
-                if backgroundTask != .invalid { UIApplication.shared.endBackgroundTask(backgroundTask); backgroundTask = .invalid }
+                backgroundTask.end()
             }
             await purchases.refreshEntitlement()
             guard purchases.isPro else { showPro = true; return }

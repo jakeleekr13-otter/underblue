@@ -43,7 +43,7 @@ final class EditorModel {
     private let estimator = VideoExporter()
     var optionsDismissing = false
     var showPro = false
-    private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
+    private var backgroundTask = BackgroundTask()
     private var cancellationNotice = String(localized: "Export cancelled")
     var completedURL: URL?
     /// Fixed when the export finishes, so the name matches the look that was exported.
@@ -237,14 +237,14 @@ final class EditorModel {
         let chosenSettings = settings
         var chosenOptions = options
         cancellationNotice = String(localized: "Export cancelled")
-        backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Finish or cancel export") { [weak self] in
+        backgroundTask.begin("Finish or cancel export") { [weak self] in
             Task { @MainActor in self?.cancelForBackground() }
         }
         exportTask = Task {
             var reserved = false
             defer {
                 exporting = false; exportTask = nil
-                if backgroundTask != .invalid { UIApplication.shared.endBackgroundTask(backgroundTask); backgroundTask = .invalid }
+                backgroundTask.end()
             }
             do {
                 await purchases.refreshEntitlement()

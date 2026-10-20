@@ -8,7 +8,12 @@ import UniformTypeIdentifiers
 /// the newest complete share the next time UnderBlue is on screen, so a share still opens if iOS refused the
 /// URL. A newer share replaces an older one that was never opened.
 enum SharedInbox {
+    // A Mac App Store group ID must start with the team ID. The iOS ID does not.
+    #if os(macOS)
+    static let appGroup = "M3HJ7YK7N7.group.com.underblue.mac"
+    #else
     static let appGroup = "group.com.underblue.app"
+    #endif
     /// The app registers the `underblue` scheme. Opening it only brings UnderBlue to the screen.
     static let openURL = URL(string: "underblue://share")!
     private static let partialSuffix = ".partial"

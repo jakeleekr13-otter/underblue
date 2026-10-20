@@ -102,7 +102,10 @@ struct Failure: Error, Codable, Sendable, Equatable {
             case AVFoundationErrorDomain:
                 switch item.code {
                 case AVError.diskFull.rawValue: kind = .storage
-                case AVError.mediaServicesWereReset.rawValue, AVError.decoderTemporarilyUnavailable.rawValue: kind = .temporarilyUnavailable
+                #if os(iOS)
+                case AVError.mediaServicesWereReset.rawValue: kind = .temporarilyUnavailable
+                #endif
+                case AVError.decoderTemporarilyUnavailable.rawValue: kind = .temporarilyUnavailable
                 case AVError.decodeFailed.rawValue, AVError.fileFormatNotRecognized.rawValue: kind = .unreadable
                 case AVError.decoderNotFound.rawValue: kind = .unsupported
                 default: kind = nil

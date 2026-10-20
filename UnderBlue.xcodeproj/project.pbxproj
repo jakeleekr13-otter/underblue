@@ -49,7 +49,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		60C8EEF058AB26576B3289F7 /* UnderBlueShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = UnderBlueShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		60C8EEF058AB26576B3289F7 /* UnderBlueShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; path = UnderBlueShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7732347C4E6FB5542BA05AC9 /* UnderBlueMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = UnderBlueMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AD5D520508EF8024D25C00BA /* UnderBlueTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = UnderBlueTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B22D326D03B77788C7376316 /* UnderBlueUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = UnderBlueUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E6FC57C251E9E1BEC1D3C0D2 /* UnderBlue.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = UnderBlue.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -77,16 +78,40 @@
 			);
 			target = 4BE864FAE2B9E4DE7821A052 /* UnderBlueShare */;
 		};
+		D771C449FABDB5F3C15C8CD0 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				App/UnderBlueApp.swift,
+				Resources/Info.plist,
+				Views/BatchView.swift,
+				Views/CustomAdjustmentControls.swift,
+				Views/DiagnosticsView.swift,
+				Views/EditorView.swift,
+				Views/ExportView.swift,
+				Views/HomeView.swift,
+				Views/ProView.swift,
+				Views/ZoomablePreview.swift,
+			);
+			target = 436D0079A3B0F0C56CF1A10C /* UnderBlueMac */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		3A2A88DEEFF3D1D23E496597 /* UnderBlue */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A5D875C65189FDCE63406F9E /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 7364889A612B6B38A2343DB0 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = UnderBlue; sourceTree = "<group>"; };
+		0D069BD07DDE7BEE712E9AFD /* UnderBlueMac */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = UnderBlueMac; sourceTree = "<group>"; };
+		3A2A88DEEFF3D1D23E496597 /* UnderBlue */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A5D875C65189FDCE63406F9E /* PBXFileSystemSynchronizedBuildFileExceptionSet */, D771C449FABDB5F3C15C8CD0 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 7364889A612B6B38A2343DB0 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = UnderBlue; sourceTree = "<group>"; };
 		54768AA1BA5D709B3AD4DD6D /* UnderBlueShare */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C87D41F98C1BF0983C3F3C8A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = UnderBlueShare; sourceTree = "<group>"; };
 		5FA060BA93CA7D761DC0AA1D /* UnderBlueUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = UnderBlueUITests; sourceTree = "<group>"; };
 		F80B2C2021F097DC9FAA009C /* UnderBlueTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = UnderBlueTests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		2A8C225853EEDD85673D1D85 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		32BD75FE04B3CDF992A510FD /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -122,6 +147,7 @@
 			isa = PBXGroup;
 			children = (
 				3A2A88DEEFF3D1D23E496597 /* UnderBlue */,
+				0D069BD07DDE7BEE712E9AFD /* UnderBlueMac */,
 				F80B2C2021F097DC9FAA009C /* UnderBlueTests */,
 				5FA060BA93CA7D761DC0AA1D /* UnderBlueUITests */,
 				54768AA1BA5D709B3AD4DD6D /* UnderBlueShare */,
@@ -133,6 +159,7 @@
 			isa = PBXGroup;
 			children = (
 				E6FC57C251E9E1BEC1D3C0D2 /* UnderBlue.app */,
+				7732347C4E6FB5542BA05AC9 /* UnderBlueMac.app */,
 				AD5D520508EF8024D25C00BA /* UnderBlueTests.xctest */,
 				B22D326D03B77788C7376316 /* UnderBlueUITests.xctest */,
 				60C8EEF058AB26576B3289F7 /* UnderBlueShare.appex */,
@@ -163,6 +190,27 @@
 			productName = UnderBlueTests;
 			productReference = AD5D520508EF8024D25C00BA /* UnderBlueTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		436D0079A3B0F0C56CF1A10C /* UnderBlueMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B9B6B44595E1B03C1E6CFB74 /* Build configuration list for PBXNativeTarget "UnderBlueMac" */;
+			buildPhases = (
+				3375EA04324642D337D927D6 /* Sources */,
+				2A8C225853EEDD85673D1D85 /* Frameworks */,
+				29FFF143ECDD60E83EF9035A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				0D069BD07DDE7BEE712E9AFD /* UnderBlueMac */,
+				3A2A88DEEFF3D1D23E496597 /* UnderBlue */,
+			);
+			name = UnderBlueMac;
+			productName = UnderBlueMac;
+			productReference = 7732347C4E6FB5542BA05AC9 /* UnderBlueMac.app */;
+			productType = "com.apple.product-type.application";
 		};
 		4BE864FAE2B9E4DE7821A052 /* UnderBlueShare */ = {
 			isa = PBXNativeTarget;
@@ -254,6 +302,7 @@
 			projectRoot = "";
 			targets = (
 				4F6027D858B72CC70E5CC8E9 /* UnderBlue */,
+				436D0079A3B0F0C56CF1A10C /* UnderBlueMac */,
 				002378A4B0AB8ED6C3038A81 /* UnderBlueTests */,
 				4D630F78F997333C57512D1C /* UnderBlueUITests */,
 				4BE864FAE2B9E4DE7821A052 /* UnderBlueShare */,
@@ -263,6 +312,13 @@
 
 /* Begin PBXResourcesBuildPhase section */
 		1544DFBBD36E4A0D68754A27 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		29FFF143ECDD60E83EF9035A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -294,6 +350,13 @@
 
 /* Begin PBXSourcesBuildPhase section */
 		0C9EC29799D8656EFFBB3686 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3375EA04324642D337D927D6 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -396,6 +459,33 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/UnderBlue.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/UnderBlue";
 			};
 			name = Debug;
+		};
+		1109CF6EAE1A139E1319B4A7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = UnderBlueMac/UnderBlueMac.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = M3HJ7YK7N7;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = UnderBlue;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save your finished photos and videos to your library.";
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.underblue.mac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
 		};
 		20B70E15FDC36C625E57F658 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -586,6 +676,33 @@
 			};
 			name = Debug;
 		};
+		FCEC940375E41513E5F12B9E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = UnderBlueMac/UnderBlueMac.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = M3HJ7YK7N7;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = UnderBlue;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save your finished photos and videos to your library.";
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.underblue.mac;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
 		FECE8ECE4507AB75FB580D0F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -625,6 +742,15 @@
 			buildConfigurations = (
 				FB520F6E62C2A172230C620F /* Debug */,
 				FECE8ECE4507AB75FB580D0F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B9B6B44595E1B03C1E6CFB74 /* Build configuration list for PBXNativeTarget "UnderBlueMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FCEC940375E41513E5F12B9E /* Debug */,
+				1109CF6EAE1A139E1319B4A7 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

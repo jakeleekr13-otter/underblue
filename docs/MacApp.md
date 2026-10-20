@@ -57,7 +57,7 @@ Each stage ends with one artifact that can fail.
 | 5 | Commerce | Mac price model and product IDs. Own StoreKit config. Own trial key. | Manual sandbox check (no StoreKit tests, memory `no-storekit-tests`) |
 | 6 | Mac colour numbers | Run the gate and m5 as Mac product numbers. Compare one Mac app export with the harness render. Decide on Mac-only reference smoothing. | Gate and m5 output lines; ΔE of app export vs harness |
 | 7 | Performance | Mac tier in `VideoProcessingPolicy`: parallel job count, memory limit, encoder sessions. Only after the algorithm is final (memory `algorithm-before-performance`). | Timing table on one fixed set: photos per minute, video speed vs real time, before and after |
-| 8 | Release | New App Store Connect app, Mac screenshots, metadata, privacy manifest, sandbox review. | Build accepted in App Store Connect |
+| 8 | Release | New App Store Connect app, Mac screenshots, metadata, privacy manifest, sandbox review. Checklist: [MacAppStoreRelease.md](MacAppStoreRelease.md). | Build accepted in App Store Connect |
 
 Stages 1–2 change only build setup and seams. Stages 3 and 4 can run in parallel after stage 2.
 

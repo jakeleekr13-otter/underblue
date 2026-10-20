@@ -54,7 +54,7 @@ The detail band now ends sooner: `detailEdgeLow` 0.05 and `detailEdgeHigh` 0.12 
 Still open:
 - Look at the turtle, clownfish and a few other photos by eye on the iPhone and the Mac. The lines are softer, not gone.
 - The Mac App Store screenshots must be made with this change.
-- The teal diver (`IMG_20230118_093746_0014`) still turns grey-blue (mean a* -30.2 to -5.9). The colour correction does it, not the detail layer. Jake has not decided if that needs a change.
+- The teal diver (`IMG_20230118_093746_0014`) still turns grey-blue (mean a* -30.2 to -5.9). The colour correction does it, not the detail layer. Jake looked at the Mac export on 20 Oct 2026 and accepted it. No change is needed.
 
 ## Long-video notice (28 Sep 2026)
 

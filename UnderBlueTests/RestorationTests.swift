@@ -1210,6 +1210,24 @@ final class RestorationTests: XCTestCase {
         assertEqual(FinishingMath.detail(peak, blurred: peak * 0.9, reference: peak, correction: v), peak, accuracy: 1e-6)
     }
 
+    /// Between detailEdgeLow and detailEdgeHigh the layer fades out. A medium edge gets less than full
+    /// strength; before 20 Oct 2026 it got all of it, which drew a bright line along turtle scales.
+    func testDetailLayerFadesOutOnMediumEdges() {
+        let v = detailValues()
+        let subject = SIMD3<Float>(0.30, 0.25, 0.20)
+        let brighter = subject * 1.35, blurred = subject
+        func gamma(_ c: SIMD3<Float>) -> Float { pow((c * ColorCorrection.luma).sum(), 1 / 2.2) }
+        let d = gamma(brighter) - gamma(blurred)
+        XCTAssertGreaterThan(d, FinishingMath.detailEdgeLow); XCTAssertLessThan(d, FinishingMath.detailEdgeHigh)
+        func smoothstep(_ low: Float, _ high: Float, _ x: Float) -> Float {
+            let t = min(1, max(0, (x - low) / (high - low))); return t * t * (3 - 2 * t)
+        }
+        let band = 1 - smoothstep(FinishingMath.detailEdgeLow, FinishingMath.detailEdgeHigh, d)
+        let out = FinishingMath.detail(brighter, blurred: blurred, reference: subject, correction: v)
+        XCTAssertEqual(gamma(out) - gamma(brighter), v.detail * band * d, accuracy: 1e-3)
+        XCTAssertGreaterThan(band, 0); XCTAssertLessThan(band, 0.9)
+    }
+
     func testDetailKernelMatchesCPUMirror() {
         let engine = FilterEngine()
         let v = detailValues()

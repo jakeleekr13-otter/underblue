@@ -231,7 +231,7 @@ The two unsharp masks change luminance only (kernel `UnderBlueLumaTransfer`). Th
 **Fine detail layer.** AquaColorFix's images carry about 40% more fine-detail energy than ours did. The difference sits at the pixel scale, not in the broad unsharp masks: its block-local contrast is lower than ours. So a last sharpening step runs after the two unsharp masks:
 
 - The layer is the difference between the pixel's gamma luminance and a Gaussian blur of it. The blur radius is `detailRadius`, 1.2/480 of the short side: 2 px on a 1200 px photo, 7.6 px on a 4032 px export.
-- Differences below `detailFloor` (0.004, doubled in dark scenes) get nothing. The strength ramps up to full at 3 x the floor. From `FinishingMath.detailEdgeLow` (0.15) the layer fades and at `detailEdgeHigh` (0.30) it is off, so an outline gets no halo. In between, texture is amplified by `detail`.
+- Differences below `detailFloor` (0.004, doubled in dark scenes) get nothing. The strength ramps up to full at 3 x the floor. From `FinishingMath.detailEdgeLow` (0.05 since 20 Oct 2026, 0.15 before) the layer fades and at `detailEdgeHigh` (0.12 since 20 Oct 2026, 0.30 before) it is off, so an outline gets no halo. In between, texture is amplified by `detail`.
 - The layer lands where the white reference lands (`FinishingMath.neutralWeight`): subjects, and pale surfaces clearly brighter than the water. Open water gets nothing. The colour kernel's plain water-like weight was tried first and cut the mola and the manta out, because a pale body lit by blue water is water-like.
 - Dark pixels fade in from linear luminance 0.02 to 0.06: they carry the most noise.
 - The pixel is scaled by one factor, so hue and chroma stay, and a pixel at or above luminance one is unchanged.
@@ -530,6 +530,7 @@ No separate figure is recorded here for these four. The scorecard shows the comb
 | Violet calm (8 Oct 2026) | See [Violet calm](#violet-calm-8-oct-2026). Violet pixels over 14 photos 17.0% to 7.8%; gate 13.20 to 13.02 (video 13.09 to 12.84); r04 unchanged. |
 | Water calm and depth image clamp (8 Oct 2026) | See [Water calm](#water-calm-8-oct-2026). Far water noise on IMG_7260 1.57 to 0.22; mola texture 6.47 to 6.39; gate 13.14 to 13.20. |
 | Fine detail layer, strength 1.3, floor 0.004, band to 0.15 to 0.30, gated by the neutral weight | Pair 3 detail energy 5.07 to 6.79 (AquaColorFix 8.10); subject detail up on every pair; water detail on pair 3 stays under AquaColorFix's (5.59 against 6.52). Gate 12.50 to 12.54. No visible halo on the mola or the manta edge at 100%. |
+| Fine detail band narrowed from 0.15 to 0.30 to 0.05 to 0.12 (20 Oct 2026) | Turtle scales and clownfish edges: high-pass L* +35.7 / -28.4 to +25.3 / -22.1 (source +22.0 / -17.7). m5 full dE 13.26 to 12.98, panel 22.19 to 21.63. AquaColorFix gate 13.02 to 13.03. m5 local contrast 9.09 to 8.76 (target 9.79), real photos 0.1 to 0.4 lower. Hue, chroma and the neutral ramp unchanged. |
 
 ### Rejected
 

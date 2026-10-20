@@ -131,9 +131,14 @@ enum FinishingMath {
         return out.x.isFinite && out.y.isFinite && out.z.isFinite ? out : c
     }
     /// The detail band's upper edge (gamma luminance): from detailEdgeLow the layer fades, at
-    /// detailEdgeHigh it is off. Fine texture sits below 0.15 (the mola's 90th percentile is 0.03 to
-    /// 0.08); an outline is above 0.3. The shadow fade is in linear luminance.
-    static let detailEdgeLow: Float = 0.15, detailEdgeHigh: Float = 0.30
+    /// detailEdgeHigh it is off. Fine texture sits below 0.05 (the mola's 90th percentile is 0.03 to
+    /// 0.08, so only its strongest texture fades); an outline is above 0.12. The shadow fade is in
+    /// linear luminance.
+    /// 0.15 and 0.30 before 20 Oct 2026. They left a bright line along the white scales of a turtle and
+    /// a dark line around a clownfish (high-pass L* +35.7 / -28.4 against +22.0 / -17.7 in the source).
+    /// At 0.05 and 0.12 the same turtle gave +25.3 / -22.1. m5 full dE 13.26 to 12.98 and the
+    /// AquaColorFix gate 13.02 to 13.03.
+    static let detailEdgeLow: Float = 0.05, detailEdgeHigh: Float = 0.12
     static let detailShadowLow: Float = 0.02, detailShadowHigh: Float = 0.06
 
     /// Contrast gain and black offset, as CIColorControls computes them: c * gain + offset. Measured

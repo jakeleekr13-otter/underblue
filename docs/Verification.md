@@ -45,6 +45,17 @@ Still open:
 - **Measuring more often did not help.** Keyframes every 0.5 s or 0.25 s made the jumps larger while the fade was tied to the keyframe gap. A scene split threshold of 0.08 gave lower numbers only because scenes merged. So no "deep scan" mode was added.
 - **Not checked:** the export from the app, the analysis time on the iPhone, and an eye check of the 3 s fade at real cuts.
 
+## Photo outlines from the fine detail layer (20 Oct 2026)
+
+On the Mac, Natural Dive drew a bright line along the white scales of a turtle (`IMG_7255`) and a dark line around a clownfish and its anemone (`IMG_7256`). The fine detail layer caused it, not the subject mask or the local veil. It was already there on 8 Oct 2026 (`3104913`).
+
+The detail band now ends sooner: `detailEdgeLow` 0.05 and `detailEdgeHigh` 0.12 (before 0.15 and 0.30). Medium edges get less sharpening. Measured on the Mac harness at 1200 px: turtle high-pass L* +35.7 / -28.4 to +25.3 / -22.1 (source +22.0 / -17.7); m5 full dE 13.26 to 12.98; AquaColorFix gate 13.02 to 13.03. Market pairs, real photos and the neutral ramp keep their hue and chroma. Local contrast fell a little (m5 9.09 to 8.76; its target is 9.79).
+
+Still open:
+- Look at the turtle, clownfish and a few other photos by eye on the iPhone and the Mac. The lines are softer, not gone.
+- The Mac App Store screenshots must be made with this change.
+- The teal diver (`IMG_20230118_093746_0014`) still turns grey-blue (mean a* -30.2 to -5.9). The colour correction does it, not the detail layer. Jake has not decided if that needs a change.
+
 ## Long-video notice (28 Sep 2026)
 
 A video of 45 s or more shows "Analysis and correction can take longer for longer videos." above "Analyzing…" (`EditorModel.longVideoSeconds`).

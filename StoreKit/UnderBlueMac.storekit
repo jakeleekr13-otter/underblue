@@ -1,0 +1,16 @@
+{
+  "identifier": "9B1C6E52-3F41-4B0D-8A4E-6C2D5A7E1F30",
+  "nonRenewingSubscriptions": [],
+  "products": [{
+    "displayPrice": "4.99",
+    "familyShareable": false,
+    "internalID": "underblue-mac-local-pro",
+    "localizations": [{"description": "Batch, unlimited photos, full-length video, 4K and HDR.", "displayName": "UnderBlue Pro", "locale": "en_US"}],
+    "productID": "com.underblue.mac.pro",
+    "referenceName": "UnderBlue Pro (Mac) — LOCAL TEST PRICE ONLY",
+    "type": "NonConsumable"
+  }],
+  "settings": {"_failTransactionsEnabled": false, "_locale": "en_US", "_storefront": "USA", "_storeKitErrors": []},
+  "subscriptionGroups": [],
+  "version": {"major": 3, "minor": 0}
+}

@@ -20,6 +20,11 @@ struct UnderBlueMacApp: App {
         }
         .defaultSize(width: 1200, height: 760)
         .commands { MacCommands(model: model) }
+        Window("UnderBlue Help", id: "help") {
+            HelpView().environment(model.purchases).environment(model.diagnostics)
+                .preferredColorScheme(.dark).tint(.mint)
+        }
+        .defaultSize(width: 560, height: 680)
         Settings {
             SettingsView().environment(model)
         }
@@ -28,8 +33,18 @@ struct UnderBlueMacApp: App {
 
 struct MacCommands: Commands {
     let model: MacModel
+    @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
+        CommandGroup(replacing: .appInfo) {
+            Button("About UnderBlue") {
+                NSApp.orderFrontStandardAboutPanel(options: [.credits: AboutCredits.text])
+            }
+        }
+        CommandGroup(replacing: .help) {
+            Button("UnderBlue Help") { openWindow(id: "help") }
+                .keyboardShortcut("?")
+        }
         CommandGroup(replacing: .newItem) {
             Button("Add Photos and Videos…") { model.showImporter = true }
                 .keyboardShortcut("o")

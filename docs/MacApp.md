@@ -61,6 +61,26 @@ Each stage ends with one artifact that can fail.
 
 Stages 1–2 change only build setup and seams. Stages 3 and 4 can run in parallel after stage 2.
 
+## Progress (20 Oct 2026)
+
+| # | Stage | State | Evidence |
+|---|---|---|---|
+| 1 | Target | Done, with the share extension `UnderBlueMacShare` | Both builds pass. The share menu itself is not run: it needs a signed build. |
+| 2 | Platform seams | Done | `BackgroundTask`, `#if os(iOS)` in two shared files. `Processing/` unchanged. |
+| 3 | Batch engine | Done, plus `MemoryGovernor` | `BatchEngineTests`, `MemoryGovernorTests` |
+| 4 | Mac UI | Built: window, queue, preview, look controls, Settings, Help, About, drop, menus, Dock count, notification | A 20-item mixed batch ran in the app. Not clicked through: menu shortcuts, drop, Settings, paywall. |
+| 5 | Commerce | Partly: product ID, paywall, trial reuse, local StoreKit file `StoreKit/UnderBlueMac.storekit` | Not done: the manual sandbox check. Mac paywall has no Redeem Code button (not checked whether macOS offers one). |
+| 6 | Mac colour numbers | Not started | |
+| 7 | Performance | Memory only. Speed tuning waits for the algorithm. | Memory peak table in the `MemoryGovernor` commit message |
+| 8 | Release | Checklist in `MacAppStoreRelease.md`. Icon is a **draft**. | `scripts/make_mac_icon.py` |
+
+Open items:
+- The Mac icon is generated from the iPhone icon. Jake decides the final design.
+- Mac screen text has no translations yet (ko, ja, zh-Hans, zh-Hant).
+- The app has no copyright line in About. The owner name is not known here.
+- Signed-build checks: sandbox bookmark after relaunch, app group, share menu, purchase.
+- Long 4K video and 8 GB Macs are not measured for memory.
+
 ## Batch engine design (stage 3)
 
 Facts from the code (1 Oct 2026):

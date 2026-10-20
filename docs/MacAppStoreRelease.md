@@ -60,6 +60,11 @@ Xcode configuration to set in stage 1 and check at archive time:
 - [ ] Archive. Run **Validate App** before **Distribute App**. Check the archive has the share extension and both profiles carry the app group.
 - [ ] Review the UI as the reviewer will: first launch, trial, paywall, restore purchase, redeem code.
 
+App icon and Help:
+- [x] A Mac icon set exists (`UnderBlueMac/Assets.xcassets/AppIconMac.appiconset`). It is a **draft** from `scripts/make_mac_icon.py`. Confirm the final design.
+- [x] Help window and About panel. Help shows the Apache-2.0 license of the depth model, as the iPhone app does. `ComplianceTests` checks it.
+- [ ] About has no copyright line. Add `NSHumanReadableCopyright` once the owner name is known.
+
 Screenshots:
 - [ ] Mac screenshot size. **Unverified:** App Store Connect accepts 1280×800, 1440×900, 2560×1600 and 2880×1800. Confirm in the upload page.
 - [ ] Five shots from the final build. Use developer-owned media only. Suggested set:

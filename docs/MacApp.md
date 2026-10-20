@@ -37,7 +37,8 @@ SwiftUI on macOS draws native Mac controls. The Mac app gets:
 - One main window: sidebar with the queue, centre with a before/after preview, right inspector with Look, preset and Custom sliders.
 - Toolbar: Add, Correct, Pause, Stop, output folder.
 - Drag and drop from Finder: files and whole folders.
-- Menu bar commands and keyboard shortcuts (⌘O add, ⌘R start, ⌘. stop, ⌘, settings).
+- Menu bar commands and keyboard shortcuts (⌘O add, ⌘R correct, ⌘. stop, ⇧⌘O show results, ⌘, settings). The app menu has "UnderBlue Pro…": Buy, Restore Purchase and Redeem Code open from there at any time.
+- Show in Finder: a link under the queue and a context-menu item on a finished file. With the Photos library as target it reads "Open Photos".
 - A Settings window: output folder, photo format, HDR, parallel jobs.
 - Progress on the Dock icon and a notification when the batch ends.
 
@@ -97,15 +98,17 @@ Decision (Jake, 20 Oct 2026): the Mac app must correct to about the same level a
 | 1 | Target | Done, with the share extension `UnderBlueMacShare` | Both builds pass. The share menu itself is not run: it needs a signed build. |
 | 2 | Platform seams | Done | `BackgroundTask`, `#if os(iOS)` in two shared files. `Processing/` unchanged. |
 | 3 | Batch engine | Done, plus `MemoryGovernor` | `BatchEngineTests`, `MemoryGovernorTests` |
-| 4 | Mac UI | Built: window, queue, preview, look controls, Settings, Help, About, drop, menus, Dock count, notification | A 20-item mixed batch ran in the app. Not clicked through: menu shortcuts, drop, Settings, paywall. |
-| 5 | Commerce | Partly: product ID, paywall (the shared `ProView`, with Redeem Code), trial reuse, local StoreKit file `StoreKit/UnderBlueMac.storekit` | Not done: the manual sandbox check. Redeem Code compiles on macOS but was not run against the store. |
-| 6 | Mac colour numbers | Measured on the Mac harness, which compiles the app's own `Processing` sources. Gate (pairs 2, 4, 5, photo path): **13.02**; mean of all five pairs 10.91. m5 `combined`: full image dE **13.26**, panel 22.19, sand 15.46, coral 15.97, water 10.20 (CIE76). The Mac app's export of m5 matches the harness `combined` render: mean dE 0.97, 95% of pixels below 2.58, max 7.24. | `aquacolorfix_eval.sh` and `m5_eval.sh` on 20 Oct 2026, `Processing/` last changed in 25aca62. Only one photo (m5) was compared app against harness. |
+| 4 | Mac UI | Built: window, queue, preview, look controls, Settings, Help, About, drop, menus, Dock count, notification. Added 20 Oct: "UnderBlue Pro…" menu item, Show in Finder / Open Photos (link also shows after a relaunch), Start renamed Correct, notice bar moved to the preview column (it covered the queue summary). | A 20-item mixed batch ran in the app. A 6-item mixed batch ran again on 20 Oct. Not clicked through: menu shortcuts, drop, Settings. |
+| 5 | Commerce | Done except three checks: product ID, paywall (the shared `ProView`, with Redeem Code), trial reuse, local StoreKit file `StoreKit/UnderBlueMac.storekit` (test price 19.99). Price is 19.99 USD. | Sandbox check on 20 Oct: the product loaded (1 product), a sandbox purchase gave `entitlements=1 owned=true`, and the export ran. Not checked: Pro after a relaunch, Restore Purchase, a refund, Redeem Code against the store. |
+| 6 | Mac colour numbers | Measured on the Mac harness, which compiles the app's own `Processing` sources. After the fine-detail edge fix `ad6ab7f` (20 Oct, other session): gate **13.03** (was 13.02; allowed rise 0.1); m5 `combined` full image dE **12.98** (was 13.26), panel 21.63, sand 15.37, coral 15.58, water 10.20 (CIE76). Before that fix: gate (pairs 2, 4, 5, photo path) 13.02; mean of all five pairs 10.91. The Mac app's export of m5 matches the harness `combined` render: mean dE 0.97, 95% of pixels below 2.58, max 7.24. | `aquacolorfix_eval.sh` and `m5_eval.sh` on 20 Oct 2026. The app-against-harness comparison (mean dE 0.97) was made before `ad6ab7f`; one photo (m5) only. |
 | 7 | Performance | Memory only. Speed tuning waits for the algorithm. | Memory peak table in the `MemoryGovernor` commit message |
-| 8 | Release | Checklist in `MacAppStoreRelease.md`. Icon is a **draft**. Copyright is `2026 Enheart`. | `scripts/make_mac_icon.py` |
+| 8 | Release | Checklist in `MacAppStoreRelease.md`. Icon is a **draft**. Copyright is `2026 Enheart`. IAP `com.underblue.mac.pro` is in App Store Connect (Prepare for Submission). Five captioned screenshots (2560×1600) and the IAP review screenshot are made. App Review Guidelines were checked against the code on 20 Oct. | `scripts/make_mac_icon.py`; `AppStoreAssets/Screenshots/mac-en-US/final`; `AppStoreAssets/IAP/Mac` |
 
 Open items:
 - The Mac icon is generated from the iPhone icon. Jake decides the final design.
-- Signed-build checks: sandbox bookmark after relaunch, app group, share menu, purchase.
+- Signed-build checks: sandbox bookmark after relaunch, app group, share menu, Pro after a relaunch, Restore Purchase.
+- Photo edges: the fine detail layer still draws thin bright or dark lines on some edges (turtle, clownfish) after `ad6ab7f`. They are softer, not gone. The screenshots avoid the turtle.
+- The screenshots were taken from an unsigned Debug build of the same sources. Retake them if the release build changes the look.
 - Long 4K video and 8 GB Macs are not measured for memory.
 
 ## Batch engine design (stage 3)

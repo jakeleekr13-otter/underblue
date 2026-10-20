@@ -41,6 +41,10 @@ struct MacCommands: Commands {
                 NSApp.orderFrontStandardAboutPanel(options: [.credits: AboutCredits.text])
             }
         }
+        CommandGroup(after: .appInfo) {
+            // Buy, Restore Purchase and Redeem Code live on this screen, so it must open without a blocked export.
+            Button("UnderBlue Pro…") { model.paywallReason = nil; model.showPaywall = true }
+        }
         CommandGroup(replacing: .help) {
             Button("UnderBlue Help") { openWindow(id: "help") }
                 .keyboardShortcut("?")

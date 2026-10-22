@@ -45,11 +45,46 @@ final class ExportSizeTests: XCTestCase {
         XCTAssertFalse(ExportOptions.isBest(CGSize(width: 1920, height: 1080)))
     }
 
+    func testSmallestLimitIsFixedAtFourKAndScales() {
+        XCTAssertEqual(VideoExporter.minimumLimitMB(for: CGSize(width: 3840, height: 2160)), 768)
+        XCTAssertEqual(VideoExporter.minimumLimitMB(for: CGSize(width: 2160, height: 3840)), 768)
+        XCTAssertEqual(VideoExporter.minimumLimitMB(for: CGSize(width: 1920, height: 1080)), 192)
+    }
+
     func testCoreImageMemoryLimitOnlyForLargeOutputs() {
         let plenty: UInt64 = 8 << 30
         XCTAssertNil(VideoExporter.memoryLimitMB(for: CGSize(width: 1280, height: 720), availableBytes: plenty))
         XCTAssertNil(VideoExporter.memoryLimitMB(for: CGSize(width: 1920, height: 1080), availableBytes: plenty))
         XCTAssertEqual(VideoExporter.memoryLimitMB(for: CGSize(width: 3840, height: 2160), availableBytes: plenty), 1029)
+    }
+
+    #if os(iOS)
+    func testIPhoneLimitFollowsFreeMemoryButNeverDropsBelowTheSmallestLimit() {
+        let fourK = CGSize(width: 3840, height: 2160)
+        XCTAssertEqual(VideoExporter.memoryLimitMB(for: fourK, availableBytes: 1400 << 20), 888)
+        XCTAssertEqual(VideoExporter.memoryLimitMB(for: fourK, availableBytes: 1300 << 20), 788)
+        // Below what a start needs, the limit stays at the smallest one (the pop-up stops the start before this).
+        XCTAssertEqual(VideoExporter.memoryLimitMB(for: fourK, availableBytes: 1000 << 20), 768)
+        XCTAssertEqual(VideoExporter.memoryLimitMB(for: fourK, availableBytes: 300 << 20), 768)
+    }
+
+    func testAnExportThatPassesTheMemoryCheckGetsAtLeastTheSmallestLimit() {
+        for size in [CGSize(width: 3840, height: 2160), CGSize(width: 2160, height: 3840), CGSize(width: 3000, height: 1688)] {
+            for freeMB in stride(from: 900, through: 4000, by: 25) {
+                let free = UInt64(freeMB) << 20
+                guard VideoExporter.memoryShortage(outputSize: size, availableMB: freeMB) == nil else { continue }
+                let limit = VideoExporter.memoryLimitMB(for: size, availableBytes: free)
+                XCTAssertGreaterThanOrEqual(limit ?? 0, VideoExporter.minimumLimitMB(for: size), "\(size) with \(freeMB) MB free")
+            }
+        }
+    }
+    #endif
+
+    func testMacLimitDoesNotDependOnFreeMemory() {
+        #if !os(iOS)
+        let fourK = CGSize(width: 3840, height: 2160)
+        XCTAssertEqual(VideoExporter.memoryLimitMB(for: fourK, availableBytes: 500 << 20), VideoExporter.memoryLimitMB(for: fourK, availableBytes: 8 << 30))
+        #endif
     }
 
     func testNeededFreeMemoryGrowsWithOutputSize() {
@@ -65,14 +100,5 @@ final class ExportSizeTests: XCTestCase {
                        VideoExporter.MemoryShortage(availableMB: 980, neededMB: 1300))
         // A small output still starts when the same free memory is too little for 4K.
         XCTAssertNil(VideoExporter.memoryShortage(outputSize: CGSize(width: 1920, height: 1080), availableMB: 980))
-    }
-
-    func testCoreImageMemoryLimitFollowsFreeMemory() {
-        let fourK = CGSize(width: 3840, height: 2160)
-        // The free memory minus the reserve, when that is below what 4K wants.
-        XCTAssertEqual(VideoExporter.memoryLimitMB(for: fourK, availableBytes: 1000 << 20), 488)
-        XCTAssertEqual(VideoExporter.memoryLimitMB(for: fourK, availableBytes: 1400 << 20), 888)
-        // Too little free memory: keep the system default instead of a small limit.
-        XCTAssertNil(VideoExporter.memoryLimitMB(for: fourK, availableBytes: 700 << 20))
     }
 }

@@ -226,22 +226,51 @@ actor VideoExporter {
         #endif
     }
 
+    /// The smallest Core Image memory limit that gives the same pixels as a large limit: 768 MB at 4K,
+    /// scaled by the pixel count. Measured at 4K on a Mac and on an iPhone 17: 768 MB and above gave
+    /// identical frames; 640 MB and below changed about 0.016% of the bytes by up to 2 levels
+    /// (22 Oct 2026, docs/PerformanceMeasurement.md). The speed also drops below it.
+    /// The export never uses a smaller limit, so the picture does not depend on how much memory is free.
+    static func minimumLimitMB(for size: CGSize) -> Int {
+        Int((size.width * size.height * 768 / (3840 * 2160)).rounded(.up))
+    }
+
     /// The Core Image memory limit for an output size: 130 bytes per pixel (4K gets about 1 GiB, where the
-    /// speed stops rising), and never more than the free memory minus `memoryReserveMB`.
+    /// speed stops rising). On an iPhone it is also at most the free memory minus `memoryReserveMB`, but never
+    /// below `minimumLimitMB`: when the free memory is too small for that, `memoryShortage` stops the start
+    /// before this runs. On a Mac nothing ends the app for lack of memory, and a limit that followed the free
+    /// memory would change the pixels from one video of a batch to the next, so the limit stays fixed.
     /// Nil keeps the system default (256 MB), which is enough up to 1080p.
     /// Measured on a Mac at 720p, 1080p and 4K, and on an iPhone 17 at 4K (docs/PerformanceMeasurement.md).
     static func memoryLimitMB(for size: CGSize, availableBytes: UInt64 = VideoExporter.availableMemoryBytes()) -> Int? {
-        let wanted = Int((size.width * size.height * 130 / 1_048_576).rounded(.up))
+        let wanted = wantedLimitMB(for: size)
+        guard wanted > 300 else { return nil }
+        #if os(iOS)
         let allowed = Int(availableBytes / 1_048_576) - memoryReserveMB
-        let limit = min(wanted, allowed)
-        return limit > 300 ? limit : nil
+        return max(min(wanted, allowed), minimumLimitMB(for: size))
+        #else
+        return wanted
+        #endif
     }
 
     /// Free memory that a video export of this output size needs before it starts. 4K was measured on an
     /// iPhone 17: it finished with 1236 MB free and the app was ended with about 980 MB free (22 Oct 2026,
     /// docs/PerformanceMeasurement.md). Other sizes scale with the pixel count; they are estimates, not measured.
+    /// When the export sets a limit, it is never less than the smallest limit plus the reserve, so a started
+    /// export always gets a full limit. Small outputs use the system default and have no such floor.
     static func requiredAvailableMB(for size: CGSize) -> Int {
-        300 + Int((size.width * size.height * 1000 / (3840 * 2160)).rounded(.up))
+        let estimate = 300 + Int((size.width * size.height * 1000 / (3840 * 2160)).rounded(.up))
+        guard coreImageLimitApplies(to: size) else { return estimate }
+        return max(estimate, minimumLimitMB(for: size) + memoryReserveMB)
+    }
+
+    /// Outputs above this size need a limit set; below it the system default is enough.
+    private static func coreImageLimitApplies(to size: CGSize) -> Bool {
+        wantedLimitMB(for: size) > 300
+    }
+
+    private static func wantedLimitMB(for size: CGSize) -> Int {
+        Int((size.width * size.height * 130 / 1_048_576).rounded(.up))
     }
 
     struct MemoryShortage: Equatable, Sendable {

@@ -143,3 +143,7 @@ A change is accepted only if all of these hold:
 - Keep what the market pairs gained so far.
 - Neutral surfaces: chroma does not rise above the committed code, on both `combined` and `uniform`.
 - AquaColorFix gate (pairs 2, 4 and 5): the mean ΔE does not rise above the committed code by more than 0.1. (A sharpening step moves texture pixels that are not aligned with AquaColorFix's, so any effective one costs 0.02 to 0.07.)
+
+## Custom sliders
+
+Set `HT_EVAL_CUSTOM="brightness,contrast,saturation,clarity,temperature"` (positions -1...1) to render the Custom preset at those positions. Compare against an all-zero run of the same code.

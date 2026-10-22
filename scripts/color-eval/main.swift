@@ -173,6 +173,13 @@ for name in selected {
     let source = fit(engine.sdr(rawFull), width: w, height: h)
     let analysis = engine.analyze(source)
     var settings = FilterSettings(); settings.analysis = analysis
+    // HT_EVAL_CUSTOM="brightness,contrast,saturation,clarity,temperature" renders the Custom preset at those slider positions.
+    if let custom = ProcessInfo.processInfo.environment["HT_EVAL_CUSTOM"] {
+        let p = custom.split(separator: ",").compactMap { Float($0) }
+        precondition(p.count == 5, "HT_EVAL_CUSTOM needs five numbers")
+        settings.preset = .custom
+        settings.adjustments = CustomAdjustments(brightness: p[0], contrast: p[1], saturation: p[2], clarity: p[3], temperature: p[4])
+    }
     var plan: RestorationPlan?
     var depthMap: NormalizedDepthMap?
     do {

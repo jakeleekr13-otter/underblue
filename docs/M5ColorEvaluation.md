@@ -3,7 +3,7 @@
 추가로 요청한 Sea-thru 8쌍과 AquaColorFix 5쌍은
 [추가 참조 이미지 확인](AdditionalReferenceReview.md)에 별도로 기록했다.
 
-목표는 `DeveloperMedia/market/raw/m5.png`를 `ref/m5.png`의 자연스러운 모습에 가깝게
+목표는 `DeveloperMedia/eval/market/raw/m5.png`를 `ref/m5.png`의 자연스러운 모습에 가깝게
 보정하면서 하단 colour panel의 색 구분도 복원하는 것이다.
 
 **판정: 구현 후보와 평가는 완료했지만, 목표 이미지 재현 및 모든 품질 기준 통과는 미달이다.**

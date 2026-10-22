@@ -10,7 +10,7 @@ source ${0:A:h}/common.sh
 O=$HT_EVAL_OUT/$1
 export HT_EVAL_SOURCES=${2:-$HT_EVAL_SOURCES}
 build_eval $O
-DATA=$HT_EVAL_DATA/aquacolorfix
+DATA=$HT_EVAL_DATA/eval/aquacolorfix
 # Per-run link folders, so two runs can go in parallel.
 RAW=$O/raw; REF=$O/ref
 rm -rf $RAW $REF; mkdir -p $RAW $REF $O/sheet

@@ -453,7 +453,7 @@ func hdrRun(_ file: String) async throws {
 
 try? FileManager.default.createDirectory(atPath: "\(root)/crops", withIntermediateDirectories: true)
 print("isSupported \(TemporalDenoiser.isSupported)")
-let clips = [("2017-01-08 01.21.36.MOV", "clip1_coral"), ("2019-05-05 18.37.02.MOV", "clip2_anemone"), ("VID_20230118_095241_0018.MP4", "clip3_school")]
+let clips = [("tune/video/Tune_20_Oct/2017-01-08 01.21.36.MOV", "clip1_coral"), ("2019-05-05 18.37.02.MOV", "clip2_anemone"), ("tune/video/Tune_20_Oct/VID_20230118_095241_0018.MP4", "clip3_school")]
 let only = CommandLine.arguments.dropFirst().first
 for (file, tag) in clips where only == nil || only == tag {
     let path = media + file

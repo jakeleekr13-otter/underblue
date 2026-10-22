@@ -20,7 +20,7 @@ final class FileImportTests: XCTestCase {
     /// Uses a portrait Sony RAW from DeveloperMedia, which is not in git. Skips when it is missing.
     func testRAWOpensUprightAtTheStandardRendering() async throws {
         let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("DeveloperMedia/bomikim/DSC03545.ARW")
+            .appendingPathComponent("DeveloperMedia/samples/bomikim/DSC03545.ARW")
         try XCTSkipUnless(FileManager.default.fileExists(atPath: url.path), "Developer RAW sample missing")
         let opened = try await PhotoProcessor().open(url)
         XCTAssertEqual(opened.extent.size, CGSize(width: 3648, height: 5472), "EXIF orientation 8 must be applied")

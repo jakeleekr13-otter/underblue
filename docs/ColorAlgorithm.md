@@ -111,7 +111,7 @@ Water takes red first. So a source pixel whose red already reaches green lost no
 - Restoration: `keepWarmRatio` keeps the restored red at or below green times the source red/green. See [Restoration kernel](#restoration-kernel).
 - Colourful red subjects (chroma above 0.3) and blue-cast pixels (red below green) keep their full correction.
 - Only the `castGains` step and the restoration are covered. The later finishing steps still add some pink. On the shark surface, restoration alone gives 3.2%. The full output gives 11.3%. Before this change, turning off saturation and vibrance, or the black offset, each removed about 5 points.
-- The test photos are in `DeveloperMedia/shallowwater/`: the shark (surface light, caustics on sand) and a cave (light rays, bubbles).
+- The test photos are in `DeveloperMedia/tune/photo/shallowwater/`: the shark (surface light, caustics on sand) and a cave (light rays, bubbles).
 
 This is not a caustics rule. Caustics on sand had no pink or violet pixels before this change (0%), and they still have none.
 
@@ -369,7 +369,7 @@ The estimator spreads attenuation across channels only as far as the measured ca
 
 ### Video-only steps (22 Oct 2026)
 
-Three steps run only on video (`combined(..., video: true)`, the flag `combined(_:moment:...)` sets). Photos keep the earlier output: the colour eval report of the photo set is identical to the commit before these steps. Found on two Instagram clips and checked on a whale shark clip and a manta clip (`DeveloperMedia/Tune_22_Oct`, `challenge_video`, `Tune_20_Oct`).
+Three steps run only on video (`combined(..., video: true)`, the flag `combined(_:moment:...)` sets). Photos keep the earlier output: the colour eval report of the photo set is identical to the commit before these steps. Found on two Instagram clips and checked on a whale shark clip and a manta clip (`DeveloperMedia/tune/video/Tune_22_Oct`, `challenge_video`, `Tune_20_Oct`).
 
 | Step | Problem it fixes | How |
 |---|---|---|

@@ -1,6 +1,6 @@
 # AquaColorFix benchmark
 
-This benchmark compares five full-resolution triplets in `DeveloperMedia/aquacolorfix`:
+This benchmark compares five full-resolution triplets in `DeveloperMedia/eval/aquacolorfix`:
 
 - `On`: source
 - `Hn`: UnderBlue output
@@ -44,7 +44,7 @@ Aggregate findings:
   and more grain. This measurement combines genuine detail, halos and noise, so matching it fully
   is not automatically desirable.
 
-Pair 4 also has an independent target, `DeveloperMedia/market/ref/m6.png`. UnderBlue is ΔE76
+Pair 4 also has an independent target, `DeveloperMedia/eval/market/ref/m6.png`. UnderBlue is ΔE76
 **24.03** from it and AquaColorFix is **19.08** from it. This one independent reference supports
 the product owner's visual preference, although it is not enough to establish ground truth generally.
 

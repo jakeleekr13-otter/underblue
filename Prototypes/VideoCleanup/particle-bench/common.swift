@@ -10,7 +10,7 @@ import VideoToolbox
 let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().path
 let root = ProcessInfo.processInfo.environment["HT_PROTO_OUT"] ?? NSTemporaryDirectory() + "underblue-video-cleanup/particles"
 let fixtures = (ProcessInfo.processInfo.environment["HT_EVAL_DATA"] ?? repo + "/DeveloperMedia") + "/"
-let clipFiles = ["c1": "2017-01-08 01.21.36.MOV", "c2": "2019-05-05 18.37.02.MOV", "c3": "VID_20230118_095241_0018.MP4"]
+let clipFiles = ["c1": "tune/video/Tune_20_Oct/2017-01-08 01.21.36.MOV", "c2": "2019-05-05 18.37.02.MOV", "c3": "tune/video/Tune_20_Oct/VID_20230118_095241_0018.MP4"]
 let sRGB = CGColorSpace(name: CGColorSpace.sRGB)!
 
 func f2(_ v: Double) -> String { String(format: "%.2f", v) }

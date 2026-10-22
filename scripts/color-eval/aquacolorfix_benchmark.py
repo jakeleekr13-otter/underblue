@@ -20,7 +20,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 
-REFERENCE_MAP = {4: "DeveloperMedia/market/ref/m6.png"}
+REFERENCE_MAP = {4: "DeveloperMedia/eval/market/ref/m6.png"}
 
 
 @dataclass
@@ -238,7 +238,7 @@ def make_sheet(rows: list[tuple[int, Path | None, Path, Path, Image.Image]], out
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", type=Path, default=Path("DeveloperMedia/aquacolorfix"))
+    parser.add_argument("--data", type=Path, default=Path("DeveloperMedia/eval/aquacolorfix"))
     parser.add_argument("--output", type=Path,
                         default=Path(tempfile.gettempdir()) / "underblue-aquacolorfix-benchmark")
     parser.add_argument("--max-dimension", type=int, default=960)
@@ -340,7 +340,7 @@ def main() -> None:
     if "mean_delta_e_reference_to_h" in records[3]:
         pair = records[3]
         report += ["## Independent reference", "",
-                   "Pair 4 also has the existing market reference `DeveloperMedia/market/ref/m6.png`.",
+                   "Pair 4 also has the existing market reference `DeveloperMedia/eval/market/ref/m6.png`.",
                    f"UnderBlue is ΔE76 {pair['mean_delta_e_reference_to_h']:.2f} from it; "
                    f"AquaColorFix is {pair['mean_delta_e_reference_to_a']:.2f} from it.", ""]
     report += ["## Global mapping diagnostic", "",

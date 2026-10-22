@@ -113,7 +113,7 @@ The first image is an authentic same-frame before/after comparison. The source c
 iPhone Duo screenshots are in `AppStoreAssets/Screenshots/iphone-duo-en-US` (19 Oct 2026). They are raw
 captures from the iPhone Duo simulator (iOS 27.1), flattened to RGB PNG without alpha, with the clock fixed at 9:41.
 Inner display, 2853×2007: `inner-1-corrected`, `inner-2-original`, `inner-3-batch`. Cover display, 1398×2034:
-`outer-1-editor`, `outer-2-home`. The photos come from `DeveloperMedia/new`; confirm they are developer-owned before upload.
+`outer-1-editor`, `outer-2-home`. The photos come from `DeveloperMedia/eval/real`; confirm they are developer-owned before upload.
 There is no video shot: video playback fails on the Duo simulator (see `docs/iPhoneDuoSupportPlan.md`).
 The need for Duo-size screenshots is from the plan document and is not checked against App Store Connect.
 

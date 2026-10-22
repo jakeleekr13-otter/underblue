@@ -3,7 +3,7 @@
 # HT_EVAL_SOURCES  folder with the colour sources (FilterEngine, MetalKernels, the .metal files, FinishingMath, ColorCorrection,
 #                  ColorMath, WaterAnalysis, FilterSettings, DivePreset), RestorationPlan, RestorationEngine,
 #                  WaterModelEstimator, DepthEstimator and SubjectMask.
-# HT_EVAL_MARKET   market pairs (raw/, ref/). Default: $HT_EVAL_DATA/market.
+# HT_EVAL_MARKET   market pairs (raw/, ref/). Default: $HT_EVAL_DATA/eval/market.
 # HT_EVAL_OUT      cache and results root. Default: $TMPDIR/underblue-color-eval. Never inside the repo.
 HERE=${0:A:h}
 REPO=${HERE:h:h}
@@ -12,7 +12,7 @@ HT_EVAL_SOURCES=${HT_EVAL_SOURCES:-$REPO/UnderBlue/Processing}
 HT_EVAL_OUT=${HT_EVAL_OUT:-${TMPDIR:-/tmp}/underblue-color-eval}
 # Keep all media OUTSIDE UnderBlueTests/: that folder is a synchronized Xcode group, so even git-ignored
 # files there ship in the test bundle, and same-named files (raw/ vs ref/) break build-for-testing.
-HT_EVAL_MARKET=${HT_EVAL_MARKET:-$HT_EVAL_DATA/market}
+HT_EVAL_MARKET=${HT_EVAL_MARKET:-$HT_EVAL_DATA/eval/market}
 MODEL=$HT_EVAL_OUT/cache/DepthAnythingV2SmallF16P6.mlmodelc
 export HT_EVAL_DATA
 

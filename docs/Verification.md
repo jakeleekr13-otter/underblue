@@ -50,7 +50,8 @@ Jake saw a black bottom-left corner (9 to 12 s) and a dark veil around a black m
 - **Cause.** The contrast step (`UnderBlueBlackOffset`) darkens dark water. The corner is already dark without the restoration (Mac, source 0.097, colour correction only 0.041, contrast set to 1: 0.131). The shadow toe has slope 0 at black.
 - **Change.** Video only: no pixel below the knee falls under 65% of its own value (`FinishingMath.videoShadowFloor`). Photos are unchanged.
 - **Result (Mac videosim, same corner, 10 s):** 0.033 to 0.051. Unchanged above the knee. Tests: RestorationTests 78 and VideoRestorationTests 25 pass on the simulator.
-- Not checked: the iPhone export with the floor, other clips, and the dark veil around the manta by eye in motion. The veil also exists without the restoration, so the contrast step is its likely cause, but the floor was not tuned for it.
+- **iPhone 17 export with the floor (0 to 15.5 s): no change.** Bottom-left luminance at 9 to 15 s is the same to three digits as before the floor (10 s: 0.060 both, source 0.085). On the iPhone the corner is not below the knee, so the floor never acts. The darkening there (about 30%) has another cause that is not found. The Mac and the iPhone get different scene values (the iPhone runs the real depth model); the iPhone values were not printed.
+- Not checked: other clips, and the dark veil around the manta by eye in motion.
 
 ## Open work (do first)
 

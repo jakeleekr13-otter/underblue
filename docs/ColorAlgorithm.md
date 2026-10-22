@@ -325,7 +325,7 @@ Custom is the user preset (gear tile). It starts from the Natural values and ren
 | Slider | Value it changes | Change at -1 / +1 |
 |---|---|---|
 | Brightness | `midLift` down; `midLift` and `shadowLift` up | -0.25 / +0.15 (`midLift`) and +0.075 (`shadowLift`) |
-| Contrast | `toneCurve`; Contrast down also lowers the global gain `contrast`, and `brightness` gives the black offset back | `toneCurve` -0.10 / +0.15; gain -0.05 / 0 |
+| Contrast | `toneCurve`; Contrast down also lowers the global gain `contrast`, and `brightness` gives the black offset back | `toneCurve` -0.40 / +0.15 (can go below zero, down to -0.4); gain -0.05 / 0 |
 | Saturation | `saturation`; the water chroma ceiling ignores it, so the water shows it too | -0.45 / +0.35 x (1 - 0.6 x neon) |
 | Clarity | `clarity` and `definition`, as a factor | x0 / x1.75 |
 | Temperature | `warmth`; a cool shift gets no tint | -1500 K / +1500 K |
@@ -346,7 +346,19 @@ Custom is the user preset (gear tile). It starts from the Natural values and ren
   | Trial: gain cap 0.10 (not kept) | -1.07 | -0.96 | +0.39 | +0.37 |
   | Trial: gain cap 0.15 (not kept) | -1.86 | -1.10 | -0.07 | +0.09 |
 
-  The 20 Oct code lifted the darkest 5% of pixels by 11 L*. That was the haze. Now the lift is gone (P5 +0.8) and the spread change is the same as before 20 Oct (-0.8). So Contrast - is no more visible than before 20 Oct. A larger gain cap lowers the mean but hardly changes the spread, so it is not a lever.
+  The 20 Oct code lifted the darkest 5% of pixels by 11 L*. That was the haze. With the fix above the lift was gone (P5 +0.8) and the spread change was the same as before 20 Oct (-0.8). So Contrast - was no more visible than before 20 Oct. A larger gain cap lowers the mean but hardly changes the spread, so it is not a lever.
+- **22 Oct 2026: Contrast down can now go below a flat curve, above the pivot only.** `toneCurve` may be negative (`ColorCorrection.minimumToneCurve` 0.4) and `contrastDown` is 0.40. A negative curve bends only the tones above `tonePivot`. Below the pivot it does nothing, because there a negative S-curve lifts the dark tones (the haze). The same rule is in `FinishingMath.color` and in `UnderBlueFinishColor` in `FinishingKernels.metal`. Only Custom Contrast down can make the curve negative, so Natural, Tropical, Deep Dive and Original are unchanged (Custom at 0 renders pixel-identical to the code before, except 1/255 on two `uniform` renders).
+  Tried and rejected: (a) a negative curve on all tones (`contrastDown` 0.20 / 0.30 / 0.40): P5 +2.5 / +5.3 / +6.9, haze again. (b) The same plus a fixed black offset of -0.003 to -0.015: a small offset still lifted m5 and m6 (P5 +4 to +8 L*), a large one crushed the dark m2 (share under L* 10 from 1.8% to 10.7% at -0.015). One offset does not fit all scenes.
+  Measured with the harness as above, mean change of Contrast -1 against Contrast 0 over m2, m5, m6, r01 and r14:
+
+  | `contrastDown` (above the pivot only) | L* spread | P5 L* | Share under L* 10 |
+  |---|---|---|---|
+  | Before this change (gain fix only) | -0.83 | +0.83 | no rise |
+  | 0.30 | -1.47 | +1.2 | no rise |
+  | **0.40 (kept)** | **-1.73** | **+1.2** | **no rise** |
+  | 0.60 | -2.03 | +1.2 | no rise |
+
+  P5 +1.2 is the mean of the five images (+1.30, +0.19, +1.99, +2.04, +0.65 with 0.40). P99 falls by 1.6 to 7.3 L* on those images. Not checked by eye yet.
 - The caps are provisional (`CustomAdjustments.Caps`). Brightness, Contrast and Clarity were measured before the white reference and the highlight shoulder landed. Saturation and Temperature were widened on 25 Sep 2026 after an iPhone test, without a render measurement. See [Verification](Verification.md).
 - One saved slot in UserDefaults (`customAdjustments.v1`) holds the five positions. The editor, batch and video share it.
 - Custom gets no preset terms, so with every slider at 0 it equals Natural at the default intensity 0.8.

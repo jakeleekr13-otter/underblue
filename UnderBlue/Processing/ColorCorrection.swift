@@ -301,6 +301,9 @@ struct ColorCorrection: Sendable, Equatable {
     /// vibrance, and on the restored path the mid-tone lift. Writes tonePivot, toneCurve, brightness,
     /// contrast, shadowLift, highlightAmount, clarity, clarityRadius, definition, detail, detailFloor,
     /// vibrance, physicalWeight, midLift.
+    /// The lowest toneCurve. Only Custom Contrast down goes below zero. A negative curve bends the tones
+    /// above the pivot down and leaves the tones below it alone (FinishingMath.color, UnderBlueFinishColor kernel).
+    static let minimumToneCurve: Float = 0.4
     /// The largest veil offset (colorControls brightness), for a bright blue-water scene.
     static let veilOffset: Float = 0.08
 
@@ -317,7 +320,7 @@ struct ColorCorrection: Sendable, Equatable {
         // gate too, but lifted one dev image's far water over the violet line.
         let curveSoftening: Float = 0.5, localSoftening: Float = 0.6
         v.toneCurve = curveSoftening * min(0.3, max(0, (preset.contrast - 1) * 2 + 0.12 + haze * 0.12)) * (1 - 0.5 * bright)
-        v.toneCurve = min(0.3, max(0, v.toneCurve + user.contrast * (user.contrast < 0 ? Caps.contrastDown : Caps.contrastUp)))
+        v.toneCurve = min(0.3, max(-Self.minimumToneCurve, v.toneCurve + user.contrast * (user.contrast < 0 ? Caps.contrastDown : Caps.contrastUp)))
         // The highlight rule (scene.highlight): such scenes get less brightness, haze shadow lift and mid-tone lift.
         v.brightness = analysis.exposure * 0.45 * (1 - 0.5 * highlight)
         v.contrast = preset.contrast + haze * 0.05 + min(0, user.contrast) * Caps.contrastGain
@@ -456,7 +459,7 @@ struct ColorCorrection: Sendable, Equatable {
         if !(v.referenceGains.x.isFinite && v.referenceGains.y.isFinite && v.referenceGains.z.isFinite) { v.referenceGains = .one; v.referenceStrength = 0 }
         v.referenceStrength = v.referenceStrength.isFinite ? min(1, max(0, v.referenceStrength)) : 0
         v.midLift = min(0.9, max(Self.minimumMidLift, v.midLift))
-        v.toneCurve = min(0.3, max(0, v.toneCurve))
+        v.toneCurve = min(0.3, max(-Self.minimumToneCurve, v.toneCurve))
         v.physicalWeight = min(1, max(0, v.physicalWeight))
         v.lightGradient = min(1, max(0, v.lightGradient))
         return v

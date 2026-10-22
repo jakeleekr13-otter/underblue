@@ -61,7 +61,10 @@ enum FinishingMath {
         if l > 1e-5 && l < 1 {
             var x = pow(l, 1 / 2.2)
             x += max(ColorCorrection.minimumMidLift, v.midLift) * x * (1 - x)
-            let y = min(1, max(0, x + 4 * v.toneCurve * (x - v.tonePivot) * x * (1 - x)))
+            // A negative curve (Custom Contrast down) bends only the tones above the pivot. Below it, a negative
+            // curve would lift the dark tones and the picture would turn hazy.
+            let bend = v.toneCurve < 0 && x < v.tonePivot ? 0 : 4 * v.toneCurve * (x - v.tonePivot) * x * (1 - x)
+            let y = min(1, max(0, x + bend))
             let peak = c.max()
             c *= min(pow(y, 2.2) / l, max(1, peak) / max(peak, 1e-5))
         }

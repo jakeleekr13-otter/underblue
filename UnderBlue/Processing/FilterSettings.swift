@@ -27,7 +27,7 @@ struct CustomAdjustments: Sendable, Equatable {
         static let brightnessDown: Float = 0.25     // taken from midLift
         static let brightnessUp: Float = 0.075      // added to shadowLift
         static let brightnessUpMid: Float = 0.15     // added to midLift
-        static let contrastDown: Float = 0.10       // toneCurve
+        static let contrastDown: Float = 0.40       // toneCurve, below zero it bends only the tones above the pivot
         static let contrastUp: Float = 0.15
         static let contrastGain: Float = 0.05       // taken from the global contrast gain (Contrast down only)
         static let saturationDown: Float = 0.45     // saturation

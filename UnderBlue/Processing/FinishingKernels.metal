@@ -100,7 +100,9 @@ using namespace metal;
         float x = pow(l, 1.0f / 2.2f);
         // A negative lift (Brightness down) darkens; -0.25 is ColorCorrection.minimumMidLift.
         x += max(tone.z, -0.25f) * x * (1.0f - x);
-        const float y = clamp(x + 4.0f * tone.x * (x - tone.y) * x * (1.0f - x), 0.0f, 1.0f);
+        // A negative curve (Custom Contrast down) bends only the tones above the pivot, so dark tones are not lifted.
+        const float bend = (tone.x < 0.0f && x < tone.y) ? 0.0f : 4.0f * tone.x * (x - tone.y) * x * (1.0f - x);
+        const float y = clamp(x + bend, 0.0f, 1.0f);
         const float peak = max(c.r, max(c.g, c.b));
         // Cap the gain so no channel crosses one, and HDR peaks above one never grow.
         c *= min(pow(y, 2.2f) / l, max(1.0f, peak) / max(peak, 1e-5f));

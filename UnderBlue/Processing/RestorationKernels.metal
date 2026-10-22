@@ -29,7 +29,11 @@ using namespace metal;
         if (broadLum > 1e-4f) { backscatter = broad * (dot(backscatter, luma) / broadLum); }
     }
     float3 restored = max(source.rgb - backscatter, float3(0.0f)) * gain;
-    const float peak = max(source.r, max(source.g, source.b));
+    // The highlight protection reads the middle channel, not the brightest. Blue water has one bright
+    // channel at all times, so the peak took it for a highlight and sent 44% of the restored pixel back
+    // to the source. That weight fell away over 50 rows and drew a hard layer edge (22 Oct 2026).
+    // A white highlight has two bright channels. RestorationMath mirrors it.
+    const float peak = max(min(source.r, source.g), min(max(source.r, source.g), source.b));
     const float highlight = smoothstep(limits.y, max(limits.y + 0.001f, limits.z), peak) * 0.8f;
     restored = mix(restored, source.rgb, highlight);
     restored = clamp(restored, float3(0.0f), float3(max(0.5f, limits.w)));
@@ -103,13 +107,10 @@ using namespace metal;
     return all(isfinite(out)) ? float4(out, broad.a) : broad;
 }
 
-// Video has no photo subject mask. Pixels whose light differs a lot from the wide light around
-// them (dark sharks, bright bellies) count as subjects, so the broad light for the local veil can
-// leave them out. mask = 0 for water, 1 for an outlier. See RestorationEngine.restore.
-[[stitchable]] float4 UnderBlueOutlierMask(coreimage::sample_t near, coreimage::sample_t wide) {
-    const float3 luma = float3(0.2126f, 0.7152f, 0.0722f);
-    const float a = dot(max(near.rgb, float3(0.0f)), luma);
-    const float b = max(dot(max(wide.rgb, float3(0.0f)), luma), 1e-4f);
-    const float m = smoothstep(0.05f, 0.18f, abs(1.0f - a / b));
-    return float4(m, m, m, 1.0f);
+// Video has no photo subject mask. A pixel darker than the wide light around it (a dark fish or shark)
+// is lifted to that light, so the broad light for the local veil follows the water, not the subject.
+// Without it, water next to a dark subject kept more veil and showed a bright halo.
+// Bright pixels stay as they are. See RestorationEngine.restore.
+[[stitchable]] float4 UnderBlueLiftToWide(coreimage::sample_t near, coreimage::sample_t wide) {
+    return float4(max(near.rgb, wide.rgb), near.a);
 }

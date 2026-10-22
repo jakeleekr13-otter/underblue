@@ -379,7 +379,7 @@ Three steps run only on video (`combined(..., video: true)`, the flag `combined(
 
 Rejected tries:
 
-- Middle-channel highlight rule on photos: it drew a dark blob around the shark in r13 (bright open blue water). The local veil scale reaches 3 times there, and the old rule hid it. A fix for that blob is still open (see [Verification](Verification.md)).
+- Middle-channel highlight rule on photos: it drew a dark blob around the shark in r13 (bright open blue water). The cause is the per-pixel depth map, not the local veil. Centre over side brightness (1.00 = no blob; source 0.954): depth map 0.908, one constant depth 0.999, and the old rule 0.984. Raising the veil's lower bound (0.33 to 0.5, 0.7, 0.9, 1.0) or lowering its upper bound (3 to 2, 1.5, 1.2) changed nothing (0.901 to 0.908). The old rule hid the blob. Video uses one depth per scene, so it cannot show this blob (video path on an r13 clip: 0.998). Photos keep the old rule.
 - Red rebuild times `(1 - waterShare)`: blue subjects count as water (the redness test is broad), so nearRG fell on r11 and r15 and 7 kernel-versus-CPU tests failed.
 - A threshold mask for the local veil (outlier pixels, smoothstep 0.12-0.35 and 0.05-0.18): it made cyan blotches and did not remove the halo.
 - A halo metric (ring versus far water, OKLab) could not tell the clips apart. The halo was judged by eye on enlarged crops of the real iPhone export.

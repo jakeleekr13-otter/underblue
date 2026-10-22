@@ -17,7 +17,7 @@ Checked by eye on an iPhone 17 export (Tune_22_Oct: thresher shark and hammerhea
 The `LongVideoTests` memory failure in Known issues may have the same cause. It was not rechecked.
 
 Still open:
-- **Dark blob on photos in bright open blue water.** Photo r13 (a shark in bright blue water): the local veil scale reaches 3 times and darkens a wide patch around the subject. A newer highlight rule would show it, so photos keep the old rule. A real fix for the veil scale is not done. The same patch may appear on video in bright open water; none of the clips shown here has it.
+- **Dark blob on photos in bright open blue water (checked 22 Oct 2026).** Photo r13: with the middle-channel highlight rule, the per-pixel depth map darkens a wide patch around the subject (centre over side brightness 0.908; one constant depth 0.999; source 0.954). The local veil is not the cause: changing its bounds did nothing. So photos keep the old rule, and the video path is safe because it uses one depth per scene (r13 as a 4 s clip: 0.998). Not done: making the middle rule safe for photos (it would need a limit on how much the depth map may change the gain in bright blue water). The photo layer edge the middle rule removes on video was not looked for in photos.
 - Not checked: 4K and HDR clips, the whole whale shark clip by eye (only the first 12 s), the Mac app's own export output (the test sandbox hides it), the iPhone export of the red-ring fix on the whale shark clip beyond the first 12 s.
 
 ## Open work (do first)

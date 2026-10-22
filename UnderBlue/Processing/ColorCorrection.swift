@@ -302,8 +302,9 @@ struct ColorCorrection: Sendable, Equatable {
     /// contrast, shadowLift, highlightAmount, clarity, clarityRadius, definition, detail, detailFloor,
     /// vibrance, physicalWeight, midLift.
     /// The lowest toneCurve. Only Custom Contrast down goes below zero. A negative curve bends the tones
-    /// above the pivot down and leaves the tones below it alone (FinishingMath.color, UnderBlueFinishColor kernel).
-    static let minimumToneCurve: Float = 0.4
+    /// above the pivot down and fades out below it (FinishingMath.color, UnderBlueFinishColor kernel). At -0.7 the
+    /// curve still rises everywhere (lowest slope 0.14); at -0.8 it nearly flattens (0.01).
+    static let minimumToneCurve: Float = 0.7
     /// The largest veil offset (colorControls brightness), for a bright blue-water scene.
     static let veilOffset: Float = 0.08
 

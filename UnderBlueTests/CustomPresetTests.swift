@@ -149,7 +149,7 @@ final class CustomPresetTests: XCTestCase {
             let brighter = custom(analysis, adjust(\.brightness, 1), plan: plan)
             XCTAssertEqual(brighter.shadowLift, base.shadowLift + 0.075, accuracy: 1e-6)
             XCTAssertEqual(brighter.midLift, min(0.9, base.midLift + 0.15), accuracy: 1e-6)
-            XCTAssertEqual(custom(analysis, adjust(\.contrast, -1), plan: plan).toneCurve, max(-ColorCorrection.minimumToneCurve, base.toneCurve - 0.40), accuracy: 1e-6)
+            XCTAssertEqual(custom(analysis, adjust(\.contrast, -1), plan: plan).toneCurve, max(-ColorCorrection.minimumToneCurve, base.toneCurve - 0.70), accuracy: 1e-6)
             XCTAssertEqual(custom(analysis, adjust(\.contrast, -1), plan: plan).contrast, base.contrast - 0.05, accuracy: 1e-6)
             // The black offset must not rise with Contrast down: it would lift every dark pixel (haze).
             let down = custom(analysis, adjust(\.contrast, -1), plan: plan)

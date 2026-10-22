@@ -54,6 +54,8 @@ Question: do we use Apple hardware well? This page records what was measured. No
 | 35 | iPhone 17, 4K SDR, free memory lowered on purpose by holding memory in the test (policy limit = 80% of free memory) | About 2486 MB free: limit 1029, 5.71 fps, minimum free 1268 MB. About 987 MB free: limit 789, finished at 4.56 fps but minimum free fell to 11 MB, and the test process ended right after. |
 | 36 | Same test, limit = free memory minus 512 MB | About 1493 MB free: limit 981, 5.28 fps, minimum free 392 MB. About 1236 MB free: limit 724, 2.37 fps, minimum free 363 MB. About 980 MB free: limit 468, the app was ended during the export (no result). |
 | 37 | iPhone 17, 4K, same 6 frames rendered at each Core Image limit, 18 renders per limit (Debug build, device-side XCTest; free memory about 3.3 GB at the start). Pixels compared with the 2048 MB result | 2048 (reference) 6.95 fps. 1536: 7.51 fps, 0 differing bytes. 1024: 7.43, 0. 768: 6.79, 0. 640: 3.46, 5171 differing bytes, largest difference 2 levels. 512: 1.50, 5177, 2. 384: 0.75, 5188, 2. Default: 2.66, 5171, 2. |
+| 38 | Mac, 1080p (2.07 MP) and 720×1280 (0.92 MP), render only, last frame checksum at each limit | 1080p: default, 192, 256, 384, 512, 1024 and 2048 MB all give the same checksum. 720×1280: default, 96, 128, 192, 256, 512 and 1024 MB give the same checksum; 64 MB differs. |
+| 39 | iPhone 17, same 4K clip scaled to 1080×1920 and 720×1280, first frame compared with the 2048 MB result (Debug build) | 1080×1920: default, 192, 256, 384, 512 and 1024 MB identical (0 differing bytes). 128 MB: 15,981 bytes differ, largest difference 3. 96 MB: 17,817 bytes, 5. 64 MB: Core Image logged "memory requirement of 67683328 too big (tile 12x8)", part of the image was not rendered, 8.2 million bytes differ, largest difference 255. 720×1280: identical at every limit down to 64 MB and for the default (64 MB is half the speed, 24 fps against 49). |
 
 ## Diagnosis
 
@@ -83,7 +85,7 @@ Result of the memory limit test (rows 24–36): at 4K the default Core Image lim
 
 Rule in the app (updated after row 37):
 - Smallest limit: 768 MB at 4K, scaled by pixel count. At 768 MB and above the frames are identical on the Mac (rows 26–27) and on the iPhone 17 (row 37). At 640 MB and below, about 0.016% of the bytes change by up to 2 levels, and the speed drops. The export never uses a limit below it.
-- Limit: 130 bytes × pixels (1029 MiB at 4K, where the speed stops rising). The system default is kept when that is 300 MB or less (1080p and below). Not yet checked at 1080p: that the default gives the same pixels as a large limit (the smallest limit there is 192 MB, so it should).
+- Limit: 130 bytes × pixels (1029 MiB at 4K, where the speed stops rising). The system default is kept when that is 300 MB or less (1080p and below). Checked at 1080p and 720×1280 (rows 38–39): the default gives the same pixels as a large limit on the Mac and on the iPhone 17. The smallest limit scaled by pixel count matches the measured knee at 1080p (192 MB). Too small a limit can break the picture (row 39, 64 MB at 1080p), which is one more reason the export never goes below the smallest limit.
 - iPhone: also at most the free memory minus 512 MB, but not below the smallest limit. Free memory is `os_proc_available_memory()`. The first rule (80% of the free memory) left no room for the rest of the export (about 190 MB for decoder, encoder and buffers) and brought the iPhone to 11 MB free.
 - Mac: the limit is fixed, not tied to the free memory. Nothing ends a Mac app for lack of memory, and a limit that followed the free memory would change pixels from one video of a batch to the next.
 - Start check: at about 1 GB free the 4K export fails whatever the limit is. The app asks the user to close other apps when the free memory is below what the output needs (1300 MB for 4K; for a size with a limit set it is never below the smallest limit plus 512 MB; other sizes are estimates scaled by pixel count, only 4K was measured). It starts after the user taps "Check again" and the check passes.
@@ -96,7 +98,7 @@ Status of rows 1–17: they were taken before the leak fix. Rows 15–17 (concur
 
 - iPhone: only the 4K clip (SDR, HLG-tagged SDR picture, 8K source brought down to 4K) at 5 s or 1 s. 1080p and 720p on the iPhone, 4K for the full clip length, 60 s or longer runs, and the old iPhones with less memory.
 - Real HDR colour. The HLG test clips are SDR pictures with an HLG tag.
-- The needed free memory for sizes other than 4K (scaled estimate).
+- The needed free memory for sizes other than 4K (scaled estimate). The identical-pixels check was run on one clip (4K scene, scaled) per size and on the first frame (iPhone) or the last frame (Mac) only.
 - Mac pop-up flow on a real Mac under low memory (the check is built, the low-memory case was not run).
 - Real Neural Engine run time and utilisation. Only the plan was read.
 - Cost per Core Image pass (graph size, intermediate count) and per-frame allocation count.

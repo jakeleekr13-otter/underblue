@@ -146,6 +146,17 @@ final class BatchEngineTests: XCTestCase {
         XCTAssertEqual(names.count, 2)
     }
 
+    func testSubjectChoiceIsPerItemAndRefusedWhileRunning() throws {
+        let queue = engine(sink: DirectorySink(directory: output))
+        queue.add([try makePhoto(CIColor(red: 0.1, green: 0.5, blue: 0.7), size: CGSize(width: 64, height: 48), name: "A.heic"),
+                   try makePhoto(CIColor(red: 0.1, green: 0.5, blue: 0.7), size: CGSize(width: 64, height: 48), name: "B.heic")])
+        let picked = SubjectChoice.picked(SubjectMask(width: 2, height: 2, values: [1, 0, 0, 0]))
+        XCTAssertTrue(queue.setSubjects(queue.items[0].id, picked))
+        XCTAssertEqual(queue.items[0].subjects, picked)
+        XCTAssertEqual(queue.items[1].subjects, .auto, "only the picked item changes")
+        XCTAssertFalse(queue.setSubjects(UUID(), picked), "an unknown item is refused")
+    }
+
     func testUniqueNameAddsANumberUntilFree() {
         let taken: Set = ["a.jpg", "a_2.jpg", "a_3.jpg"]
         XCTAssertEqual(ExportNaming.unique("b.jpg") { taken.contains($0) }, "b.jpg")

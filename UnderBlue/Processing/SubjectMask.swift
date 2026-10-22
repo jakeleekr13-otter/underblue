@@ -22,11 +22,7 @@ struct SubjectMask: Sendable, Equatable {
 
     /// Nil when Vision finds no subject, or the subjects cover too little or too much of the frame.
     static func estimate(_ image: CIImage) -> SubjectMask? {
-        let extent = image.extent
-        guard extent.width > 0, extent.height > 0, extent.width.isFinite, extent.height.isFinite else { return nil }
-        let scale = min(1, side / max(extent.width, extent.height))
-        let small = image.transformed(by: CGAffineTransform(translationX: -extent.minX, y: -extent.minY)
-            .concatenating(CGAffineTransform(scaleX: scale, y: scale)))
+        guard let small = visionInput(image) else { return nil }
         let request = VNGenerateForegroundInstanceMaskRequest()
         let handler = VNImageRequestHandler(ciImage: small, options: [:])
         guard (try? handler.perform([request])) != nil, let observation = request.results?.first,
@@ -47,6 +43,15 @@ struct SubjectMask: Sendable, Equatable {
         let share = values.reduce(0, +) / Float(values.count)
         guard share >= minimumShare, share <= maximumShare else { return nil }
         return SubjectMask(width: width, height: height, values: values)
+    }
+
+    /// The image Vision reads: moved to the origin and scaled to `side`. Nil for an empty or infinite extent.
+    static func visionInput(_ image: CIImage) -> CIImage? {
+        let extent = image.extent
+        guard extent.width > 0, extent.height > 0, extent.width.isFinite, extent.height.isFinite else { return nil }
+        let scale = min(1, side / max(extent.width, extent.height))
+        return image.transformed(by: CGAffineTransform(translationX: -extent.minX, y: -extent.minY)
+            .concatenating(CGAffineTransform(scaleX: scale, y: scale)))
     }
 
     /// The mask as an image over `extent` (red holds the mask).

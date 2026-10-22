@@ -26,6 +26,9 @@ actor PhotoProcessor {
     private struct Prepared { let analysis: WaterAnalysis; let plan: RestorationPlan? }
     /// Keyed by photo so a batch can switch between photos without repeating depth analysis.
     private var prepared: [URL: Prepared] = [:]
+    /// The pickable subject groups per photo. Made on the first request, because Vision runs again for them.
+    /// A photo with no subject is stored as nil, so it is not tried twice.
+    private var candidates: [URL: SubjectCandidates?] = [:]
     private var recordedRenderFallback = false
     private var recordedKernelFallback = false
     #if DEBUG
@@ -55,10 +58,19 @@ actor PhotoProcessor {
         let source = engine.sdr(try open(url))
         return try await prepare(url: url, source: source).analysis
     }
-    func preview(_ url: URL, settings: FilterSettings, original: Bool, maxPixel: CGFloat = 1600) async throws -> CGImage {
+    /// The groups the user can pick from, or nil when Vision finds no usable subject.
+    func subjectCandidates(_ url: URL) async throws -> SubjectCandidates? {
+        if let known = candidates[url] { return known }
+        try Task.checkCancellation()
+        let found = SubjectCandidates.estimate(engine.sdr(try open(url)))
+        candidates[url] = .some(found)
+        return found
+    }
+    func preview(_ url: URL, settings: FilterSettings, original: Bool, maxPixel: CGFloat = 1600,
+                 subjects: SubjectChoice = .auto) async throws -> CGImage {
         try Task.checkCancellation()
         let source = engine.sdr(try open(url))
-        let plan = original ? nil : try await prepare(url: url, source: source).plan
+        let plan = original ? nil : Self.applying(subjects, to: try await prepare(url: url, source: source).plan)
         let ratio = min(1, maxPixel / max(source.extent.width, source.extent.height))
         let small = source.transformed(by: CGAffineTransform(scaleX: ratio, y: ratio))
         let result = original ? small : processed(small, settings: settings, plan: plan)
@@ -73,11 +85,11 @@ actor PhotoProcessor {
     /// In both formats, quality 0.95 to 0.99 barely changed the error (measured 28 Sep 2026).
     /// A JPEG source is already compressed, so each save must add as little loss as possible.
     func export(_ url: URL, settings: FilterSettings, keepHDR: Bool = false,
-                format: ExportOptions.PhotoFormat = .jpeg) async throws -> URL {
+                format: ExportOptions.PhotoFormat = .jpeg, subjects: SubjectChoice = .auto) async throws -> URL {
         try Task.checkCancellation()
         let original = try open(url)
         let source = engine.sdr(original)
-        let plan = try await prepare(url: url, source: source).plan
+        let plan = Self.applying(subjects, to: try await prepare(url: url, source: source).plan)
         let image = processed(source, settings: settings, plan: plan)
         // The SDR image in the file is the normal export. The HDR version (PhotoHDR) becomes its gain map.
         var hdr: CIImage?
@@ -152,7 +164,15 @@ actor PhotoProcessor {
     #endif
 
     /// Drops a photo's cached analysis once it leaves the session.
-    func forget(_ url: URL) { prepared[url] = nil }
+    func forget(_ url: URL) { prepared[url] = nil; candidates[url] = nil }
+
+    /// The one place a subject choice meets the plan, so preview and export get the same mask.
+    /// A photo with no mask is not routed differently (liftDark is for video only).
+    static func applying(_ choice: SubjectChoice, to plan: RestorationPlan?) -> RestorationPlan? {
+        guard var plan, case .picked(let mask) = choice else { return plan }
+        plan.subjectMask = mask
+        return plan
+    }
 
     private func prepare(url: URL, source: CIImage) async throws -> Prepared {
         if let cached = prepared[url] { return cached }

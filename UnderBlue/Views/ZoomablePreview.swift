@@ -35,11 +35,21 @@ struct PreviewZoom: Equatable {
 
 /// A photo preview that zooms with a pinch or a double tap and pans while zoomed.
 /// The zoom state is owned by the caller, so swapping the image (Compare, a sharper render) keeps it.
-struct ZoomablePreview: View {
+///
+/// `overlay` draws over the fitted image and zooms with it. It gets the fitted size. While `overlayActive`,
+/// double tap zoom is off, so a quick second tap on a subject does not zoom. Pinch still zooms.
+struct ZoomablePreview<Overlay: View>: View {
     let image: CGImage
     @Binding var zoom: PreviewZoom
+    var overlayActive = false
     var onZoomIn: () -> Void = {}
+    let overlay: (CGSize) -> Overlay
     @State private var base = PreviewZoom()
+
+    init(image: CGImage, zoom: Binding<PreviewZoom>, overlayActive: Bool = false, onZoomIn: @escaping () -> Void = {},
+         @ViewBuilder overlay: @escaping (CGSize) -> Overlay) {
+        self.image = image; _zoom = zoom; self.overlayActive = overlayActive; self.onZoomIn = onZoomIn; self.overlay = overlay
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -47,6 +57,7 @@ struct ZoomablePreview: View {
             let content = PreviewZoom.fitted(CGSize(width: image.width, height: image.height), in: container)
             Image(decorative: image, scale: 1).resizable()
                 .frame(width: content.width, height: content.height)
+                .overlay { overlay(content).frame(width: content.width, height: content.height) }
                 .scaleEffect(zoom.scale)
                 .offset(zoom.offset)
                 .frame(width: container.width, height: container.height)
@@ -70,15 +81,15 @@ struct ZoomablePreview: View {
                             zoom = PreviewZoom(scale: zoom.scale, offset: moved).clamped(content: content, container: container)
                         }
                         .onEnded { _ in finish() }))
-                .onTapGesture(count: 2) {
+                .gesture(TapGesture(count: 2).onEnded {
                     withAnimation(.snappy) {
                         zoom = zoom.isZoomed ? PreviewZoom()
                             : PreviewZoom(scale: PreviewZoom.doubleTapScale).clamped(content: content, container: container)
                     }
                     finish()
-                }
+                }, isEnabled: !overlayActive)
         }
-        .accessibilityElement()
+        .accessibilityElement(children: overlayActive ? .contain : .ignore)
         .accessibilityLabel("Photo preview")
         .accessibilityValue(Text("\(Int((zoom.scale * 100).rounded()))%"))
         .accessibilityHint("Pinch or double-tap to zoom.")
@@ -93,5 +104,11 @@ struct ZoomablePreview: View {
     private func finish() {
         base = zoom
         if zoom.isZoomed { onZoomIn() }
+    }
+}
+
+extension ZoomablePreview where Overlay == EmptyView {
+    init(image: CGImage, zoom: Binding<PreviewZoom>, onZoomIn: @escaping () -> Void = {}) {
+        self.init(image: image, zoom: zoom, overlayActive: false, onZoomIn: onZoomIn) { _ in EmptyView() }
     }
 }

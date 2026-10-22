@@ -17,6 +17,8 @@ final class EditorModel {
     private(set) var previewMaxPixel: CGFloat = 1600
     private var detailPreviewBlocked = false
     var comparing = false
+    /// Which subjects the correction protects. Auto until the user opens the picker. One model per photo.
+    private(set) var subjects = SubjectSelection()
     var player: AVPlayer?
     var clipPlaying = false
     private var clipStart: CMTime?
@@ -149,7 +151,8 @@ final class EditorModel {
             return
         }
         do {
-            let rendered = try await photos.preview(media.url, settings: settings, original: false, maxPixel: previewMaxPixel)
+            let rendered = try await photos.preview(media.url, settings: settings, original: false, maxPixel: previewMaxPixel,
+                                                    subjects: subjects.choice)
             try Task.checkCancellation()
             preview = rendered
             previewFailures = 0
@@ -258,6 +261,7 @@ final class EditorModel {
         optionsDismissing = showExportOptions
         showExportOptions = false
         let chosenSettings = settings
+        let chosenSubjects = subjects.choice
         var chosenOptions = options
         cancellationNotice = String(localized: "Export cancelled")
         backgroundTask.begin("Finish or cancel export") { [weak self] in
@@ -288,7 +292,7 @@ final class EditorModel {
                 } else {
                     try StorageCheck.require(bytes: 100_000_000)
                     output = try await photos.export(media.url, settings: chosenSettings, keepHDR: chosenOptions.range == .hdr,
-                                                     format: chosenOptions.photoFormat)
+                                                     format: chosenOptions.photoFormat, subjects: chosenSubjects)
                 }
                 do {
                     try Task.checkCancellation()
@@ -322,6 +326,28 @@ final class EditorModel {
         exportTask?.cancel()
     }
     private func updateProgress(_ value: Double) { progress = value }
+    // MARK: Subjects
+
+    /// Manual: finds the subject groups once, then shows the picker. A photo with none stays in Auto.
+    func chooseManualSubjects() async {
+        guard media.kind == .photo, !subjects.isDetecting else { return }
+        if subjects.candidates != nil { subjects.resumeManual(); return }
+        subjects.startDetecting()
+        do {
+            subjects.finishDetecting(try await photos.subjectCandidates(media.url))
+        } catch is CancellationError {
+            subjects.useAuto()
+        } catch {
+            subjects.finishDetecting(nil)
+            report(error, operation: .preview)
+        }
+    }
+    func chooseAutoSubjects() { subjects.useAuto() }
+    func toggleSubject(_ id: Int) { subjects.toggle(id) }
+    func finishSubjectPicking() { subjects.done() }
+    func editSubjects() { subjects.edit() }
+    func resetSubjects() { subjects.reset() }
+
     func retryPreview() async {
         previewPaused = false; previewFailures = 0
         await refreshPreview()

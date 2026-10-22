@@ -58,6 +58,13 @@ final class MacModel {
 
     var selectedItem: BatchEngine.Item? { engine.items.first { $0.id == selection } }
 
+    // MARK: Subjects
+    /// The subject picker state of each queue item. An item without an entry is Auto. Only a picked item changes.
+    private(set) var subjectStates: [BatchEngine.Item.ID: SubjectSelection] = [:]
+    var subjects: SubjectSelection { selection.flatMap { subjectStates[$0] } ?? SubjectSelection() }
+    /// The picker works on a queued photo and only while no batch runs.
+    var canPickSubjects: Bool { selectedItem?.kind == .photo && !engine.running }
+
     // MARK: Private
     private let previewPhotos: PhotoProcessor
     private let videoPreview: VideoPreview
@@ -165,7 +172,7 @@ final class MacModel {
         guard engine.remove(id) else { return }
         // Files that came from the share menu were moved into the temporary folder. Files you added stay where they are.
         TemporaryFiles.remove(url)
-        photoAnalysis[id] = nil; videoAnalysis[id] = nil
+        photoAnalysis[id] = nil; videoAnalysis[id] = nil; subjectStates[id] = nil
         if selection == id { selection = engine.items.first?.id }
     }
 
@@ -406,6 +413,44 @@ final class MacModel {
         }
     }
 
+    // MARK: Subject picking
+
+    /// Manual: finds the subject groups once, then shows the picker. A photo with none stays in Auto.
+    func chooseManualSubjects() {
+        guard canPickSubjects, let item = selectedItem else { return }
+        var state = subjectStates[item.id] ?? SubjectSelection()
+        guard !state.isDetecting else { return }
+        if state.candidates != nil { state.resumeManual(); applySubjects(state, to: item); return }
+        state.startDetecting()
+        subjectStates[item.id] = state
+        Task {
+            var done = subjectStates[item.id] ?? SubjectSelection()
+            do { done.finishDetecting(try await previewPhotos.subjectCandidates(item.url)) }
+            catch is CancellationError { done.useAuto() }
+            catch { done.finishDetecting(nil); previewError = Failure.classify(error, operation: .preview).message }
+            applySubjects(done, to: item)
+        }
+    }
+    func chooseAutoSubjects() { change { $0.useAuto() } }
+    func toggleSubject(_ id: Int) { change { $0.toggle(id) } }
+    func finishSubjectPicking() { change { $0.done() } }
+    func editSubjects() { change { $0.edit() } }
+    func resetSubjects() { change { $0.reset() } }
+
+    private func change(_ edit: (inout SubjectSelection) -> Void) {
+        guard canPickSubjects, let item = selectedItem, var state = subjectStates[item.id] else { return }
+        edit(&state)
+        applySubjects(state, to: item)
+    }
+
+    /// Stores the state, gives the queue item its choice for export, and redraws the preview when the result changed.
+    private func applySubjects(_ state: SubjectSelection, to item: BatchEngine.Item) {
+        let changed = subjectStates[item.id]?.key != state.key
+        subjectStates[item.id] = state
+        engine.setSubjects(item.id, state.choice)
+        if changed, selection == item.id, !showingOriginal { refreshPreview() }
+    }
+
     private func buildPhotoPreview(_ item: BatchEngine.Item) async throws {
         let analysis = try await previewPhotos.analyze(item.url)
         photoAnalysis[item.id] = analysis
@@ -418,7 +463,8 @@ final class MacModel {
     private func renderCorrectedPhoto(_ item: BatchEngine.Item) async throws {
         guard let analysis = photoAnalysis[item.id] else { return }
         var s = settings; s.analysis = analysis
-        let image = try await previewPhotos.preview(item.url, settings: s, original: false, maxPixel: 1600)
+        let image = try await previewPhotos.preview(item.url, settings: s, original: false, maxPixel: 1600,
+                                                    subjects: subjectStates[item.id]?.choice ?? .auto)
         try Task.checkCancellation()
         correctedImage = image
         previewError = nil

@@ -33,6 +33,7 @@ struct EditorView: View {
             .task { await model.load() }
             .task(id: model.settings) { if !model.loading { await model.refreshPreview() } }
             .task(id: model.comparing) { if !model.loading { await model.refreshPreview() } }
+            .task(id: model.subjects.key) { if !model.loading { await model.refreshPreview() } }
             .onDisappear { model.close() }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in model.memoryWarning() }
             .onReceive(NotificationCenter.default.publisher(for: .AVPlayerItemFailedToPlayToEndTime)) { model.playbackFailed($0) }
@@ -76,7 +77,13 @@ struct EditorView: View {
             }
             else if let preview = model.comparing ? model.originalPreview : model.preview {
                 // Compare swaps the image but keeps the zoom, so the same detail can be checked both ways.
-                ZoomablePreview(image: preview, zoom: $zoom) { model.requestDetailPreview() }
+                // The picker shows over the corrected image only. Compare hides it.
+                let picking = model.subjects.showsOverlay && !model.comparing
+                ZoomablePreview(image: preview, zoom: $zoom, overlayActive: picking, onZoomIn: { model.requestDetailPreview() }) { size in
+                    if picking, let candidates = model.subjects.candidates {
+                        SubjectPicker(candidates: candidates, picks: model.subjects.picks, size: size, zoom: zoom.scale) { model.toggleSubject($0) }
+                    }
+                }
             }
             if model.loading {
                 if model.analyzing { VStack(spacing: 12) { longVideoNotice; ProgressView("Analyzing…") } }
@@ -127,6 +134,7 @@ struct EditorView: View {
                     .accessibilityHint("Show original media without correction")
             }.padding(.horizontal)
             presetPicker(grid: presetGrid)
+            if model.media.kind == .photo { subjectsRow }
             if model.settings.preset == .custom {
                 // Custom has no intensity: it renders at the default intensity (0.8) and has its own sliders.
                 CustomAdjustmentControls(adjustments: $model.settings.adjustments).padding(.horizontal)
@@ -140,6 +148,35 @@ struct EditorView: View {
             Button("Export") { Task { await model.requestExport(purchases: purchases, trial: trial) } }
                 .buttonStyle(.borderedProminent).frame(minHeight: 44).disabled(!model.ready || model.exporting || model.analyzing)
         }.padding(.bottom, 8)
+    }
+    /// Auto or Manual, then Done and Reset while picking. Always shown for a photo; Manual says so when Vision finds nothing.
+    private var subjectsRow: some View {
+        let subjects = model.subjects
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Subjects").font(.subheadline)
+                Spacer(minLength: 8)
+                Picker("Subjects", selection: Binding(
+                    get: { subjects.isManual },
+                    set: { manual in if manual { Task { await model.chooseManualSubjects() } } else { model.chooseAutoSubjects() } })) {
+                    Text("Auto").tag(false)
+                    Text("Manual").tag(true)
+                }.pickerStyle(.segmented).labelsHidden().frame(maxWidth: 180).disabled(subjects.isDetecting)
+                    .accessibilityLabel("Subjects")
+            }
+            if subjects.isManual {
+                HStack {
+                    if subjects.showsOverlay {
+                        Button("Done") { model.finishSubjectPicking() }
+                    } else {
+                        Button { model.editSubjects() } label: { Label("Edit", systemImage: "pencil") }
+                    }
+                    Button("Reset") { model.resetSubjects() }
+                }.buttonStyle(.bordered).frame(minHeight: 44)
+            }
+            Text(SubjectPickerText.summary(subjects)).font(.footnote).foregroundStyle(.secondary)
+            if let notice = SubjectPickerText.notice(subjects) { Text(notice).font(.footnote).foregroundStyle(.orange) }
+        }.padding(.horizontal).animation(.default, value: subjects.status)
     }
     /// One row that scrolls sideways, or a two-column grid when the pane is narrow and tall.
     @ViewBuilder private func presetPicker(grid: Bool) -> some View {

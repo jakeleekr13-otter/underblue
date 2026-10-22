@@ -1,6 +1,8 @@
 # Subject picker — plan
 
-Status: plan agreed 22 Oct 2026. Nothing built yet.
+**ON HOLD (Jake, 22 Oct 2026).** The picker is paused. First find a way to make subjects bright, vivid and natural. That plan is [SubjectEmphasis.md](SubjectEmphasis.md). The mask alone only reduces the halo beside a subject. It does not change the subject.
+
+Status (22 Oct 2026): code written on branch `subject-picker`, not committed. Not checked on a real photo or a device yet. See "Progress" below.
 
 ## Goal
 
@@ -110,6 +112,49 @@ Each stage ends with one artifact that can fail.
 | S5 | Look at O4, m5, O1 with groups selected and not selected. Same photo and same picks on Mac and iPhone. | At most 6 captures. A line in `docs/Verification.md`. Report if the two masks differ. |
 
 If S1b shows no gain, schools stay Auto and only tap picking ships. A brush becomes a later stage.
+
+## Progress (22 Oct 2026)
+
+| Stage | State | Evidence |
+|---|---|---|
+| S1 Vision measurement | Not done | Needs O1, O4, m5 on iPhone and Mac. The group gap 0.04 is a guess. |
+| S1b School experiment | Not done | Water likeness was not built. See "Changes from the plan". |
+| S2 Candidates, choice, grouping | Done | `SubjectCandidates.swift`, `SubjectSelection.swift`. 14 tests pass (`SubjectCandidatesTests`). |
+| S3 `preview`/`export` take `SubjectChoice` | Done | `PhotoProcessor.applying` is the one place. Test: default keeps the plan, picked replaces the mask. No byte-compare of a real export yet. |
+| S4a Shared `SubjectPicker` view | Done | Coordinate tests pass at zoom 1 and 4, three aspects. Both targets build. Not seen on screen. |
+| S4b iPhone | Code done | Subjects row in `EditorView`. No screenshot. Small-iPhone Export check not done. |
+| S4c Mac | Code done | `MacModel.subjectStates`, `BatchEngine.Item.subjects`. Test passes: only the picked item changes. No app screenshot. |
+| S4d Strings | Not done | New strings are not in the catalog yet. List below. |
+| S5 Look on O4, m5, O1 | Not done | |
+
+### Cases the user asked for
+
+| Case | Handling | Checked |
+|---|---|---|
+| Vision finds no subject | Manual shows "No subjects found. UnderBlue uses Auto." and the photo stays in Auto. | Unit test (state). Not on a real photo. |
+| School of fish | Close instances merge into one group (gap 4% of the long side, chains merge). | Unit test with a 10-fish chain. Not on a real school. |
+| Too many subjects found | At most 6 groups. The smallest merges into its nearest. A note says nearby ones are grouped. | Unit test with 10 instances. |
+| Too much selected | The picks may cover at most 50% of the frame. A tap past that is refused with a message. A single group over 50% shows "too large". | Unit test. |
+
+### Changes from the plan
+
+- Outline is the group's bounding box, not its exact area. The fill shows the real mask.
+- Water likeness was not built. The mask is the union of the picked Vision masks, so water between fish stays out only as far as Vision leaves it out. S1b decides if more is needed.
+- Vision for the groups runs when the user first taps Manual, not on load. The row is always shown for a photo.
+- First time in Manual, the picks equal what Auto would use. Reset returns to that.
+- Pick cap 50% is new (Auto allows 25%). Provisional.
+
+### Strings to add (S4d)
+
+Subjects, Auto, Manual, Edit, Done, Reset, Auto subjects, Pick subjects, "Looking for subjects…", "No subjects found. UnderBlue uses Auto.", "Auto protects the main subjects it finds.", "No subject selected. Tap a subject to protect it.", "%lld of %lld selected. Tap a subject to change it.", "Too much of the photo is selected. Deselect a subject first.", "This area is too large to be a subject.", "Many subjects were found. Nearby ones are grouped.", "Subject group %lld, selected, %lld included", "Subject group %lld, not selected, %lld included". Some may already exist (Done, Reset). Check the catalog first.
+
+### Next session
+
+1. Add the strings (insert keys, check 0 deleted lines).
+2. Run `SubjectCandidates.estimate` on O1, O4, m5 on Mac, then on the iPhone. Record instance and group counts. Set the gap (S1).
+3. Look at the picker on the Mac app and on the iPhone. Check a small iPhone with Custom preset shows Export.
+4. Check a no-subject photo (O1, O5) and a school.
+5. S5, then `docs/Verification.md`.
 
 ## Rules for this work
 

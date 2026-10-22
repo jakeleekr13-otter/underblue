@@ -29,11 +29,13 @@ using namespace metal;
         if (broadLum > 1e-4f) { backscatter = broad * (dot(backscatter, luma) / broadLum); }
     }
     float3 restored = max(source.rgb - backscatter, float3(0.0f)) * gain;
-    // The highlight protection reads the middle channel, not the brightest. Blue water has one bright
-    // channel at all times, so the peak took it for a highlight and sent 44% of the restored pixel back
-    // to the source. That weight fell away over 50 rows and drew a hard layer edge (22 Oct 2026).
-    // A white highlight has two bright channels. RestorationMath mirrors it.
-    const float peak = max(min(source.r, source.g), min(max(source.r, source.g), source.b));
+    // Video (veil.w = 1): the highlight protection reads the middle channel, not the brightest. Blue water
+    // has one bright channel at all times, so the peak took it for a highlight and sent 44% of the restored
+    // pixel back to the source. That weight fell away over 50 rows and drew a hard layer edge (22 Oct 2026).
+    // A white highlight has two bright channels. Photos keep the peak: there it also hides a dark blob that
+    // the local veil draws in bright open blue water (r13). RestorationMath mirrors it.
+    const float peak = veil.w > 0.5f ? max(min(source.r, source.g), min(max(source.r, source.g), source.b))
+                                     : max(source.r, max(source.g, source.b));
     const float highlight = smoothstep(limits.y, max(limits.y + 0.001f, limits.z), peak) * 0.8f;
     restored = mix(restored, source.rgb, highlight);
     restored = clamp(restored, float3(0.0f), float3(max(0.5f, limits.w)));

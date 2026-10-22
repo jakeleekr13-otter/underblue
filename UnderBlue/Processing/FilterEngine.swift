@@ -76,6 +76,8 @@ final class FilterEngine: Sendable {
     /// `image`. The restored path passes the unrestored source, so restoration cannot raise the ceiling.
     /// `calmWeight` is waterCalmWeight of the source; it defaults to the weight of `image` itself.
     /// `openWaterRed` (video) keeps the red rebuild out of flat open water; see below.
+    /// Blur radius (share of the short side) of the open-water weight that mixes out the rebuilt red.
+    static let openWaterBlur: Float = 0.03
     func finishing(_ image: CIImage, correction v: ColorCorrection, reference: CIImage? = nil, calmWeight: CIImage? = nil,
                    openWaterRed: Bool = false) -> CIImage {
         guard v != .identity else { return image }
@@ -91,7 +93,13 @@ final class FilterEngine: Sendable {
         if openWaterRed, v.redRebuild > 0, let calm, let keep = calmKernels["UnderBlueCalmKeep"] {
             var unrebuilt = v
             unrebuilt.redRebuild = 0
-            corrected = keep.apply(extent: image.extent, arguments: [colorStage(calmed, unrebuilt), corrected, calm]) ?? corrected
+            // The weight is blurred wide. Raw, it drops to 0 right next to a small subject, and only that ring
+            // got the rebuilt red: every fish in a whale shark clip wore a grey ring.
+            let wide = CIFilter.gaussianBlur()
+            wide.inputImage = calm.clampedToExtent()
+            wide.radius = max(1, Self.openWaterBlur * short)
+            let softCalm = (wide.outputImage ?? calm).cropped(to: image.extent)
+            corrected = keep.apply(extent: image.extent, arguments: [colorStage(calmed, unrebuilt), corrected, softCalm]) ?? corrected
         }
 
         let controls = CIFilter.colorControls()

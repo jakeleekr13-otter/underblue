@@ -26,7 +26,7 @@ enum RestorationMath {
     static func inverse(observed: SIMD3<Float>, depth: Float, backscatterInfinity: SIMD3<Float>,
                         betaDirect: SIMD3<Float>, betaBackscatter: SIMD3<Float>,
                         limits: RestorationLimits, recoverability: SIMD3<Float> = .init(repeating: 1),
-                        broad: SIMD3<Float>? = nil, veilLevel: Float = 0) -> RestorationPixelResult {
+                        broad: SIMD3<Float>? = nil, veilLevel: Float = 0, middleHighlight: Bool = false) -> RestorationPixelResult {
         let source = finite(observed)
         let z = safe(depth, fallback: 0, range: 0...1)
         var corrected = SIMD3<Float>(repeating: 0)
@@ -45,8 +45,9 @@ enum RestorationMath {
             hitGain = hitGain || gain >= maximumGain - 1e-5
             corrected[channel] = max(0, source[channel] - veil[channel]) * gain
         }
-        // The middle channel, as in the kernel: blue water has one bright channel, a highlight has two.
-        let sourcePeak = max(min(source.x, source.y), min(max(source.x, source.y), source.z))
+        // Video reads the middle channel, as in the kernel: blue water has one bright channel, a highlight has two.
+        let sourcePeak = middleHighlight ? max(min(source.x, source.y), min(max(source.x, source.y), source.z))
+                                         : max(source.x, source.y, source.z)
         let highlight = smoothstep(limits.highlightStart, limits.highlightEnd, sourcePeak) * 0.8
         corrected = corrected * (1 - highlight) + source * highlight
         let maximumOutput = safe(limits.maximumOutput, fallback: 1.15, range: 0.5...8)
@@ -235,7 +236,7 @@ final class RestorationEngine: Sendable {
                      z: CGFloat(limits.highlightEnd), w: CGFloat(limits.maximumOutput)),
             vector(limits.maximumGain), vector(plan.channelRecoverability),
             CIVector(x: CGFloat(plan.veilLevel), y: CGFloat(RestorationMath.localVeilRange.lowerBound),
-                     z: CGFloat(RestorationMath.localVeilRange.upperBound), w: 0)
+                     z: CGFloat(RestorationMath.localVeilRange.upperBound), w: liftDark ? 1 : 0)
         ])
         guard let restoredLow else { throw RestorationError.kernelUnavailable }
         guard let detailKernel, low !== image else { return restoredLow.cropped(to: image.extent) }

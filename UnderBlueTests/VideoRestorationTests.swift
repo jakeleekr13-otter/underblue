@@ -242,20 +242,18 @@ final class VideoRestorationTests: XCTestCase {
         photoSettings.analysis = moment.from.analysis
         let video = try restoration.combined(image, moment: moment, settings: FilterSettings(preset: .natural, intensity: 0.8), filter: engine)
         let photo = try restoration.combined(image, plan: moment.from.plan, settings: photoSettings, filter: engine)
-        // Video adds two steps the photo path lacks: no rebuilt red in flat open water, and a subject-free
-        // broad light from outlier pixels. With them on, the photo path gives the same pixels as the moment.
+        // Video adds steps the photo path lacks: no rebuilt red in flat open water, the middle-channel highlight
+        // rule, and a broad light that lifts dark subjects. With them on, the photo path gives the same pixels
+        // as the moment.
         let photoAsVideo = try restoration.combined(image, plan: moment.from.plan,
                                                     values: restoration.corrections(settings: photoSettings, plan: moment.from.plan),
                                                     settings: photoSettings, filter: engine, video: true)
         XCTAssertEqual(try pixels(video, engine), try pixels(photoAsVideo, engine))
-        // Against the plain photo path only red may differ, and only downward (22 Oct 2026).
+        // Against the plain photo path the video steps may change a pixel, but only a little (22 Oct 2026).
         let v = try pixels(video, engine), p = try pixels(photo, engine)
         XCTAssertEqual(v.count, p.count)
-        for i in stride(from: 0, to: v.count, by: 4) {
-            XCTAssertLessThanOrEqual(v[i], p[i], "red at \(i / 4)")
-            XCTAssertLessThanOrEqual(Int(p[i]) - Int(v[i]), 16, "red at \(i / 4)")
-            XCTAssertEqual(v[i + 1], p[i + 1], "green at \(i / 4)")
-            XCTAssertEqual(v[i + 2], p[i + 2], "blue at \(i / 4)")
+        for i in 0..<v.count {
+            XCTAssertLessThanOrEqual(abs(Int(v[i]) - Int(p[i])), 16, "channel \(i % 4) at pixel \(i / 4)")
         }
     }
 

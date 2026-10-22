@@ -38,12 +38,15 @@ final class RestorationTests: XCTestCase {
         // Blue water has one bright channel. It must not count as a highlight: the protection sent part of
         // the restored pixel back to the source and drew a hard layer edge in bright blue water (22 Oct 2026).
         let on = RestorationLimits(), off = RestorationLimits(highlightStart: 10, highlightEnd: 11)
-        func restore(_ source: SIMD3<Float>, _ limits: RestorationLimits) -> SIMD3<Float> {
+        func restore(_ source: SIMD3<Float>, _ limits: RestorationLimits, video: Bool = true) -> SIMD3<Float> {
             RestorationMath.inverse(observed: source, depth: 0.5, backscatterInfinity: parameters.infinity,
-                betaDirect: parameters.betaDirect, betaBackscatter: parameters.betaBackscatter, limits: limits).color
+                betaDirect: parameters.betaDirect, betaBackscatter: parameters.betaBackscatter, limits: limits,
+                middleHighlight: video).color
         }
         let blueWater = SIMD3<Float>(0.02, 0.13, 0.87)
         assertEqual(restore(blueWater, on), restore(blueWater, off), accuracy: 1e-6)
+        // Photos keep the brightest-channel rule (it hides a dark blob in bright open water, r13).
+        XCTAssertGreaterThan(abs((restore(blueWater, on, video: false) - restore(blueWater, off, video: false)).z), 0.01)
         // A white highlight has two or more bright channels and is still protected.
         let white = SIMD3<Float>(0.9, 0.92, 0.9)
         XCTAssertGreaterThan(abs((restore(white, on) - restore(white, off)).x), 0.01)

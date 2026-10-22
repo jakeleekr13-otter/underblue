@@ -151,6 +151,9 @@ final class CustomPresetTests: XCTestCase {
             XCTAssertEqual(brighter.midLift, min(0.9, base.midLift + 0.15), accuracy: 1e-6)
             XCTAssertEqual(custom(analysis, adjust(\.contrast, -1), plan: plan).toneCurve, max(0, base.toneCurve - 0.10), accuracy: 1e-6)
             XCTAssertEqual(custom(analysis, adjust(\.contrast, -1), plan: plan).contrast, base.contrast - 0.05, accuracy: 1e-6)
+            // The black offset must not rise with Contrast down: it would lift every dark pixel (haze).
+            let down = custom(analysis, adjust(\.contrast, -1), plan: plan)
+            XCTAssertEqual(down.brightness + (1 - down.contrast) * 0.5, base.brightness + (1 - base.contrast) * 0.5, accuracy: 1e-6)
             XCTAssertEqual(custom(analysis, adjust(\.contrast, 1), plan: plan).contrast, base.contrast, accuracy: 1e-6)
             XCTAssertEqual(custom(analysis, adjust(\.contrast, 1), plan: plan).toneCurve, min(0.3, base.toneCurve + 0.15), accuracy: 1e-6)
             XCTAssertEqual(custom(analysis, adjust(\.saturation, -1), plan: plan).saturation, base.saturation - CustomAdjustments.Caps.saturationDown, accuracy: 1e-6)

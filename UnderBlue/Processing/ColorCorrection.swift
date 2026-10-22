@@ -321,6 +321,10 @@ struct ColorCorrection: Sendable, Equatable {
         // The highlight rule (scene.highlight): such scenes get less brightness, haze shadow lift and mid-tone lift.
         v.brightness = analysis.exposure * 0.45 * (1 - 0.5 * highlight)
         v.contrast = preset.contrast + haze * 0.05 + min(0, user.contrast) * Caps.contrastGain
+        // Custom Contrast down lowers the gain. The black offset (brightness + (1 - contrast) / 2) would
+        // rise with it and lift every dark pixel: the whole frame turned hazy. Brightness gives the
+        // same amount back, so the black point stays and only the tones above it come down.
+        v.brightness += min(0, user.contrast) * Caps.contrastGain * 0.5
         // Global contrast alone can bury a dark diver or reef, so lift the lower tones. The lift
         // reaches the mid-tones too, so it stays moderate: the market look sits 3 to 6 L* below the
         // earlier values in the mid-tones, with the same shadows.

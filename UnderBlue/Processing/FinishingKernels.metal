@@ -172,6 +172,8 @@ using namespace metal;
         const float knee = -2.0f * tone.y;
         const float3 toe = max(x, float3(0.0f)) * max(x, float3(0.0f)) / (2.0f * knee);
         out = select(out, toe, x < knee);
+        // tone.z is the shadow floor (video only): no pixel below the knee falls under tone.z times its own value.
+        out = max(out, min(max(x, float3(0.0f)), float3(knee)) * tone.z);
     }
     return all(isfinite(out)) ? float4(out, source.a) : source;
 }

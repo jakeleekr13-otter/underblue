@@ -1457,13 +1457,26 @@ final class RestorationTests: XCTestCase {
         XCTAssertEqual((above - below) / (2 * step), gain, accuracy: 0.01)
         // A positive offset (a lift) is the plain line.
         assertEqual(FinishingMath.blackOffset(.init(0.01, 0.02, 0.03), gain: 1, offset: 0.02), .init(0.03, 0.04, 0.05), accuracy: 1e-7)
-        // The kernel matches the mirror.
+        // The kernel matches the mirror, with and without the video shadow floor.
         let kernel = try XCTUnwrap(engine.offsetKernelForTesting)
-        for c: SIMD3<Float> in [bright, .init(0.03, 0.06, 0.12), .init(0.001, 0.02, 0.2), .init(-0.01, 0.05, 0.3)] {
-            let out = try XCTUnwrap(kernel.apply(extent: CGRect(x: 0, y: 0, width: 4, height: 4),
-                                                 arguments: [solid(c), CIVector(x: CGFloat(gain), y: CGFloat(offset), z: 0, w: 0)]))
-            assertEqual(render(out), FinishingMath.blackOffset(c, gain: gain, offset: offset), accuracy: 1e-3)
+        for floor: Float in [0, FinishingMath.videoShadowFloor] {
+            for c: SIMD3<Float> in [bright, .init(0.03, 0.06, 0.12), .init(0.001, 0.02, 0.2), .init(-0.01, 0.05, 0.3)] {
+                let out = try XCTUnwrap(kernel.apply(extent: CGRect(x: 0, y: 0, width: 4, height: 4),
+                                                     arguments: [solid(c), CIVector(x: CGFloat(gain), y: CGFloat(offset), z: CGFloat(floor), w: 0)]))
+                assertEqual(render(out), FinishingMath.blackOffset(c, gain: gain, offset: offset, floor: floor), accuracy: 1e-3)
+            }
         }
+        // The floor keeps a dark pixel at 65% of itself, stays non-decreasing, and leaves bright pixels alone.
+        let floored = FinishingMath.videoShadowFloor
+        let deep = SIMD3<Float>(repeating: 0.01)
+        XCTAssertGreaterThanOrEqual(FinishingMath.blackOffset(deep, gain: gain, offset: offset, floor: floored).x, 0.01 * gain * floored - 1e-6)
+        var last: Float = 0
+        for i in 0...200 {
+            let v = FinishingMath.blackOffset(.init(repeating: Float(i) * 0.002), gain: gain, offset: offset, floor: floored).x
+            XCTAssertGreaterThanOrEqual(v, last - 1e-7); last = v
+        }
+        assertEqual(FinishingMath.blackOffset(bright, gain: gain, offset: offset, floor: floored),
+                    FinishingMath.blackOffset(bright, gain: gain, offset: offset), accuracy: 1e-7)
     }
 
     // MARK: Highlight shoulder

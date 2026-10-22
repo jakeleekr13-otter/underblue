@@ -42,6 +42,16 @@ Still open:
 - **Dark blob on photos in bright open blue water (checked 22 Oct 2026).** Photo r13: with the middle-channel highlight rule, the per-pixel depth map darkens a wide patch around the subject (centre over side brightness 0.908; one constant depth 0.999; source 0.954). The local veil is not the cause: changing its bounds did nothing. So photos keep the old rule, and the video path is safe because it uses one depth per scene (r13 as a 4 s clip: 0.998). Not done: making the middle rule safe for photos (it would need a limit on how much the depth map may change the gain in bright blue water). The photo layer edge the middle rule removes on video was not looked for in photos.
 - Not checked: 4K and HDR clips, the whole whale shark clip by eye (only the first 12 s), the Mac app's own export output (the test sandbox hides it), the iPhone export of the red-ring fix on the whale shark clip beyond the first 12 s.
 
+## Dark corner in video: shadow floor (22 Oct 2026)
+
+Jake saw a black bottom-left corner (9 to 12 s) and a dark veil around a black manta (13 to 14 s) in `2025-05-03 22.12.02.MOV`.
+
+- **Not caused by the 22 Oct video and speed changes.** `151e4f3` and HEAD gave the same corner on the Mac, the iOS simulator and an iPhone 17 export (iPhone, bottom-left 10% x 12%, luminance at 10 s: source 0.085, both builds 0.060). The old build needed the export leak fix (`9cee0d5`) to run on the iPhone.
+- **Cause.** The contrast step (`UnderBlueBlackOffset`) darkens dark water. The corner is already dark without the restoration (Mac, source 0.097, colour correction only 0.041, contrast set to 1: 0.131). The shadow toe has slope 0 at black.
+- **Change.** Video only: no pixel below the knee falls under 65% of its own value (`FinishingMath.videoShadowFloor`). Photos are unchanged.
+- **Result (Mac videosim, same corner, 10 s):** 0.033 to 0.051. Unchanged above the knee. Tests: RestorationTests 78 and VideoRestorationTests 25 pass on the simulator.
+- Not checked: the iPhone export with the floor, other clips, and the dark veil around the manta by eye in motion. The veil also exists without the restoration, so the contrast step is its likely cause, but the floor was not tuned for it.
+
 ## Open work (do first)
 
 - **Done (29 Sep 2026): distinguish the three built-in presets.** Jake checked the tuned presets

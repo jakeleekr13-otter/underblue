@@ -118,7 +118,7 @@ final class FilterEngine: Sendable {
         corrected = controls.outputImage ?? corrected
         if let offsetKernel {
             corrected = offsetKernel.apply(extent: image.extent, arguments: [
-                corrected, CIVector(x: CGFloat(gain), y: CGFloat(brightness + (1 - gain) * 0.5), z: 0, w: 0)
+                corrected, CIVector(x: CGFloat(gain), y: CGFloat(brightness + (1 - gain) * 0.5), z: CGFloat(openWaterRed ? FinishingMath.videoShadowFloor : 0), w: 0)
             ]) ?? corrected
         }
 

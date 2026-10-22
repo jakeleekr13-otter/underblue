@@ -151,16 +151,23 @@ enum FinishingMath {
     /// bright scene (video2 at 5 s, 30 Sep 2026) lost its whole body: 41% of that region near black, source 11%.
     /// So below twice the offset a quadratic toe takes over. Zero stays zero, and the toe meets the
     /// straight line with the same slope, so every channel from twice the offset up is as before.
-    static func blackOffset(_ c: SIMD3<Float>, gain: Float, offset: Float) -> SIMD3<Float> {
+    /// The toe has no floor: its slope is 0 at black. A dark corner of open water (linear 0.01) came out
+    /// near black, 30% of its source (iPhone 17, 2025-05-03 22.12.02.MOV at 10 s, 22 Oct 2026). Video
+    /// passes `floor` > 0: no pixel below the knee falls under `floor` times its own value.
+    /// The result stays non-decreasing. With floor 0.5 it meets the line at the knee; above 0.5 it is flat for a short span.
+    static func blackOffset(_ c: SIMD3<Float>, gain: Float, offset: Float, floor: Float = 0) -> SIMD3<Float> {
         var out = c * gain + offset
         guard offset < 0 else { return out }
         let knee = -2 * offset
         for channel in 0..<3 {
             let x = c[channel] * gain
             if x < knee { out[channel] = max(0, x) * max(0, x) / (2 * knee) }
+            out[channel] = max(out[channel], min(max(x, 0), knee) * floor)
         }
         return out
     }
+    /// The shadow floor video uses in `blackOffset`.
+    static let videoShadowFloor: Float = 0.65
 
     /// Highlight shoulder, the last finishing step. The UnderBlueHighlightShoulder kernel mirrors it.
     /// The largest channel is read as a BT.709 / sRGB display shows it (`display`), because the

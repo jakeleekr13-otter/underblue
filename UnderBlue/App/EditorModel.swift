@@ -69,7 +69,7 @@ final class EditorModel {
         self.formatStore = formatStore
         photos = PhotoProcessor(diagnostics: diagnostics)
         video = VideoExporter(diagnostics: diagnostics)
-        videoPreview = VideoPreview(diagnostics: diagnostics)
+        videoPreview = VideoPreview(diagnostics: diagnostics, pixelRateBudget: VideoPreview.phonePixelRateBudget)
         settings.adjustments = adjustmentStore.load()
         options.photoFormat = formatStore.load()
     }
@@ -91,10 +91,11 @@ final class EditorModel {
                 previewSettings.update(settings, comparing: comparing)
                 player = AVPlayer(playerItem: try await videoPreview.item(media.url, settings: previewSettings))
                 ready = true
-                // Show the existing UnderBlue preview immediately. Device benchmarking and
-                // depth analysis may continue without keeping the editor behind "Opening…".
+                // Show the first frame immediately. Device benchmarking and depth analysis continue
+                // without keeping the editor behind "Opening…". Playback stays blocked until they finish.
                 loading = false
                 analyzing = true
+                player?.pause()
                 capability = await ExportCapability.evaluate(url: media.url, metadata: metadata)
                 // The video is already open and playing here. A failed scene analysis only loses the
                 // scene correction, so record it as a restoration fallback, not as "couldn't open".

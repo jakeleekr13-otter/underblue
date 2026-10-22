@@ -2942,37 +2942,37 @@
         }
       }
     },
-    "For a video, Play 3s plays three seconds from the current position, then returns." : {
+    "For a video, 3s Preview plays three seconds from the current position, then returns." : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "For a video, Play 3s plays three seconds from the current position, then returns."
+            "value" : "For a video, 3s Preview plays three seconds from the current position, then returns."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ビデオでは、3秒再生で現在の位置から3秒再生し、元の位置に戻ります。"
+            "value" : "ビデオでは、3秒プレビューで現在の位置から3秒再生し、元の位置に戻ります。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "동영상에서는 3초 재생이 현재 위치부터 3초를 재생한 뒤 돌아옵니다."
+            "value" : "동영상에서는 3초 미리보기가 현재 위치부터 3초를 재생한 뒤 돌아옵니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "对于视频，“播放3秒”会从当前位置播放三秒，然后返回。"
+            "value" : "对于视频，“3秒预览”会从当前位置播放三秒，然后返回。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "對於影片，「播放3秒」會從目前位置播放三秒，然後返回。"
+            "value" : "對於影片，「3秒預覽」會從目前位置播放三秒，然後返回。"
           }
         }
       }
@@ -5217,37 +5217,37 @@
         }
       }
     },
-    "Play 3s" : {
+    "3s Preview" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Play 3s"
+            "value" : "3s Preview"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "3秒再生"
+            "value" : "3秒プレビュー"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "3초 재생"
+            "value" : "3초 미리보기"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "播放3秒"
+            "value" : "3秒预览"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "播放3秒"
+            "value" : "3秒預覽"
           }
         }
       }

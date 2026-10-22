@@ -113,7 +113,7 @@ struct DiagnosticsView: View {
          "Pick a look: Natural Dive, Tropical or Deep Dive. Intensity sets how strong it is.",
          "Custom starts from the Natural Dive result. Adjust it with five sliders.",
          "Tap Compare to see the original. In the photo editor, pinch or double-tap to zoom.",
-         "For a video, Play 3s plays three seconds from the current position, then returns.",
+         "For a video, 3s Preview plays three seconds from the current position, then returns.",
          "Tap Export, then Save to Photos."]
         #else
         ["Add photos, videos or whole folders: drag them into the window or press ⌘O. You can also use Share in Finder or Photos.",

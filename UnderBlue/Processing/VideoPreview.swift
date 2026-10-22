@@ -46,9 +46,16 @@ struct VideoPreview {
     let analyzer: VideoRestorationAnalyzer
     private let diagnostics: DiagnosticRecorder?
     private let diagnosticGate = VideoRestorationDiagnosticGate()
+    /// Output pixels per second the preview may render. nil renders at full size.
+    private let pixelRateBudget: Double?
 
-    init(diagnostics: DiagnosticRecorder? = nil) {
+    /// Measured on iPhone 17 (22 Oct 2026): about 31 million pixels per second plays smoothly.
+    /// 1080p at 60 fps with 0.5 scale ran at 60 fps. 4K at 60 fps with 0.5 scale ran at 18 fps.
+    static let phonePixelRateBudget = 30_000_000.0
+
+    init(diagnostics: DiagnosticRecorder? = nil, pixelRateBudget: Double? = nil) {
         self.diagnostics = diagnostics
+        self.pixelRateBudget = pixelRateBudget
         analyzer = VideoRestorationAnalyzer(diagnostics: diagnostics)
     }
 
@@ -62,6 +69,14 @@ struct VideoPreview {
         item.appliesPerFrameHDRDisplayMetadata = false
         item.videoComposition = try await composition(asset: asset, settings: settings, analysis: analysis)
         return item
+    }
+
+    /// Render scale that keeps the preview inside the pixel-rate budget. Export never uses it.
+    static func renderScale(size: CGSize, frameDuration: CMTime, budget: Double?) -> Float {
+        guard let budget, frameDuration.seconds > 0 else { return 1 }
+        let pixelRate = Double(size.width * size.height) / frameDuration.seconds
+        guard pixelRate > budget else { return 1 }
+        return Float((budget / pixelRate).squareRoot())
     }
 
     /// A fresh composition is intentionally created for every preset revision.
@@ -98,7 +113,8 @@ struct VideoPreview {
             instructions: filtered.instructions,
             outputBufferDescription: filtered.outputBufferDescription,
             perFrameHDRDisplayMetadataPolicy: filtered.perFrameHDRDisplayMetadataPolicy,
-            renderScale: filtered.renderScale,
+            renderScale: Self.renderScale(size: filtered.renderSize, frameDuration: filtered.frameDuration,
+                                          budget: pixelRateBudget),
             renderSize: filtered.renderSize,
             sourceSampleDataTrackIDs: filtered.sourceSampleDataTrackIDs,
             sourceTrackIDForFrameTiming: filtered.sourceTrackIDForFrameTiming,

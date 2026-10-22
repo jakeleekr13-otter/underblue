@@ -2,6 +2,28 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## Video preview stutter and the 3s Preview button (22 Oct 2026)
+
+A user reported that the 3-second video preview stutters badly. The preview renders every frame live with Core Image. Cost follows the pixel count.
+
+Measured on an iPhone 17 (Release build, thermal state 0 to 1, 3 s of playback, frames read at 60 Hz with `AVPlayerItemVideoOutput`, no visible layer). Frames delivered in 3 s, with the scene analysis done:
+- 4K 60 fps, two real clips (`13832750_2160_3840_60fps`, `16893606_2160_3840_60fps`): 6 to 7 frames before the fix (about 2 fps).
+- 1080p 60 fps, two clips: 69 to 98 frames before the fix (about 25 to 33 fps), uneven gaps of 33 and 50 ms.
+- 720p 30 fps: 90 frames, smooth before and after.
+- Locking the frame duration to 30 fps did not help. It was worse.
+
+Fix:
+- The editor preview now renders at a scale that keeps the output near 30 million pixels per second (`VideoPreview.phonePixelRateBudget`). 1080p 60 fps renders at 0.49. 4K 60 fps renders at 0.25. Export and the Mac preview are not changed.
+- After the fix: the two real 4K clips gave 180 frames (60 fps) in runs 2 and 3. Run 1 gave 167 and 164 frames, with max gaps of 133 ms and 183 ms. 1080p 60 fps and a 1080p 30 fps clip held their source rate. The unit tests are in `VideoPreviewScaleTests`.
+- Playback is blocked while the scene is analysed (about 15 s for 4K, 3 to 8 s for 1080p). The filter-only preview before the analysis stutters on 4K (about 10 fps, measured without the budget). The video player ignores taps and the 3s Preview button is disabled until the analysis ends.
+- The button was renamed from "Play 3s" to "3s Preview" in all five languages.
+
+Still open:
+- **Look at a 4K clip on the phone.** At 0.25 scale the preview may look soft. Export quality is the same as before.
+- Not measured: the filter-only path with the budget (it is now blocked), a hot phone (thermal state 2 or higher), older iPhones, the first-play gap of 133 to 183 ms (cause not checked), and the Mac preview.
+- Not checked by hand: the blocked player and the disabled button on the device.
+- The budget comes from one phone. Measure again when another device is available.
+
 ## Video layer edge, halo and export memory (22 Oct 2026)
 
 Commits `7040d4f`, `23d27bc`, `2c55acc` and the export memory fix. Algorithm details: [ColorAlgorithm](ColorAlgorithm.md#video-only-steps-22-oct-2026).

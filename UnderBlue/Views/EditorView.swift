@@ -70,7 +70,10 @@ struct EditorView: View {
     private var previewPanel: some View {
         ZStack {
             Color.black
-            if model.media.kind == .video { VideoPlayer(player: model.player) }
+            if model.media.kind == .video {
+                // No playback while the scene is analysed: the filter-only preview stutters on large clips.
+                VideoPlayer(player: model.player).disabled(model.analyzing).allowsHitTesting(!model.analyzing)
+            }
             else if let preview = model.comparing ? model.originalPreview : model.preview {
                 // Compare swaps the image but keeps the zoom, so the same detail can be checked both ways.
                 ZoomablePreview(image: preview, zoom: $zoom) { model.requestDetailPreview() }
@@ -79,7 +82,7 @@ struct EditorView: View {
                 if model.analyzing { VStack(spacing: 12) { longVideoNotice; ProgressView("Analyzing…") } }
                 else { ProgressView("Opening…") }
             } else if model.analyzing {
-                // Video stays playable while the scene is analysed; the colour updates when it finishes.
+                // Playback is blocked until the scene is analysed. The colour is then final from the first frame.
                 VStack(spacing: 8) {
                     longVideoNotice
                     HStack(spacing: 8) { ProgressView(); Text("Analyzing…").font(.footnote.weight(.medium)) }
@@ -111,9 +114,9 @@ struct EditorView: View {
                 Spacer(minLength: 8)
                 if model.media.kind == .video {
                     Button { if model.clipPlaying { model.stopClip(rewind: true) } else { Task { await model.playClip() } } } label: {
-                        Label(model.clipPlaying ? "Stop" : "Play 3s", systemImage: model.clipPlaying ? "stop.fill" : "play.fill")
+                        Label(model.clipPlaying ? "Stop" : "3s Preview", systemImage: model.clipPlaying ? "stop.fill" : "play.fill")
                             .lineLimit(1).fixedSize()
-                    }.buttonStyle(.bordered).frame(minHeight: 44).disabled(!model.ready)
+                    }.buttonStyle(.bordered).frame(minHeight: 44).disabled(!model.ready || model.analyzing)
                         .accessibilityHint("Play three seconds from the current position, then return")
                 }
                 Button { model.comparing.toggle() } label: {

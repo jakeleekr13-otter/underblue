@@ -13,7 +13,6 @@ struct VideoExportResult: Sendable {
 }
 
 actor VideoExporter {
-    private let engine = FilterEngine()
     private let restorationEngine = RestorationEngine()
     private let diagnostics: DiagnosticRecorder?
     private let signposter = OSSignposter(subsystem: "com.underblue.app", category: "export")
@@ -40,6 +39,8 @@ actor VideoExporter {
         guard let track = try await asset.loadTracks(withMediaType: .video).first else { throw UnderBlueError.unreadable }
         let duration = min(metadata.duration, options.durationLimit ?? metadata.duration)
         let size = options.size(for: metadata.displaySize)
+        // One Core Image context per export, sized for this output (see memoryLimitMB).
+        let engine = FilterEngine(memoryLimitMB: Self.memoryLimitMB(for: size))
         let bitrate = Int(min(100_000_000, max(6_000_000, size.width * size.height * Double(max(24, metadata.frameRate)) * 0.12)))
         try StorageCheck.require(bytes: Int64(Double(bitrate) / 8 * duration * 1.3))
         let target = try TemporaryFiles.makeURL(extension: "mov")
@@ -207,6 +208,52 @@ actor VideoExporter {
         succeeded = true
         return VideoExportResult(url: target, metadata: result, frames: frames,
                                  elapsedSeconds: Date().timeIntervalSince(startedAt), frameLoopSeconds: frameLoopSeconds)
+    }
+
+    /// Free memory that Core Image must leave alone. The rest of an export (decoder, encoder, frame buffers)
+    /// took about 190 MB on an iPhone 17 at 4K. With 80% of the free memory given to Core Image instead, the
+    /// free memory fell to 11 MB (22 Oct 2026, docs/PerformanceMeasurement.md). The app stays in the
+    /// foreground during an export, so the free memory does not drop suddenly.
+    static let memoryReserveMB = 512
+
+    /// The memory that is free now: what the system still lets this app use on an iPhone, the free and
+    /// reclaimable memory of the Mac.
+    static func availableMemoryBytes() -> UInt64 {
+        #if os(iOS)
+        UInt64(os_proc_available_memory())
+        #else
+        SystemMemoryProbe().availableBytes()
+        #endif
+    }
+
+    /// The Core Image memory limit for an output size: 130 bytes per pixel (4K gets about 1 GiB, where the
+    /// speed stops rising), and never more than the free memory minus `memoryReserveMB`.
+    /// Nil keeps the system default (256 MB), which is enough up to 1080p.
+    /// Measured on a Mac at 720p, 1080p and 4K, and on an iPhone 17 at 4K (docs/PerformanceMeasurement.md).
+    static func memoryLimitMB(for size: CGSize, availableBytes: UInt64 = VideoExporter.availableMemoryBytes()) -> Int? {
+        let wanted = Int((size.width * size.height * 130 / 1_048_576).rounded(.up))
+        let allowed = Int(availableBytes / 1_048_576) - memoryReserveMB
+        let limit = min(wanted, allowed)
+        return limit > 300 ? limit : nil
+    }
+
+    /// Free memory that a video export of this output size needs before it starts. 4K was measured on an
+    /// iPhone 17: it finished with 1236 MB free and the app was ended with about 980 MB free (22 Oct 2026,
+    /// docs/PerformanceMeasurement.md). Other sizes scale with the pixel count; they are estimates, not measured.
+    static func requiredAvailableMB(for size: CGSize) -> Int {
+        300 + Int((size.width * size.height * 1000 / (3840 * 2160)).rounded(.up))
+    }
+
+    struct MemoryShortage: Equatable, Sendable {
+        let availableMB: Int
+        let neededMB: Int
+    }
+
+    /// Nil when enough memory is free to start. Otherwise the free and the needed amount, for the
+    /// "close other apps" message.
+    static func memoryShortage(outputSize: CGSize, availableMB: Int = Int(VideoExporter.availableMemoryBytes() / 1_048_576)) -> MemoryShortage? {
+        let needed = requiredAvailableMB(for: outputSize)
+        return availableMB < needed ? MemoryShortage(availableMB: availableMB, neededMB: needed) : nil
     }
 
     /// Exports a short probe with the real pipeline and scales its frame-loop time to the full length.

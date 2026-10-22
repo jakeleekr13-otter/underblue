@@ -21,7 +21,15 @@ struct ExportView: View {
                         Picker("Resolution", selection: $model.options.resolution) {
                             ForEach(ExportOptions.Resolution.allCases) { resolution in
                                 HStack {
-                                    Text(resolution.localizedName)
+                                    if resolution == .source, ExportOptions.exceedsSupportedSize(metadata.displaySize) {
+                                        Text(verbatim: "4K")
+                                    } else {
+                                        Text(resolution.localizedName)
+                                    }
+                                    if resolution == .source, ExportOptions.isBest(metadata.displaySize) {
+                                        Text("Best").font(.caption2.bold()).padding(.horizontal, 6).padding(.vertical, 2)
+                                            .background(.tint.opacity(0.2), in: Capsule()).foregroundStyle(.tint)
+                                    }
                                     Spacer()
                                     if let seconds = model.estimates[resolution] {
                                         Text("~" + Self.format(seconds)).monospacedDigit().foregroundStyle(.secondary)
@@ -30,7 +38,11 @@ struct ExportView: View {
                             }
                         }.pickerStyle(.inline).labelsHidden()
                         Text(model.options.summary(for: metadata)).font(.footnote).foregroundStyle(.secondary)
+                        if ExportOptions.exceedsSupportedSize(metadata.displaySize) {
+                            Text("8K video isn’t supported yet. It exports in 4K, the best option.").font(.footnote).foregroundStyle(.secondary)
+                        }
                         Text("Estimated time is measured with a short test export on this device.").font(.footnote).foregroundStyle(.secondary)
+                        Text("Other apps running at the same time can slow the export.").font(.footnote).foregroundStyle(.secondary)
                     }
                     Section("Color") {
                         Picker("Color", selection: $model.options.range) {
@@ -69,7 +81,7 @@ struct ExportView: View {
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
                 // Pinned so the action stays visible however far the options scroll.
                 .safeAreaInset(edge: .bottom) {
-                    Button { model.startExport(purchases: purchases, trial: trial) } label: {
+                    Button { model.requestStart(purchases: purchases, trial: trial) } label: {
                         Text("Export").frame(maxWidth: .infinity, minHeight: 44)
                     }.buttonStyle(.borderedProminent).accessibilityIdentifier("export-confirm").padding(.horizontal).padding(.vertical, 8).background(.bar)
                 }
@@ -77,6 +89,12 @@ struct ExportView: View {
             .task { if model.media.kind == .video { model.estimateExportTimes() } }
             .onChange(of: model.options.range) { if model.media.kind == .video { model.estimateExportTimes() } }
             .onDisappear { model.cancelEstimates() }
+            .alert("Free up memory", isPresented: Binding(get: { model.memoryShortage != nil }, set: { if !$0 { model.memoryShortage = nil } })) {
+                Button("Check again") { Task { await model.recheckMemory(purchases: purchases, trial: trial) } }
+                Button("Cancel", role: .cancel) { model.memoryShortage = nil }
+            } message: {
+                Text("There isn’t enough free memory for this video. Close other apps, then choose Check again.")
+            }
     }
     static func photoSummary(_ options: ExportOptions) -> String {
         switch (options.range, options.photoFormat) {

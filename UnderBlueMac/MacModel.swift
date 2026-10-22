@@ -269,6 +269,23 @@ final class MacModel {
 
     var canStart: Bool { !engine.running && engine.pendingCount > 0 }
 
+    /// Set when the biggest video in the queue needs more free memory than there is now. The window asks the user
+    /// to close other apps and click "Check again". Nothing is shown when enough memory is free.
+    var memoryShortage: VideoExporter.MemoryShortage?
+
+    /// The shortage for the biggest video output in `pending`, or nil. A file that can't be read is left to the run.
+    private func videoMemoryShortage(for pending: [BatchEngine.Item]) async -> VideoExporter.MemoryShortage? {
+        var options = ExportOptions()
+        if !isProOrDemo { options.resolution = .hd }
+        var largest: CGSize?
+        for item in pending where item.kind == .video {
+            guard let metadata = try? await MediaInspector().inspect(item.url) else { continue }
+            let size = options.size(for: metadata.displaySize)
+            if largest.map({ size.width * size.height > $0.width * $0.height }) ?? true { largest = size }
+        }
+        return largest.flatMap { VideoExporter.memoryShortage(outputSize: $0) }
+    }
+
     /// Pro runs the whole queue. Without Pro, one item may run as the free trial; more than one needs Pro.
     func start() {
         guard canStart, runTask == nil else { return }
@@ -276,6 +293,8 @@ final class MacModel {
             defer { runTask = nil }
             await purchases.refreshEntitlement()
             let pending = engine.items.filter { $0.state == .queued || $0.state == .cancelled }
+            if let shortage = await videoMemoryShortage(for: pending) { memoryShortage = shortage; return }
+            memoryShortage = nil
             var trialKind: ImportedMedia.Kind?
             if !isProOrDemo {
                 guard pending.count == 1, let kind = pending.first?.kind else {

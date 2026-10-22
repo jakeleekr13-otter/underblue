@@ -23,8 +23,12 @@ final class FilterEngine: Sendable {
     func calmKernelForTesting(_ name: String) -> CIColorKernel? { calmKernels[name] }
     static let workingSpace = CGColorSpace(name: CGColorSpace.extendedLinearITUR_2020)!
     static let photoSpace = CGColorSpace(name: CGColorSpace.displayP3)!
-    init() {
-        let options: [CIContextOption: Any] = [.workingColorSpace: Self.workingSpace, .workingFormat: CIFormat.RGBAh, .cacheIntermediates: false]
+    /// `memoryLimitMB` sets the most memory Core Image may use for one render. The default (256 MB) is
+    /// too small for 4K video: it ran 3 times slower and used twice the memory (Mac, 22 Oct 2026,
+    /// docs/PerformanceMeasurement.md). Nil keeps the system default.
+    init(memoryLimitMB: Int? = nil) {
+        var options: [CIContextOption: Any] = [.workingColorSpace: Self.workingSpace, .workingFormat: CIFormat.RGBAh, .cacheIntermediates: false]
+        if let memoryLimitMB { options[.memoryTarget] = memoryLimitMB }
         if let device = MTLCreateSystemDefaultDevice() { context = CIContext(mtlDevice: device, options: options) }
         else { context = CIContext(options: options) }
         colorKernel = MetalKernels.color("UnderBlueFinishColor")

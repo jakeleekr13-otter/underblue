@@ -226,6 +226,28 @@ final class EditorModel {
         }
     }
     func cancelEstimates() { estimateTask?.cancel(); estimateTask = nil; estimating = false }
+    /// Set when a video export needs more free memory than there is now. The export view asks the user to close
+    /// other apps and tap "Check again". Nothing is shown when enough memory is free.
+    var memoryShortage: VideoExporter.MemoryShortage?
+    /// Starts the export, or asks for free memory first.
+    func requestStart(purchases: PurchaseStore, trial: TrialStore) {
+        guard !exporting else { return }
+        if let metadata, media.kind == .video {
+            var chosen = options
+            if !purchases.isPro { chosen.resolution = .hd }
+            if let shortage = VideoExporter.memoryShortage(outputSize: chosen.size(for: metadata.displaySize)) {
+                memoryShortage = shortage
+                return
+            }
+        }
+        memoryShortage = nil
+        startExport(purchases: purchases, trial: trial)
+    }
+    /// The "Check again" button: reads the free memory again, then starts or asks again.
+    func recheckMemory(purchases: PurchaseStore, trial: TrialStore) async {
+        try? await Task.sleep(for: .milliseconds(400))
+        requestStart(purchases: purchases, trial: trial)
+    }
     func startExport(purchases: PurchaseStore, trial: TrialStore) {
         guard !exporting else { return }
         cancelEstimates()

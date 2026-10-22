@@ -67,6 +67,12 @@ struct MainWindow: View {
             if case .success(let urls) = result { Task { await model.add(urls) } }
         }
         .sheet(isPresented: $model.showPaywall) { ProView(reason: model.paywallReason) }
+        .alert("Free up memory", isPresented: Binding(get: { model.memoryShortage != nil }, set: { if !$0 { model.memoryShortage = nil } })) {
+            Button("Check again") { model.start() }
+            Button("Cancel", role: .cancel) { model.memoryShortage = nil }
+        } message: {
+            Text("There isn’t enough free memory for this video. Close other apps, then choose Check again.")
+        }
         .frame(minWidth: 900, minHeight: 560)
     }
 

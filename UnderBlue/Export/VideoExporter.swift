@@ -142,24 +142,30 @@ actor VideoExporter {
                 }
                 if let frame {
                     VideoColorPipeline.tag(destination, hdr: hdr, pq: metadata.dynamicRange == .pq)
-                    let fallback = engine.apply(frame.0, settings: settings)
-                    let corrected: CIImage
-                    if let moment = restoration?.moment(at: frame.1.seconds) {
-                        do {
-                            corrected = try restorationEngine.combined(frame.0, moment: moment, settings: settings,
-                                                                        filter: engine, preservesHDR: hdr)
-                        } catch {
-                            corrected = fallback
-                            if !recordedRenderFallback, let diagnostics {
-                                recordedRenderFallback = true
-                                await diagnostics.record(.restorationFallback(.videoRender),
-                                                         operation: .videoRestoration)
+                    // One autorelease pool per frame. Without it the memory grew about 3.7 MB per frame with the
+                    // restoration on (flat with preset Original): the 31 s whale shark clip (931 frames) passed 3 GB on
+                    // an iPhone 17 and the system ended the app. With the pool the footprint stays near 230 MB.
+                    var renderFellBack = false
+                    try autoreleasepool {
+                        let fallback = engine.apply(frame.0, settings: settings)
+                        let corrected: CIImage
+                        if let moment = restoration?.moment(at: frame.1.seconds) {
+                            do {
+                                corrected = try restorationEngine.combined(frame.0, moment: moment, settings: settings,
+                                                                            filter: engine, preservesHDR: hdr)
+                            } catch {
+                                corrected = fallback
+                                renderFellBack = true
                             }
-                        }
-                    } else { corrected = fallback }
-                    engine.context.render(corrected, to: destination, bounds: CGRect(origin: .zero, size: size),
-                                          colorSpace: VideoColorPipeline.colorSpace(hdr: hdr, pq: metadata.dynamicRange == .pq))
-                    guard adaptor.append(destination, withPresentationTime: frame.1) else { throw writer.error ?? UnderBlueError.exportFailed }
+                        } else { corrected = fallback }
+                        engine.context.render(corrected, to: destination, bounds: CGRect(origin: .zero, size: size),
+                                              colorSpace: VideoColorPipeline.colorSpace(hdr: hdr, pq: metadata.dynamicRange == .pq))
+                        guard adaptor.append(destination, withPresentationTime: frame.1) else { throw writer.error ?? UnderBlueError.exportFailed }
+                    }
+                    if renderFellBack, !recordedRenderFallback, let diagnostics {
+                        recordedRenderFallback = true
+                        await diagnostics.record(.restorationFallback(.videoRender), operation: .videoRestoration)
+                    }
                     frames += 1
                     if frames.isMultiple(of: 300) { engine.context.clearCaches() }
                 }

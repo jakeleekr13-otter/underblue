@@ -355,7 +355,7 @@ These limits apply. Most are in `RestorationLimits`; `channelRecoverability` is 
 |---|---|
 | `transmissionFloor` | 0.28 |
 | `maximumGain` | Red 1.32 + 0.45 x red survival, green 1.55, blue 1.45, spread by cast (`WaterModelEstimator`) |
-| Highlight protection | From peak 0.72 to 1.0, up to 80% of the source is kept |
+| Highlight protection | From peak 0.72 to 1.0, up to 80% of the source is kept. Peak is the brightest channel on photos and the middle channel on video (see [Video-only steps](#video-only-steps-22-oct-2026)). |
 | `maximumOutput` | 1.15; 8 for HDR video (`RestorationEngine.combined(_:moment:settings:filter:preservesHDR:)`) |
 | `channelRecoverability` | Per-channel share of the correction that is applied |
 
@@ -366,6 +366,23 @@ Three hue rules run last:
 - **`keepWarmRatio`**: a pale source pixel whose red already reaches green (`FinishingMath.uncast`) cannot get a higher red/green than its source. The red-first gain and the removal of a bluer veil raised it before. On the shark photo, restoration alone took the surface from 4.2% to 12.7% pink or violet pixels. With this rule it gives 3.2%.
 
 The estimator spreads attenuation across channels only as far as the measured cast (`spread(_:by:)` with `castStrength`). A neutral scene gets equal attenuation, so greys stay grey. Plan confidence is the minimum of four values: the estimator's overall confidence (at most 0.9), depth, water-fit and temporal confidence (`RestorationPlan.init`).
+
+### Video-only steps (22 Oct 2026)
+
+Three steps run only on video (`combined(..., video: true)`, the flag `combined(_:moment:...)` sets). Photos keep the earlier output: the colour eval report of the photo set is identical to the commit before these steps. Found on two Instagram clips and checked on a whale shark clip and a manta clip (`DeveloperMedia/Tune_22_Oct`, `challenge_video`, `Tune_20_Oct`).
+
+| Step | Problem it fixes | How |
+|---|---|---|
+| Middle-channel highlight rule | A hard layer edge in bright blue water (50.6 to 15.9 change over 20 rows; the source has 17.6). Blue water has one bright channel, so the brightest-channel peak read it as a highlight. About 44% of the restored pixel went back to the source, and that weight fell away over about 50 rows. | `peak` is the middle channel. A white highlight has two bright channels. The kernel reads `veil.w` (1 on video) to choose; `RestorationMath.inverse(middleHighlight:)` mirrors it. |
+| No rebuilt red in flat open water | Grey top layer over a blue layer. Sunlit surface water is greener than the scene's one water colour, so the red hue gate took it for a subject. | `FilterEngine.finishing(openWaterRed:)` mixes the colour stage without rebuilt red back in by the water calm weight. The weight is blurred by `openWaterBlur` (0.03 of the short side). Raw, it fell to 0 beside small subjects and gave every fish a grey ring. |
+| Dark pixels lifted before the broad blur | A bright halo around dark fish and sharks. The dark subject lowers the broad light, so the water next to it kept more veil. | `RestorationEngine.restore(liftDark:)`: twice, `max(source, wide blur)` (kernel `UnderBlueLiftToWide`, wide radius 3 broad radii), then the broad blur. Used only without a photo subject mask. |
+
+Rejected tries:
+
+- Middle-channel highlight rule on photos: it drew a dark blob around the shark in r13 (bright open blue water). The local veil scale reaches 3 times there, and the old rule hid it. A fix for that blob is still open (see [Verification](Verification.md)).
+- Red rebuild times `(1 - waterShare)`: blue subjects count as water (the redness test is broad), so nearRG fell on r11 and r15 and 7 kernel-versus-CPU tests failed.
+- A threshold mask for the local veil (outlier pixels, smoothstep 0.12-0.35 and 0.05-0.18): it made cyan blotches and did not remove the halo.
+- A halo metric (ring versus far water, OKLab) could not tell the clips apart. The halo was judged by eye on enlarged crops of the real iPhone export.
 
 ## CPU mirrors and tests
 

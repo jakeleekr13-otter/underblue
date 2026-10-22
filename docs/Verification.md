@@ -2,6 +2,24 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## Video layer edge, halo and export memory (22 Oct 2026)
+
+Commits `7040d4f`, `23d27bc`, `2c55acc` and the export memory fix. Algorithm details: [ColorAlgorithm](ColorAlgorithm.md#video-only-steps-22-oct-2026).
+
+Checked by eye on an iPhone 17 export (Tune_22_Oct: thresher shark and hammerheads; whale shark first 12 s) and on the Mac render tool (`videosim`, plus the 22 tests of `UnderBlueMacTests`):
+- Layer edge: gone. Change over 20 rows 50.6 to 15.9 (source 17.6). Whale shark top: 46.4 to 36.8 (source 30.4; that clip has a real light edge).
+- Halo: gone beside dark fish. A numeric halo metric did not work, so this is by eye.
+- Photos: colour eval report identical to before. 149 simulator tests passed.
+- Export time on the iPhone 17: about 5 to 15% slower (clip B 5.0-6.5 s to 6.0-6.7 s; clip A 12.7-13.8 s to 14.4-15.8 s; 2 runs each). Mac times were too noisy (fanless Air).
+
+**Export memory leak (fixed, 22 Oct 2026).** Before: with the restoration on, the footprint grew about 3.7 MB per frame (preset Original stayed at 127 MB). The 31 s whale shark clip (931 frames) passed 3 GB and the system ended the app on an iPhone 17. Commit `151e4f3` did the same, so it is older than the video steps. No crash log exists; the cause was found by logging the footprint in the progress callback. Fix: one `autoreleasepool` around the per-frame render in `VideoExporter` (the loop is in an async function). After: about 230 MB flat, 931 frames in 25.6 s, duration check passed. The first 12 s: 1581 MB before, 279 MB after.
+
+The `LongVideoTests` memory failure in Known issues may have the same cause. It was not rechecked.
+
+Still open:
+- **Dark blob on photos in bright open blue water.** Photo r13 (a shark in bright blue water): the local veil scale reaches 3 times and darkens a wide patch around the subject. A newer highlight rule would show it, so photos keep the old rule. A real fix for the veil scale is not done. The same patch may appear on video in bright open water; none of the clips shown here has it.
+- Not checked: 4K and HDR clips, the whole whale shark clip by eye (only the first 12 s), the Mac app's own export output (the test sandbox hides it), the iPhone export of the red-ring fix on the whale shark clip beyond the first 12 s.
+
 ## Open work (do first)
 
 - **Done (29 Sep 2026): distinguish the three built-in presets.** Jake checked the tuned presets
@@ -40,7 +58,7 @@ Two changes in the video path. Photos are unchanged.
 Test clips are in `DeveloperMedia/Tune_20_Oct`. All numbers come from the Mac simulation (`videosim`), not from an app export.
 
 Still open:
-- **Pale rim around dark subjects in video.** On `2025-05-03 22.12.02.MOV` at 14.4 s, the water beside a manta is about 2 L* brighter than the water further out. 51% of the edge rows show it. The band is 3 to 4% of the frame height at any size. The local veil causes it: with `veilLevel` set to 0 the rim is gone, but the whole clip gets 2 to 6 L* brighter and one clip loses 0.12 saturation. So do not switch it off. Video plans have no subject mask (photos only, since 1 Oct 2026). Whether that is the cause is untested. Whether photos show the same rim is unmeasured.
+- **Pale rim around dark subjects in video. Changed 22 Oct 2026:** the video path now lifts dark pixels before the local veil's broad blur, and the iPhone export of two clips showed no bright fog beside dark fish. See [Video layer edge, halo and export memory](#video-layer-edge-halo-and-export-memory-22-oct-2026). Original note: On `2025-05-03 22.12.02.MOV` at 14.4 s, the water beside a manta is about 2 L* brighter than the water further out. 51% of the edge rows show it. The band is 3 to 4% of the frame height at any size. The local veil causes it: with `veilLevel` set to 0 the rim is gone, but the whole clip gets 2 to 6 L* brighter and one clip loses 0.12 saturation. So do not switch it off. Video plans have no subject mask (photos only, since 1 Oct 2026). Whether that is the cause is untested. Whether photos show the same rim is unmeasured.
 - **Brightness jumps at scene changes are not gone.** With every correction frozen, 5.1 and 6.1 L* of jump remain on two clips. Limiting each scene's brightness to 0.01 around the clip's value cut the largest jump (9.4 to 5.7 L*), but it gave a pale rim around a manta (`2025-05-03` at 5 s). It was removed.
 - **Measuring more often did not help.** Keyframes every 0.5 s or 0.25 s made the jumps larger while the fade was tied to the keyframe gap. A scene split threshold of 0.08 gave lower numbers only because scenes merged. So no "deep scan" mode was added.
 - **Not checked:** the export from the app, the analysis time on the iPhone, and an eye check of the 3 s fade at real cuts.

@@ -369,7 +369,7 @@ extension RestorationEngine {
                   filter: FilterEngine, preservesHDR: Bool = false) throws -> CIImage {
         let moment = preservesHDR ? moment.limiting(maximumOutput: 8) : moment
         return try combined(image, plan: moment.plan(), values: moment.corrections(settings: settings, engine: self),
-                            settings: settings, filter: filter)
+                            settings: settings, filter: filter, video: true)
     }
 }
 

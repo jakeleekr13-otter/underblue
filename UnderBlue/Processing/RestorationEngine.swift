@@ -159,6 +159,7 @@ final class RestorationEngine: Sendable {
     private let depthBlendKernel: CIColorKernel?
     private let subjectWeightKernel: CIColorKernel?
     private let subjectFreeLightKernel: CIColorKernel?
+    private let outlierMaskKernel: CIColorKernel?
     /// Depth (normalized) from which a pixel takes the full restored result. See combined().
     static let nearDepth: Float = 0.25
 
@@ -168,18 +169,21 @@ final class RestorationEngine: Sendable {
         depthBlendKernel = MetalKernels.color("UnderBlueDepthBlend")
         subjectWeightKernel = MetalKernels.color("UnderBlueSubjectWeight")
         subjectFreeLightKernel = MetalKernels.color("UnderBlueSubjectFreeLight")
+        outlierMaskKernel = MetalKernels.color("UnderBlueOutlierMask")
     }
 
     /// The blur (share of the short side, at least 1.5 px) that splits the source into the part
     /// the restoration acts on and the fine detail. See restore(_:plan:).
     static let detailSplitRadius: Float = 0.0015
+    /// The wide light that outlier pixels are measured against, in broad-light radii.
+    static let outlierWideScale: Float = 3
 
     /// The restoration removes the veil and divides by the transmission. On fine detail that is
     /// mostly noise: the veil takes signal, not noise, and the division then scales both. Far water
     /// got about twice the noise per signal (IMG_7260, 28 Sep 2026). So the restoration acts on a
     /// slightly blurred source, and the source's fine detail comes back at the pixel's own
     /// restoration ratio. The mean colour is the same; detail keeps its share of the signal.
-    func restore(_ image: CIImage, plan: RestorationPlan) throws -> CIImage {
+    func restore(_ image: CIImage, plan: RestorationPlan, outlierMask: Bool = false) throws -> CIImage {
         guard let kernel else { throw RestorationError.kernelUnavailable }
         let depth = try depthImage(plan.depth, matching: image.extent)
         let limits = plan.limits
@@ -199,8 +203,17 @@ final class RestorationEngine: Sendable {
         var broad = broadBlur(image)
         // Outside the photo's subjects the broad light leaves them out: a blur of the source
         // weighted by (1 - mask), divided by the blur of the weight. See SubjectMask.
-        if let subjects = plan.subjectMask, let subjectWeightKernel, let subjectFreeLightKernel {
-            let mask = subjects.image(matching: image.extent)
+        // Video has no photo mask: with outlierMask, pixels far from the wide light around them stand in for
+        // the subjects (dark sharks made a violet halo, instagram-media, 22 Oct 2026).
+        var subjectMask: CIImage? = plan.subjectMask?.image(matching: image.extent)
+        if outlierMask, subjectMask == nil, let outlierMaskKernel {
+            let wideBlur = CIFilter.gaussianBlur()
+            wideBlur.inputImage = image.clampedToExtent()
+            wideBlur.radius = broadRadius * Self.outlierWideScale
+            let wide = (wideBlur.outputImage ?? image).cropped(to: image.extent)
+            subjectMask = outlierMaskKernel.apply(extent: image.extent, arguments: [low, wide])
+        }
+        if let mask = subjectMask, let subjectWeightKernel, let subjectFreeLightKernel {
             if let weighted = subjectWeightKernel.apply(extent: image.extent, arguments: [image, mask, 0]),
                let weight = subjectWeightKernel.apply(extent: image.extent, arguments: [image, mask, 1]),
                let free = subjectFreeLightKernel.apply(extent: image.extent, arguments: [
@@ -249,15 +262,15 @@ final class RestorationEngine: Sendable {
     /// combined() with correction values the caller already made. Video mixes two scenes' values here.
     func combined(_ image: CIImage, plan: RestorationPlan,
                   values: (current: ColorCorrection, restored: ColorCorrection),
-                  settings: FilterSettings, filter: FilterEngine) throws -> CIImage {
+                  settings: FilterSettings, filter: FilterEngine, video: Bool = false) throws -> CIImage {
         let amount = min(1, max(0, settings.appliedIntensity))
         guard settings.preset != .original, amount > 0 else { return image }
         // Both paths calm the water the source shows. On the restored image the water test read 0.65
         // in far water and below 0.2 near a subject, which left a noisy band (IMG_7260, 8 Oct 2026).
         let calm = filter.waterCalmWeight(image, correction: values.current)
-        let current = filter.apply(image, correction: values.current, intensity: amount, calmWeight: calm, violetCalm: false)
-        let physicallyRestored = try restore(image, plan: plan)
-        let finished = filter.finishing(physicallyRestored, correction: values.restored, reference: image, calmWeight: calm)
+        let current = filter.apply(image, correction: values.current, intensity: amount, calmWeight: calm, violetCalm: false, openWaterRed: video)
+        let physicallyRestored = try restore(image, plan: plan, outlierMask: video)
+        let finished = filter.finishing(physicallyRestored, correction: values.restored, reference: image, calmWeight: calm, openWaterRed: video)
         let depthAware = filter.blend(image, finished, amount: amount)
         // Low-confidence fits approach the exact current UnderBlue output. So do the nearest pixels
         // (depth 0 to nearDepth): the restoration leaves them almost as they are, but the restored

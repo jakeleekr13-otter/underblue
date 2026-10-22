@@ -47,11 +47,11 @@ final class FilterEngine: Sendable {
     /// `violetCalm` false leaves the violet calm to the caller: RestorationEngine.combined runs it once
     /// on the blended output.
     func apply(_ image: CIImage, correction: ColorCorrection, intensity: Float, calmWeight: CIImage? = nil,
-               violetCalm calmsViolet: Bool = true) -> CIImage {
+               violetCalm calmsViolet: Bool = true, openWaterRed: Bool = false) -> CIImage {
         let amount = min(1, max(0, intensity.isFinite ? intensity : 0))
         guard amount > 0 else { return image }
         let calm = calmWeight ?? waterCalmWeight(image, correction: correction)
-        let shown = blend(image, finishing(image, correction: correction, calmWeight: calm), amount: amount)
+        let shown = blend(image, finishing(image, correction: correction, calmWeight: calm, openWaterRed: openWaterRed), amount: amount)
         return calmsViolet ? violetCalm(shown, source: image, calmWeight: calm) : shown
     }
     /// Violet the correction made loses its chroma; a pixel that was violet in the source keeps it
@@ -75,12 +75,24 @@ final class FilterEngine: Sendable {
     /// `reference` is the source image the highlight shoulder takes its ceiling from; it defaults to
     /// `image`. The restored path passes the unrestored source, so restoration cannot raise the ceiling.
     /// `calmWeight` is waterCalmWeight of the source; it defaults to the weight of `image` itself.
-    func finishing(_ image: CIImage, correction v: ColorCorrection, reference: CIImage? = nil, calmWeight: CIImage? = nil) -> CIImage {
+    /// `openWaterRed` (video) keeps the red rebuild out of flat open water; see below.
+    func finishing(_ image: CIImage, correction v: ColorCorrection, reference: CIImage? = nil, calmWeight: CIImage? = nil,
+                   openWaterRed: Bool = false) -> CIImage {
         guard v != .identity else { return image }
         let side = Float(min(image.extent.width, image.extent.height))
         let short = side.isFinite && side > 0 ? side : 480
         let calm = calmWeight ?? waterCalmWeight(image, correction: v)
-        var corrected = colorStage(waterCalm(image, weight: calm, short: short), v)
+        let calmed = waterCalm(image, weight: calm, short: short)
+        var corrected = colorStage(calmed, v)
+        // Flat open water gets no rebuilt red. Video has one water colour per scene, but its sunlit
+        // surface water is greener than that colour, so the hue gate took it for a subject and turned
+        // it grey above a blue layer (instagram-media 2, 22 Oct 2026). A subject is not flat water, so
+        // its weight is 0 and it keeps the rebuild. Photos and the CPU mirror are unchanged.
+        if openWaterRed, v.redRebuild > 0, let calm, let keep = calmKernels["UnderBlueCalmKeep"] {
+            var unrebuilt = v
+            unrebuilt.redRebuild = 0
+            corrected = keep.apply(extent: image.extent, arguments: [colorStage(calmed, unrebuilt), corrected, calm]) ?? corrected
+        }
 
         let controls = CIFilter.colorControls()
         controls.inputImage = corrected

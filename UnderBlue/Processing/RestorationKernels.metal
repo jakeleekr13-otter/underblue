@@ -102,3 +102,14 @@ using namespace metal;
     const float3 out = mix(broad.rgb, weighted.rgb / max(w, 1e-3f), t);
     return all(isfinite(out)) ? float4(out, broad.a) : broad;
 }
+
+// Video has no photo subject mask. Pixels whose light differs a lot from the wide light around
+// them (dark sharks, bright bellies) count as subjects, so the broad light for the local veil can
+// leave them out. mask = 0 for water, 1 for an outlier. See RestorationEngine.restore.
+[[stitchable]] float4 UnderBlueOutlierMask(coreimage::sample_t near, coreimage::sample_t wide) {
+    const float3 luma = float3(0.2126f, 0.7152f, 0.0722f);
+    const float a = dot(max(near.rgb, float3(0.0f)), luma);
+    const float b = max(dot(max(wide.rgb, float3(0.0f)), luma), 1e-4f);
+    const float m = smoothstep(0.05f, 0.18f, abs(1.0f - a / b));
+    return float4(m, m, m, 1.0f);
+}

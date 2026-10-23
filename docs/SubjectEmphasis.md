@@ -734,7 +734,7 @@ The branch merged main at `287743d`. Every number above E15 predates that merge.
 | E15 | Make the Vision input the same at every size | Mask share of one photo at four sizes | Done |
 | E16 | Trust a white reference on a subject | Unit test, gate, analysis on 31 photos | Done |
 | E17 | Split the tiers by the water, not by a depth cut | Transmission maps, metrics, full-size crops | Built. Jake judges the look |
-| E18 | Find the cause of the pale ring around fish | Ring chroma with each stage switched off | Cause found. Not fixed |
+| E18 | Find the cause of the pale ring around fish | Ring chroma with each stage switched off | Narrowed to a per-pixel step. Not fixed |
 | E19 | Device check of E15 to E17 | Parity export on the iPhone | Not done: the phone was locked |
 
 ### E15, the Vision input, 23 Oct 2026
@@ -866,7 +866,9 @@ The cause is per pixel. The source already has a pale glow around each fish. Lig
 | near, colour also found far | 0.673 | 0.1817 | 0.679 | 0.1062 |
 | near, the glow | 0.693 | 0.1450 | 0.695 | 0.0577 |
 
-The glow holds 79% of the water's chroma in the source and 54% in the result. The colour stage treats a paler, less water-like pixel more like a subject and greys it. The fix belongs in the colour stage's water test, which every photo and every clip uses. It is not made here.
+The glow holds 79% of the water's chroma in the source and 54% in the result. So the finishing path takes more chroma from a pale pixel than from the water, per pixel.
+
+Which step does it is not known. The colour kernel's water test was checked and ruled out. With its chroma term removed the ring reads 0.936. With its redness term removed it also reads 0.936. The cast gains alone are ruled out too. Applied by hand to the source, they move the glow's share of the water's chroma only from 0.79 to 0.77, against 0.54 in the result. Next to test, one at a time: the water tone and water saturation, the tone curve, vibrance. Not fixed.
 
 ### The control photos
 

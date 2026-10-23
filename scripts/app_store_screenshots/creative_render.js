@@ -1,5 +1,5 @@
 // Render the App Store universal creative asset (product page header and search results).
-// Output: AppStoreAssets/Creative/universal-5244x2950.png, RGB PNG without alpha.
+// Output: AppStoreAssets/Screenshots/header/universal-5244x2950.png, RGB PNG without alpha.
 // Run from the repo root: npm i --no-save playwright && node scripts/app_store_screenshots/creative_render.js
 const { chromium } = require('playwright');
 const { execFileSync } = require('child_process');
@@ -9,7 +9,7 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '../..');
 const source = path.join(root, 'AppStoreAssets/Screenshots/en-US/source');
-const out = path.join(root, 'AppStoreAssets/Creative');
+const out = path.join(root, 'AppStoreAssets/Screenshots/header');
 const file = path.join(out, 'universal-5244x2950.png');
 
 // Chromium cannot read HEIC, so stage the frames as JPEG next to the page.
@@ -17,7 +17,8 @@ const work = fs.mkdtempSync(path.join(os.tmpdir(), 'underblue-creative-'));
 fs.mkdirSync(path.join(work, 'assets'));
 fs.copyFileSync(path.join(__dirname, 'creative.html'), path.join(work, 'creative.html'));
 for (const n of ['video_frame_before', 'video_frame_after']) {
-  execFileSync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '95',
+  // Mirrored, so the clownfish faces right (see creative.html).
+  execFileSync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '95', '--flip', 'horizontal',
     path.join(source, n + '.HEIC'), '--out', path.join(work, 'assets', n + '.jpg')], { stdio: 'ignore' });
 }
 

@@ -19,7 +19,7 @@ Checks run for it are in `Verification.md`, "Camera JPEG reef colour".
 Store page work for 1.1.4 (23 Oct 2026). Jake submitted the app the same day.
 
 - New app icon: `UnderBlue/Resources/AppIcon.icon` (Icon Composer), in build 10. See `docs/IconComposer.md`.
-- Product page header: `AppStoreAssets/Creative/universal-5244x2950.png`, uploaded by Jake.
+- Product page header: `AppStoreAssets/Screenshots/header/universal-5244x2950.png`, uploaded by Jake.
 - Search results (same file), Korean metadata (`docs/AppStoreMetadata.md`) and Korean screenshots (`AppStoreAssets/Screenshots/ko/final`): prepared. Upload not recorded.
 - Product Page Optimization: not used (Jake, 23 Oct 2026).
 

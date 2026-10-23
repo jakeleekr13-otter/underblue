@@ -1,6 +1,6 @@
 # Subject emphasis — plan
 
-Status: plan draft, revised 22 Oct 2026. Nothing built. Not yet agreed by Jake.
+Status: revised 23 Oct 2026. Built on the branch, not in the app yet. Numbers above E15 predate the 1.1.4 merge and are superseded. See "The track on 1.1.4".
 
 The manual subject picker ([SubjectPicker.md](SubjectPicker.md)) is on hold. Stage E2 decides whether it comes back.
 
@@ -718,6 +718,155 @@ Two things follow.
 - The five photos in `DeveloperMedia/subjectpicker` are camera JPEGs. If people shoot RAW, the recipe has to be judged on RAW as well.
 
 **Mac against iOS, measured.** Same commit, same photo, no lift. The Mac harness reads hue 49 and the device reads 56. The gap `MacApp.md:150` warns about is real, and it is smaller than the RAW-against-JPEG gap.
+
+### The track on 1.1.4, 23 Oct 2026
+
+Main shipped 1.1.4 today. Jake asked for three things on top of it:
+
+- finish the subject work,
+- redesign the tiers from optics,
+- fix what 1.1.4 left open (`JpegInput.md`, "Next").
+
+The branch merged main at `287743d`. Every number above E15 predates that merge. Those numbers are superseded.
+
+| # | Stage | Artefact | Result |
+|---|---|---|---|
+| E15 | Make the Vision input the same at every size | Mask share of one photo at four sizes | Done |
+| E16 | Trust a white reference on a subject | Unit test, gate, analysis on 31 photos | Done |
+| E17 | Split the tiers by the water, not by a depth cut | Transmission maps, metrics, full-size crops | Built. Jake judges the look |
+| E18 | Find the cause of the pale ring around fish | Ring chroma with each stage switched off | Cause found. Not fixed |
+| E19 | Device check of E15 to E17 | Parity export on the iPhone | Not done: the phone was locked |
+
+### E15, the Vision input, 23 Oct 2026
+
+The mask of one photo came and went with the input size. `SubjectMask.visionInput` scaled with a plain transform. The default sampler then reads only a few source pixels per output pixel. 1.1.4 fixed the same problem in the analysis sample (`JpegInput.md`, J5).
+
+| DSC03545 camera JPEG, input size | plain transform | Lanczos |
+|---|---|---|
+| 5472 px (the file) | share 0.0250 | 0.0259 |
+| 4000 px | no mask | 0.0257 |
+| 2000 px | no mask | 0.0258 |
+| 1024 px | 0.0254 | 0.0254 |
+
+`visionInput` now uses Lanczos. The harness renders at 4000 px, so before this change it saw no mask on this photo. The app reads the full file, so it did. The two disagreed.
+
+On the AquaColorFix gate, E15 alone changes nothing: 11.33, the same as main. The ARW of DSC03545 still gets no mask at any size.
+
+### E16, a white reference on a subject, 23 Oct 2026
+
+1.1.4 ignores a white reference whose hue sits within 25 degrees of the water. That stops water-lit coral from being greyed. It also drops the white belly of the manta in AquaColorFix pair 4 (23.5 degrees).
+
+Hue cannot tell the two apart. The subject mask can. `FilterEngine.analyze` now takes the photo's mask, the one with the 0.25 cap. Each candidate pixel is split by its mask weight:
+
+- the part on a subject is trusted, whatever its hue;
+- the rest goes through the hue gate, as in 1.1.4.
+
+Without a mask the result is exactly 1.1.4. Video has no mask, so video is unchanged. `PhotoProcessor` now builds the mask before the analysis.
+
+Analysis at 1600 px, 31 photos. 15 changed. These are the ones that matter:
+
+| photo | white reference share, 1.1.4 | with E16 | subject chroma, 1.1.4 | with E16 |
+|---|---|---|---|---|
+| AquaColorFix pair 4 (manta) | 0 | 0.0307 | 0.0524 | 0.0495 |
+| m6 (the same manta) | 0 | 0.0307 | 0.0534 | 0.0505 |
+| DSC03687 JPEG and ARW | 0 | 0 | unchanged | unchanged |
+| m1 | 0 | 0.0003 | 0.0333 | 0.0333 |
+
+- The manta belly gets its reference back, and its tint drops.
+- The DSC03687 coral is not on a subject, so its red-reef fix stays.
+- m1 does not improve. Its yellow coral is not on a subject either. This rule cannot fix m1.
+- 12 more photos moved their share. Their mean L and subject chroma did not move at the printed precision (0.01 and 0.0001).
+
+Gate: mean 11.33 to 11.23, gate pairs 13.58 to 13.41, pair 4 12.49 to 11.98. The other four pairs did not move. m5 did not move, because m5 has no mask under the 0.25 cap.
+
+The harness `uniform` row also improves (pair 4 14.16 to 13.28). That row is not what the app's video does: the harness hands it the photo's analysis, mask included.
+
+Test: `testWhiteReferenceOnASubjectSkipsTheHueGate`. The simulator ran `RestorationTests`, `SubjectCandidatesTests` and `PhotoTests`: 102 tests, 0 failures, 1 skipped.
+
+### E17, the tiers by the water, 23 Oct 2026
+
+Two numbers in the E11 recipe were picked by eye:
+
+- `depthSplit` 0.4, where the reef becomes the background;
+- `textureFalloff` 0.8, how fast sharpening fades with depth.
+
+Neither one knows the water. Optics gives the rule. Against a water background, an object's apparent contrast falls as exp(-beta z) (Duntley's law). This holds whatever the object's own brightness. The plan already fits beta on the same normalised depth the restoration uses.
+
+So `UnderBlueContrastTransmission` computes, per pixel, t = luma · exp(-betaDirect · depth). Then:
+
+| Weight | Before (E11) | Now |
+|---|---|---|
+| tier two | tier2 · not water · (1 - step at depth 0.4) | tier2 · not water · t |
+| tier three | tier3 · not water · step at depth 0.4 | tier3 · not water · (1 - t) |
+| sharpening and clarity | w · (1 - 0.8 · depth) | w · t |
+
+Why t for sharpening: the restoration divides by t, so a far pixel carries 1/t of a near pixel's noise. Sharpening by t keeps the added noise the same at every depth. `depthSplit` and `textureFalloff` are gone. `HT_EVAL_LIFT` now takes 15 numbers.
+
+A first version used the share of the pixel's light that is not veil. It failed. On DSC03687 and DSC03656 the plan's veil sits below the bright water near the surface and above the dark diver. So that version read open water as object and the diver as veil.
+
+Transmission on the test set, linear:
+
+| photo | t, 10th percentile | median | 90th percentile |
+|---|---|---|---|
+| Jake's five, JPEG | 0.72 to 0.77 | 0.75 to 0.80 | 0.93 to 0.99 |
+| Jake's five, ARW | 0.64 to 0.78 | 0.72 to 0.81 | 0.94 to 0.99 |
+| m5 | 0.46 | 0.72 | 0.93 |
+| pair 4 (manta) | 0.50 | 0.53 | 0.89 |
+| pair 1 | 0.38 | 0.39 | 0.63 |
+
+Jake's five are clear water: green beta is about 0.2, so the far reef keeps about 75% of its contrast. E11's fall to 0.2 at the far end took away much more than the water does. The new rule gives the background reef more sharpening than E11 did. In murky water (pair 1) it gives less.
+
+Measured at 1600 px, E11 against E17, both with the lift:
+
+| photo | local contrast, E11 | E17 | far local contrast, E11 | E17 | clipped, E11 | E17 |
+|---|---|---|---|---|---|---|
+| DSC03687 JPEG | 10.65 | 10.89 | 3.647 | 3.834 | 0.0054 | 0.0069 |
+| DSC03656 JPEG | 7.686 | 7.868 | 1.754 | 1.823 | 0.1432 | 0.1405 |
+| DSC03696 JPEG | 8.639 | 8.933 | 2.304 | 2.414 | 0.0236 | 0.0238 |
+| m5 | 9.979 | 10.05 | 0.984 | 1.010 | 0.0003 | 0.0003 |
+| pair 4 | 3.943 | 3.987 | 0.940 | 0.960 | 0.0004 | 0.0005 |
+
+- Local contrast rises 0.7% to 3.4% over E11 on these photos. r13 falls 2%. The far reef gains most.
+- On DSC03687, pixels with L from 0.1 to 0.3 get 0.01 darker than with E11. They are the reef's shadows, under more clarity.
+- Clipping on DSC03687 rises from 0.0054 to 0.0069. Main is 0.0031.
+- Outside chroma changes by 0.0003 or less, except r13 (+0.0013).
+
+Whether the sharper background reads natural is Jake's call. The full-size crops are main, E11 and E17 side by side.
+
+### E18, the pale ring around fish, 23 Oct 2026
+
+`JpegInput.md` asked whether the ring sits on the subject mask's edge. It does not. On DSC03545 the Vision mask holds the two divers only. The two fish with the ring are outside it.
+
+Ring chroma: the water 8 to 40 px from the fish, over the water 100 to 160 px out. Fish mask made by hand from the source. 4000 px render, camera JPEG.
+
+| what is switched off | near over far chroma |
+|---|---|
+| nothing, source | 0.967 |
+| nothing, result | 0.939 |
+| subject-free broad light, or the whole mask | 0.939 |
+| local veil | 0.942 |
+| shadow and highlight filter | 0.940 |
+| clarity and definition | 0.939 |
+| light detail | 0.939 |
+| fine detail layer | 0.939 |
+| water calm | 0.941 |
+| calm keep | 0.938 |
+| violet calm | 0.939 |
+| saturation control | 0.939 |
+
+No stage that reads a neighbourhood causes it. The fine detail layer, the second suspect in `JpegInput.md`, changes nothing. The ARW shows the same: 0.989 in the source, 0.959 in the result.
+
+By path: the restoration alone keeps the ratio (0.962). The finishing path alone drops it (0.924).
+
+The cause is per pixel. The source already has a pale glow around each fish. Light scatters off a sunlit fish into the water around it. 87% of the near pixels have a colour that also occurs in the far water. Those come out the same as far water (C 0.1062 against 0.1065). The other 13% are the glow:
+
+| pixels | source L | source C | result L | result C |
+|---|---|---|---|---|
+| far water | 0.672 | 0.1829 | 0.685 | 0.1065 |
+| near, colour also found far | 0.673 | 0.1817 | 0.679 | 0.1062 |
+| near, the glow | 0.693 | 0.1450 | 0.695 | 0.0577 |
+
+The glow holds 79% of the water's chroma in the source and 54% in the result. The colour stage treats a paler, less water-like pixel more like a subject and greys it. The fix belongs in the colour stage's water test, which every photo and every clip uses. It is not made here.
 
 ### The control photos
 

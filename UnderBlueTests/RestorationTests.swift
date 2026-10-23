@@ -1166,6 +1166,30 @@ final class RestorationTests: XCTestCase {
         XCTAssertEqual(plain.highShare, 0)
     }
 
+    func testWhiteReferenceOnASubjectSkipsTheHueGate() {
+        // The water-lit surface of the test above, now covered by a subject mask: a manta's belly,
+        // not coral. The hue gate alone gave it nothing (docs/SubjectEmphasis.md, E16).
+        let width = 48, height = 48
+        var rgba = [Float]()
+        for _ in 0..<height { for x in 0..<width {
+            rgba += x < 30 ? [0.02, 0.2, 0.55, 1] : [0.3, 0.5, 0.8, 1]
+        } }
+        let data = rgba.withUnsafeBytes { Data($0) }
+        let image = CIImage(bitmapData: data, bytesPerRow: width * 16, size: CGSize(width: width, height: height),
+                            format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+        let engine = FilterEngine()
+        let mask = SubjectMask(width: width, height: height,
+                               values: (0..<(width * height)).map { $0 % width >= 30 ? 1 : 0 })
+        XCTAssertEqual(engine.analyze(image).neutralShare, 0)
+        let onSubject = engine.analyze(image, subjects: mask)
+        XCTAssertGreaterThan(onSubject.neutralShare, 0.2)
+        XCTAssertEqual(onSubject.neutralBlue, 0.8, accuracy: 0.05)
+        // A mask on the water only leaves the reference as the gate made it.
+        let onWater = SubjectMask(width: width, height: height,
+                                  values: (0..<(width * height)).map { $0 % width < 20 ? 1 : 0 })
+        XCTAssertEqual(engine.analyze(image, subjects: onWater).neutralShare, 0)
+    }
+
     func testStrongLightSourceWidensTheWhiteReferenceRamp() {
         // Dark blue water with a light source on the right (an eighth of the frame, 17 times the
         // water's luminance), as below the surface in IMG_7400.

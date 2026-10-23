@@ -1,4 +1,5 @@
 import CoreImage
+import CoreImage.CIFilterBuiltins
 import Vision
 
 /// The subject lift (docs/SubjectEmphasis.md). It brightens the subject and follows with its chroma.
@@ -19,13 +20,10 @@ struct SubjectLift: Sendable, Equatable {
     /// Tier two: how much of the lift reaches pixels that are not open water but hold no Vision
     /// instance, such as a reef or a wreck. 0 is off, 1 treats them like a Vision subject.
     var tier2: Float = 0.2
-    /// How much the sharpening and the clarity fade with distance, 0 to 1. At 1 the far end of the
-    /// depth map gets none. A far subject carries less real detail, so sharpening it raises the veil.
-    var textureFalloff: Float = 0.8
-    /// Tier three: the same as tier two for pixels beyond `depthSplit`, the background reef.
+    /// Tier three: the same as tier two for the background reef, the part whose contrast the water
+    /// has taken. The split and the sharpening's fall come from the plan's water fit
+    /// (RestorationEngine.contrastTransmission), so they have no setting here.
     var tier3: Float = 0.1
-    /// Where near becomes far, on the normalised depth map. 0 is nearest.
-    var depthSplit: Float = 0.4
     /// The highlight pull for tiers two and three. A reef clips where a Vision subject does not.
     var highlights2: Float = 0.85
     var highlights3: Float = 0.85
@@ -116,8 +114,18 @@ struct SubjectMask: Sendable, Equatable {
         let extent = image.extent
         guard extent.width > 0, extent.height > 0, extent.width.isFinite, extent.height.isFinite else { return nil }
         let scale = min(1, side / max(extent.width, extent.height))
-        return image.transformed(by: CGAffineTransform(translationX: -extent.minX, y: -extent.minY)
-            .concatenating(CGAffineTransform(scaleX: scale, y: scale)))
+        let moved = image.transformed(by: CGAffineTransform(translationX: -extent.minX, y: -extent.minY))
+        guard scale < 1 else { return moved }
+        // Lanczos, as FilterEngine.analyze does. With a plain transform the default sampler reads a
+        // few source pixels per output pixel, so the same photo gave Vision different inputs at
+        // different sizes. DSC03545 got a mask from its full 5472 px and none from a 4000 px copy.
+        // With Lanczos its share was 0.0254 to 0.0259 at every size (docs/SubjectEmphasis.md, E15).
+        let resample = CIFilter.lanczosScaleTransform()
+        resample.inputImage = moved
+        resample.scale = Float(scale)
+        resample.aspectRatio = 1
+        let bounds = CGRect(x: 0, y: 0, width: (extent.width * scale).rounded(.down), height: (extent.height * scale).rounded(.down))
+        return (resample.outputImage ?? moved.transformed(by: CGAffineTransform(scaleX: scale, y: scale))).cropped(to: bounds)
     }
 
     /// The mask as an image over `extent` (red holds the mask).

@@ -354,7 +354,7 @@ static float violetHue(float3 o) { return fmod(atan2(o.z, o.y) * 57.29578f + 360
 // and before the violet calm: a step inside the finishing kernel runs on both paths, and the blend
 // then dilutes it. The highlight shoulder has already run per path, so the lift rolls itself off.
 // mask.r is the subject weight. params: x = L gain, y = chroma cap, z = highlight start, w = noise floor.
-[[stitchable]] float4 UnderBlueSubjectLift(coreimage::sample_t c, coreimage::sample_t mask, coreimage::sample_t blurred, coreimage::sample_t wide, coreimage::sample_t water, coreimage::sample_t depth, float4 params, float4 shape, float4 det, float4 hi, float4 tier, float4 tex) {
+[[stitchable]] float4 UnderBlueSubjectLift(coreimage::sample_t c, coreimage::sample_t mask, coreimage::sample_t blurred, coreimage::sample_t wide, coreimage::sample_t water, coreimage::sample_t signal, float4 params, float4 shape, float4 det, float4 hi, float4 tier) {
     float w = clamp(mask.r, 0.0f, 1.0f);
     // Vision builds the mask at 1024 on the long side. Stretched to full size its edge spreads over
     // several pixels, and the lift used to follow that ramp into the water: the water within 4 px of
@@ -365,15 +365,17 @@ static float violetHue(float3 o) { return fmod(atan2(o.z, o.y) * 57.29578f + 360
     // diver or the anemone and left the reef or the wreck out (23 Oct 2026). Those are subjects too.
     // The water share already says which pixels are not open water, so its complement carries them,
     // at shape.w of the strength. It is a layer, not an instance, so no picker can offer it.
-    // Tier three splits tier two by distance. Depth 0 is nearest (RestorationEngine.nearDepth), so
-    // the reef in front leads and the background sits back. tier: x = tier three, y and z are the
-    // highlight pulls for tiers two and three, w is where near becomes far.
+    // Tier three splits tier two by the water in front, not by a depth cut. `signal` is how much of an
+    // object's contrast survives that water (UnderBlueContrastTransmission): 1 for a reef in front, less
+    // for one further back. It follows the plan's own water, so clear water keeps a far reef near and
+    // murky water sends it back. It replaced a fixed cut at depth 0.4 (E17).
+    // tier: x = tier three, y and z are the highlight pulls for tiers two and three.
+    const float f = clamp(signal.r, 0.0f, 1.0f);
     float w2 = 0.0f, w3 = 0.0f;
     if (shape.w > 0.0f || tier.x > 0.0f) {
         const float notWater = (1.0f - clamp(water.r, 0.0f, 1.0f)) * (1.0f - w);
-        const float far = smoothstep(tier.w, min(1.0f, tier.w + 0.2f), clamp(depth.r, 0.0f, 1.0f));
-        w2 = shape.w * notWater * (1.0f - far);
-        w3 = tier.x * notWater * far;
+        w2 = shape.w * notWater * f;
+        w3 = tier.x * notWater * (1.0f - f);
         w = w + w2 + w3;
     }
     if (!(w > 0.0f)) { return c; }
@@ -399,10 +401,11 @@ static float violetHue(float3 o) { return fmod(atan2(o.z, o.y) * 57.29578f + 360
     // background contrast alone, so the deep blue stays (Jake, 23 Oct 2026). So the brightness and
     // the chroma follow the near weight, while contrast, clarity and sharpening use all three.
     const float wNear = wv + w2;
-    // Sharpening falls with distance. A far subject is seen through more water, so less real detail
-    // survives to recover; pushing it there raises the veil and the noise instead (Jake, 23 Oct 2026).
-    // The fall is continuous in depth, not stepped by tier, because the water is.
-    const float wTex = w * (1.0f - clamp(tex.x, 0.0f, 1.0f) * clamp(depth.r, 0.0f, 1.0f));
+    // Sharpening follows the same transmission t. The restoration divides by t, so the noise of a far
+    // pixel is 1/t times a near one's. Sharpening by t keeps the noise it adds the same at every depth,
+    // and a far subject seen through more water gets less (Jake, 23 Oct 2026). It used to fall by a
+    // fixed 0.8 x depth (E17).
+    const float wTex = w * f;
     // Gamma, not a gain. A gain multiplies L, so a bright pixel passes white by construction
     // (E4, 22 Oct 2026: gain 1.2 clipped 19% of the O4 subject). Gamma cannot pass white, and it
     // lifts the dark part of the subject most, which is the part that needed it.

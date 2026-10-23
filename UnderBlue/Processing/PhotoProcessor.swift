@@ -177,7 +177,9 @@ actor PhotoProcessor {
 
     private func prepare(url: URL, source: CIImage) async throws -> Prepared {
         if let cached = prepared[url] { return cached }
-        let analysis = engine.analyze(source)
+        // The mask comes first: the white reference trusts what sits on a subject (FilterEngine.analyze).
+        let subjects = SubjectMask.estimate(source)
+        let analysis = engine.analyze(source, subjects: subjects)
         #if DEBUG
         logger.debug("current values(natural): \(ColorCorrection.make(analysis: analysis, preset: .natural).logDescription, privacy: .public)")
         #endif
@@ -198,7 +200,7 @@ actor PhotoProcessor {
             let depth = try await depthEstimator.estimate(image: source, sourceURL: url)
             try Task.checkCancellation()
             var plan = try waterEstimator.estimate(image: source, depth: depth, legacy: analysis, context: engine.context)
-            plan.subjectMask = SubjectMask.estimate(source)
+            plan.subjectMask = subjects
             // The lift takes its own mask, at its own cap: the veil's 0.25 rejects a reef that is
             // the photo's subject, and the lift wants it (docs/SubjectEmphasis.md, E2).
             var liftOff = false

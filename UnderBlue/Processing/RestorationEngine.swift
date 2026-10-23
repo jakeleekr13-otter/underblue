@@ -162,6 +162,7 @@ final class RestorationEngine: Sendable {
     private let subjectWeightKernel: CIColorKernel?
     private let subjectFreeLightKernel: CIColorKernel?
     private let liftKernel: CIColorKernel?
+    private let signalKernel: CIColorKernel?
     /// Depth (normalized) from which a pixel takes the full restored result. See combined().
     static let nearDepth: Float = 0.25
 
@@ -172,6 +173,7 @@ final class RestorationEngine: Sendable {
         subjectWeightKernel = MetalKernels.color("UnderBlueSubjectWeight")
         subjectFreeLightKernel = MetalKernels.color("UnderBlueSubjectFreeLight")
         liftKernel = MetalKernels.color("UnderBlueLiftToWide")
+        signalKernel = MetalKernels.color("UnderBlueContrastTransmission")
     }
 
     /// The blur (share of the short side, at least 1.5 px) that splits the source into the part
@@ -280,9 +282,8 @@ final class RestorationEngine: Sendable {
         // Tier two of the lift reads the raw water share, not the spread calm weight.
         let share = (subjectLift?.tier2 ?? 0) > 0 || (subjectLift?.tier3 ?? 0) > 0
             ? filter.waterShare(image, correction: values.current) : nil
-        // Tier three needs distance. Without it every tier-two pixel counts as near.
-        let needsDepth = (subjectLift?.tier3 ?? 0) > 0 || (subjectLift?.textureFalloff ?? 0) > 0
-        let liftDepth = needsDepth ? try? depthImage(plan.depth, matching: image.extent) : nil
+        // The tiers and the sharpening follow how much of an object's contrast survives the water.
+        let liftSignal = subjectLift == nil ? nil : contrastTransmission(image, plan: plan)
         let current = filter.apply(image, correction: values.current, intensity: amount, calmWeight: calm, violetCalm: false, openWaterRed: video)
         let physicallyRestored = try restore(image, plan: plan, liftDark: video)
         let finished = filter.finishing(physicallyRestored, correction: values.restored, reference: image, calmWeight: calm, openWaterRed: video)
@@ -296,22 +297,32 @@ final class RestorationEngine: Sendable {
         let values = plan.depth.values
         guard let nearest = values.min(), let farthest = values.max(), farthest - nearest > 0.05,
               let depthBlendKernel else {
-            return filter.violetCalm(lifted(filter.blend(current, depthAware, amount: weight), subjectLift, filter, share, liftDepth),
+            return filter.violetCalm(lifted(filter.blend(current, depthAware, amount: weight), subjectLift, filter, share, liftSignal),
                                      source: image, calmWeight: calm)
         }
         let depth = try depthImage(plan.depth, matching: image.extent)
         let mixed = depthBlendKernel.apply(extent: image.extent, arguments: [current, depthAware, depth,
             CIVector(x: CGFloat(weight), y: CGFloat(Self.nearDepth), z: 0, w: 0)])
         let blended = (mixed ?? filter.blend(current, depthAware, amount: weight)).cropped(to: image.extent)
-        return filter.violetCalm(lifted(blended, subjectLift, filter, share, liftDepth), source: image, calmWeight: calm)
+        return filter.violetCalm(lifted(blended, subjectLift, filter, share, liftSignal), source: image, calmWeight: calm)
     }
 
     /// The subject lift, at the one place it may run. Both of combined()'s return points go through here,
     /// so a fix cannot land on only one of them (docs/SubjectEmphasis.md).
     private func lifted(_ image: CIImage, _ lift: SubjectLift?, _ filter: FilterEngine,
-                        _ waterShare: CIImage?, _ depth: CIImage?) -> CIImage {
+                        _ waterShare: CIImage?, _ signal: CIImage?) -> CIImage {
         guard let lift else { return image }
-        return filter.subjectLift(image, lift: lift, waterShare: waterShare, depth: depth)
+        return filter.subjectLift(image, lift: lift, waterShare: waterShare, signal: signal)
+    }
+
+    /// How much of an object's contrast survives the water in front of it (UnderBlueContrastTransmission),
+    /// from the plan's own water fit, so clear water keeps a far reef sharp and murky water does not.
+    /// A share of the pixel's light was tried first and dropped: the plan's veil sits below the bright
+    /// water near the surface and above a dark diver, so it read water as object and the diver as veil
+    /// (E17, 23 Oct 2026). Nil without the kernel or the depth.
+    func contrastTransmission(_ image: CIImage, plan: RestorationPlan) -> CIImage? {
+        guard let signalKernel, let depth = try? depthImage(plan.depth, matching: image.extent) else { return nil }
+        return signalKernel.apply(extent: image.extent, arguments: [depth, vector(plan.betaDirect)])?.cropped(to: image.extent)
     }
 
     /// The correction values combined applies: one set for the source image, one for the restored image.

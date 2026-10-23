@@ -224,7 +224,7 @@ func fullReference(_ a: [UInt8], _ b: [UInt8], _ w: Int, _ h: Int, into m: inout
     m.ssim = total / max(1, n)
 }
 
-let variants = ["original", "grayworld", "current", "restoration", "combined", "lift", "uniform", "reference"]
+let variants = ["original", "grayworld", "current", "restoration", "combined", "lift", "uniform", "reference", "signal"]
 var csv = "image,variant,psnr,ssim,deltaE,farHue,farChroma,nearA,nearRG,contrastL,meanL,localContrast,farLocalContrast,farHueOK,farChromaOK,fallback,confidence,depthConf,waterConf,betaDR,betaDG,betaDB,binfR,binfG,binfB,floorPct,gainPct,recR,subjectShare,subjectL,outsideL,subjectChroma,subjectViolet,clipped,subjectClipped,outsideChroma,subjectLocalContrast,subjectOvershoot\n"
 let files = try FileManager.default.contentsOfDirectory(atPath: rawDir.path).filter { [".png", ".jpg", ".jpeg", ".arw"].contains(where: $0.lowercased().hasSuffix) }.sorted()
 let started = Date()
@@ -251,7 +251,10 @@ for name in selected {
     // HT_EVAL_ANALYSIS_SWAP="<from>:<to>" analyses a different file and renders this one with it.
     // It answers one question: how much of a result comes from the analysis, and how much from the
     // image itself. "_jpg.jpg:_raw.arw" renders a camera JPEG with its RAW's analysis.
-    var analysis = engine.analyze(source)
+    // As PhotoProcessor does: the veil's mask, made before the analysis, which trusts a white
+    // reference on a subject. HT_EVAL_NO_SUBJECT_REFERENCE=1 analyses without it, as 1.1.4 did.
+    let subjects = SubjectMask.estimate(source)
+    var analysis = engine.analyze(source, subjects: ProcessInfo.processInfo.environment["HT_EVAL_NO_SUBJECT_REFERENCE"] == nil ? subjects : nil)
     if let swap = ProcessInfo.processInfo.environment["HT_EVAL_ANALYSIS_SWAP"] {
         let parts = swap.split(separator: ":").map(String.init)
         precondition(parts.count == 2, "HT_EVAL_ANALYSIS_SWAP needs <from>:<to>")
@@ -288,7 +291,7 @@ for name in selected {
         depthMap = depth.map
         plan = try waterEstimator.estimate(image: source, depth: depth, legacy: analysis, context: engine.context)
         // As PhotoProcessor does. The uniform (video) plan below has no mask, as video has none.
-        plan?.subjectMask = SubjectMask.estimate(source)
+        plan?.subjectMask = subjects
         // The subject lift has its own cap (docs/SubjectEmphasis.md, E2), so m5's coral block counts.
         liftMask = SubjectMask.estimate(source, cap: SubjectMask.liftMaximumShare)
         // HT_EVAL_WATER_SWAP="<from>:<to>" fits the water model on a different file and puts it on
@@ -368,10 +371,9 @@ for name in selected {
         // variant (docs/SubjectEmphasis.md, E4). Without the mask the lift output equals combined.
         if let liftMask, let spec = ProcessInfo.processInfo.environment["HT_EVAL_LIFT"] {
             let v = spec.split(separator: ",").compactMap { Float($0) }
-            precondition(v.count == 17, "HT_EVAL_LIFT: strength,chromaCap,highlightStart,noiseFloor,chromaExponent,contrast,detail,clarity,highlights,maskLow,maskHigh,tier2,tier3,depthSplit,highlights2,highlights3,textureFalloff")
+            precondition(v.count == 15, "HT_EVAL_LIFT: strength,chromaCap,highlightStart,noiseFloor,chromaExponent,contrast,detail,clarity,highlights,maskLow,maskHigh,tier2,tier3,highlights2,highlights3")
             let lift = SubjectLift(mask: liftMask, strength: v[0], chromaCap: v[1], tier2: v[11],
-                                   textureFalloff: v[16], tier3: v[12], depthSplit: v[13],
-                                   highlights2: v[14], highlights3: v[15],
+                                   tier3: v[12], highlights2: v[13], highlights3: v[14],
                                    maskLow: v[9], maskHigh: v[10], clarity: v[7], highlights: v[8],
                                    detail: v[6], contrast: v[5], chromaExponent: v[4],
                                    highlightStart: v[2], noiseFloor: v[3])
@@ -379,6 +381,10 @@ for name in selected {
                                                          subjectLift: lift)) ?? outputs["combined"]
         } else {
             outputs["lift"] = outputs["combined"]
+        }
+        // HT_EVAL_SIGNAL=1 adds the lift's contrast transmission (UnderBlueContrastTransmission) as a grey variant.
+        if ProcessInfo.processInfo.environment["HT_EVAL_SIGNAL"] == "1", let signal = restoration.contrastTransmission(source, plan: plan) {
+            outputs["signal"] = signal
         }
         if let uniform = try? plan.withUniformDepth() {
             // The video entry point (correction values passed in), as video frames are rendered.

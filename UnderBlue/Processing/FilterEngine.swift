@@ -62,13 +62,13 @@ final class FilterEngine: Sendable {
             CIVector(x: CGFloat(v.waterLit.x), y: CGFloat(v.waterLit.y), z: CGFloat(v.waterLit.z), w: CGFloat(v.lightGradient))])
     }
 
-    func subjectLift(_ image: CIImage, lift: SubjectLift, waterShare: CIImage? = nil, depth: CIImage? = nil) -> CIImage {
+    func subjectLift(_ image: CIImage, lift: SubjectLift, waterShare: CIImage? = nil, signal: CIImage? = nil) -> CIImage {
         guard let subjectLiftKernel else { return image }
         let mask = lift.mask.image(matching: image.extent)
         // No share image means tier two is off: a fully water-like stand-in makes its term zero.
         let share = waterShare ?? CIImage(color: .white).cropped(to: image.extent)
-        // No depth image means every tier-two pixel counts as near, which is tier two alone.
-        let depthImage = depth ?? CIImage(color: .black).cropped(to: image.extent)
+        // No signal image means every pixel is all signal: tier two alone, sharpening at full weight.
+        let signalImage = signal ?? CIImage(color: .white).cropped(to: image.extent)
         let short = min(image.extent.width, image.extent.height)
         func blur(_ input: CIImage, _ radius: Float) -> CIImage {
             let f = CIFilter.gaussianBlur()
@@ -82,7 +82,7 @@ final class FilterEngine: Sendable {
         let blurred = blur(image, Float(lift.detailRadius) * Float(short))
         let wide = blur(image, Float(lift.clarityRadius) * Float(short))
         let out = subjectLiftKernel.apply(extent: image.extent, arguments: [
-            image, mask, blurred, wide, share, depthImage,
+            image, mask, blurred, wide, share, signalImage,
             CIVector(x: CGFloat(lift.strength), y: CGFloat(lift.chromaCap),
                      z: CGFloat(lift.highlightStart), w: CGFloat(lift.noiseFloor)),
             CIVector(x: CGFloat(lift.chromaExponent), y: CGFloat(lift.contrast),
@@ -92,8 +92,7 @@ final class FilterEngine: Sendable {
             CIVector(x: CGFloat(lift.highlights), y: CGFloat(lift.highlightKnee),
                      z: CGFloat(lift.maskLow), w: CGFloat(lift.maskHigh)),
             CIVector(x: CGFloat(lift.tier3), y: CGFloat(lift.highlights2),
-                     z: CGFloat(lift.highlights3), w: CGFloat(lift.depthSplit)),
-            CIVector(x: CGFloat(lift.textureFalloff), y: 0, z: 0, w: 0)])
+                     z: CGFloat(lift.highlights3), w: 0)])
         return (out ?? image).cropped(to: image.extent)
     }
 
@@ -357,7 +356,9 @@ final class FilterEngine: Sendable {
     /// trusted. Below the low bound it is a water-lit surface and counts for nothing.
     static let neutralHueLow: Float = 25, neutralHueHigh: Float = 35
 
-    func analyze(_ image: CIImage) -> WaterAnalysis {
+    /// `subjects` is the photo's subject mask. A white reference on a subject is trusted whatever its
+    /// hue (see the hue gate below). Video has no mask, so it keeps the hue gate alone.
+    func analyze(_ image: CIImage, subjects: SubjectMask? = nil) -> WaterAnalysis {
         let source = sdr(image)
         let extent = source.extent
         guard !extent.isEmpty, extent.width.isFinite, extent.height.isFinite else { return .neutral }
@@ -367,19 +368,27 @@ final class FilterEngine: Sendable {
         // it reads is up to the implementation, so a Mac and a phone read different samples from one
         // file. Lanczos takes every pixel in. It brought the water colour into agreement; the white
         // reference's share still differs, which is why the hue gate below exists (docs/JpegInput.md, J5).
-        let moved = source.transformed(by: CGAffineTransform(translationX: -extent.minX, y: -extent.minY))
-        let resample = CIFilter.lanczosScaleTransform()
-        resample.inputImage = moved
-        resample.scale = Float(CGFloat(size) / extent.height)
-        resample.aspectRatio = Float(extent.height / extent.width)
-        let scaled = (resample.outputImage ?? moved
-            .transformed(by: CGAffineTransform(scaleX: CGFloat(size) / extent.width, y: CGFloat(size) / extent.height)))
-            .cropped(to: CGRect(x: 0, y: 0, width: CGFloat(size), height: CGFloat(size)))
-        var pixels = [Float](repeating: 0, count: size * size * 4)
-        context.render(scaled, toBitmap: &pixels, rowBytes: size * 4 * MemoryLayout<Float>.size,
-                       bounds: CGRect(x: 0, y: 0, width: size, height: size), format: .RGBAf, colorSpace: Self.workingSpace)
+        func sample(_ input: CIImage, colorSpace: CGColorSpace?) -> [Float] {
+            let moved = input.transformed(by: CGAffineTransform(translationX: -extent.minX, y: -extent.minY))
+            let resample = CIFilter.lanczosScaleTransform()
+            resample.inputImage = moved
+            resample.scale = Float(CGFloat(size) / extent.height)
+            resample.aspectRatio = Float(extent.height / extent.width)
+            let scaled = (resample.outputImage ?? moved
+                .transformed(by: CGAffineTransform(scaleX: CGFloat(size) / extent.width, y: CGFloat(size) / extent.height)))
+                .cropped(to: CGRect(x: 0, y: 0, width: CGFloat(size), height: CGFloat(size)))
+            var pixels = [Float](repeating: 0, count: size * size * 4)
+            context.render(scaled, toBitmap: &pixels, rowBytes: size * 4 * MemoryLayout<Float>.size,
+                           bounds: CGRect(x: 0, y: 0, width: size, height: size), format: .RGBAf, colorSpace: colorSpace)
+            return pixels
+        }
+        let pixels = sample(source, colorSpace: Self.workingSpace)
+        // The mask goes through the same resample, so each value sits on its own pixel. No colour
+        // matching: the mask is a weight, not a colour.
+        let onSubject = subjects.map { sample($0.image(matching: extent), colorSpace: nil) }
         var red: Float = 0, green: Float = 0, blue: Float = 0, luminance: [Float] = [], saturation: Float = 0
-        var colors: [SIMD3<Float>] = []
+        // s is the candidate's subject weight, 0 when there is no mask.
+        var colors: [(c: SIMD3<Float>, s: Float)] = []
         var lit: Float = 0, high: Float = 0, litLuminance: [Float] = []
         for i in stride(from: 0, to: pixels.count, by: 4) {
             let r = pixels[i], g = pixels[i+1], b = pixels[i+2]
@@ -388,7 +397,7 @@ final class FilterEngine: Sendable {
             if l.isFinite, l > 0.015 { lit += 1; litLuminance.append(l); if l >= 0.35 { high += 1 } }
             guard l.isFinite, l > 0.015, l < 0.85 else { continue }
             red += max(0, r); green += max(0, g); blue += max(0, b); luminance.append(l)
-            colors.append(SIMD3(max(0, r), max(0, g), max(0, b)))
+            colors.append((SIMD3(max(0, r), max(0, g), max(0, b)), onSubject.map { min(1, max(0, $0[i])) } ?? 0))
             let top = max(r, g, b)
             saturation += top > 0 ? (top - min(r, g, b)) / top : 0
         }
@@ -398,9 +407,9 @@ final class FilterEngine: Sendable {
         let surviving = max(0.001, (green + blue) / 2)
         let loss = max(0, min(1, 1 - red / surviving))
         // Open water is the least red part of an underwater scene; subjects are redder.
-        colors.sort { $0.x / max(1e-4, $0.y + $0.z) < $1.x / max(1e-4, $1.y + $1.z) }
+        colors.sort { $0.c.x / max(1e-4, $0.c.y + $0.c.z) < $1.c.x / max(1e-4, $1.c.y + $1.c.z) }
         let waterCount = max(1, colors.count / 3)
-        let water = colors.prefix(waterCount).reduce(SIMD3<Float>(repeating: 0), +) / Float(waterCount)
+        let water = colors.prefix(waterCount).reduce(SIMD3<Float>(repeating: 0)) { $0 + $1.c } / Float(waterCount)
         // White reference candidates: outside the least red third (so not open water), among the
         // brightest fifth, clearly brighter than the water and no more colourful than it. The ceiling
         // carried 10% of slack until 23 Oct 2026. A camera JPEG's water is more saturated, so that
@@ -408,24 +417,33 @@ final class FilterEngine: Sendable {
         // (docs/JpegInput.md, J3).
         let waterChroma = ColorCorrection.oklch(water).y, waterLuminance = (water * ColorCorrection.luma).sum()
         let brightCut = max(luminance[min(luminance.count - 1, luminance.count * 8 / 10)], waterLuminance * 1.25)
-        var neutral = SIMD3<Float>(repeating: 0), neutralCount: Float = 0
-        for c in colors.dropFirst(waterCount) where (c * ColorCorrection.luma).sum() >= brightCut
+        // Each candidate is split by its subject weight s: s of it is on a subject, 1 - s is scene.
+        var scene = SIMD3<Float>(repeating: 0), sceneCount: Float = 0
+        var subject = SIMD3<Float>(repeating: 0), subjectCount: Float = 0
+        for (c, s) in colors.dropFirst(waterCount) where (c * ColorCorrection.luma).sum() >= brightCut
             && ColorCorrection.oklch(c).y <= min(0.2, waterChroma) {
-            neutral += c; neutralCount += 1
+            scene += c * (1 - s); sceneCount += 1 - s
+            subject += c * s; subjectCount += s
         }
-        if neutralCount > 0 { neutral /= neutralCount }
         // A reference whose hue is the water's own hue is not a white surface. It is coral or rock
         // lit by the water, and greying it takes the water's colour out of the whole frame: the reef
         // then reads red (docs/JpegInput.md, J5). Trust grows with the angle between the two hues.
         // The bounds sit in an empty band: across eval/real, eval/market, eval/aquacolorfix and the
-        // five camera pairs, the gap is either 24.8 degrees or less, or 36.7 or more. Known cost: a
-        // white belly lit by the water sits low too (the manta in AquaColorFix pair 4, 23.5 degrees),
-        // so it loses its reference and keeps more tint.
-        let hueGap = abs(ColorCorrection.oklch(neutral).z - ColorCorrection.oklch(water).z)
+        // five camera pairs, the gap is either 24.8 degrees or less, or 36.7 or more.
+        // A white belly lit by the water sits low too (the manta in AquaColorFix pair 4, 23.5 degrees).
+        // Hue cannot tell it from coral, but the subject mask can: a reference on a detected subject
+        // is an animal or a diver, not the reef, so it skips the gate (docs/SubjectEmphasis.md, E16).
+        let sceneMean = sceneCount > 0 ? scene / sceneCount : SIMD3<Float>(repeating: 0)
+        let hueGap = abs(ColorCorrection.oklch(sceneMean).z - ColorCorrection.oklch(water).z)
             .truncatingRemainder(dividingBy: 360)
         let angle = min(hueGap, 360 - hueGap)
         let t = min(1, max(0, (angle - Self.neutralHueLow) / (Self.neutralHueHigh - Self.neutralHueLow)))
-        let trust = neutralCount > 0 ? t * t * (3 - 2 * t) : 0
+        let sceneTrust = sceneCount > 0 ? t * t * (3 - 2 * t) : 0
+        let trusted = sceneTrust * sceneCount + subjectCount
+        let neutralCount = sceneCount + subjectCount
+        // Without a trusted subject reference the colour is the scene mean, as before the mask.
+        let neutral = subjectCount > 0 && trusted > 0 ? (scene * sceneTrust + subject) / trusted : sceneMean
+        let trust = neutralCount > 0 ? trusted / neutralCount : 0
         return WaterAnalysis(redLoss: loss, cyanDominance: max(0, min(1, (surviving - red) / surviving)),
             exposure: min(0.12, max(0, (0.22 - luminance[luminance.count/2]) * 0.6)),
             contrast: luminance[luminance.count * 9 / 10] - luminance[luminance.count / 10], saturation: saturation / n,

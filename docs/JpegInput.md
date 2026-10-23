@@ -1,6 +1,6 @@
 # Camera JPEG input — plan
 
-Status: J1 and J2 done, 23 Oct 2026. Branch `jpeg-input`, from `main` at `1bcbbc7`. Agreed with Jake: this ships before the subject work.
+Status: J1 to J5 done, 23 Oct 2026. iPhone 1.1.4 (build 10) ships the J3 change plus v2 from J5, which fixes the reef on the iPhone too. Agreed with Jake: this ships before the subject work.
 
 ## The problem
 
@@ -311,6 +311,156 @@ the vividness reference. Some photos lose a correction they had: O3 goes from 1.
 m2 from 1.063 and 0.686 to one, O1 from 1.141 and 0.952 to 1.032 and 0.894.
 
 So J4 is the real gate for this change, not J3.
+
+All numbers in this section are from the Mac harness. The iPhone reads differently: see J5.
+
+## J4 result — m5 does not move; the gate moves on two pairs
+
+m5 (`m5_eval.sh`, against a render of `main` at `1bcbbc7`) is identical to every digit: whole-image,
+panel, sand, coral and water dE on all four paths, all 18 panel patches, and the noise and black
+figures. The two builds were different binaries (their md5 differ), so this is a result, not a rerun.
+
+AquaColorFix gate, mean dE from our output to AquaColorFix's:
+
+| path | mean | p1 | p2 | p3 | p4 | p5 |
+|---|---|---|---|---|---|---|
+| photo, before | 10.92 | 9.14 | 17.39 | 6.37 | 11.01 | 10.69 |
+| photo, after | 11.16 | 9.14 | 17.39 | 6.95 | 11.64 | 10.69 |
+| video, before | 10.61 | 8.32 | 16.11 | 6.21 | 11.76 | 10.66 |
+| video, after | 10.87 | 8.30 | 16.11 | 6.60 | 12.67 | 10.66 |
+
+p3 and p4 are the two photos whose white reference changed most. Jake looked at both and called the
+result better than before. One cost is known: the manta belly in p4 keeps more tint, OKLab chroma
+0.023 before and 0.030 after. AquaColorFix reaches 0.011 there.
+
+Trap: `aquacolorfix_eval.sh` cannot score from a git worktree. Its benchmark finds `DeveloperMedia`
+from its own path and calls `relative_to(repo)`. Render from the worktree, then run the benchmark
+from the clone that holds `DeveloperMedia`, with `--underblue-files`.
+
+## J5 result — the J3 change alone did not reach the iPhone
+
+iPhone 17, `PhotoParityTests`, `PhotoProcessor.export`, Natural Dive 0.8. Both columns were measured
+by the same tool on files from this session and from the session before.
+
+| photo | from the JPEG, before | J3 change alone | with v2 (ships) | from the ARW, with v2 |
+|---|---|---|---|---|
+| DSC03656 | 0.405 | 0.339 | 0.336 | 0.110 |
+| DSC03687 | 0.511 | 0.511 | 0.241 | 0.098 |
+| DSC03696 | 0.353 | 0.324 | 0.300 | 0.231 |
+
+With the J3 change alone, DSC03687 does not move at all on the phone. On the Mac it went from 0.545
+to 0.244. The rest of this section is how v2 got there.
+
+### Why: the Mac and the phone read a different white reference
+
+`testPrintAnalysisForParityPhotos` prints the analysis on the device. For DSC03687 from the JPEG, with
+the same code and the same file:
+
+| value | Mac | iPhone 17 |
+|---|---|---|
+| water colour | (0.114, 0.235, 0.650) | (0.099, 0.204, 0.594) |
+| water chroma | 0.1560 | 0.1555 |
+| mid luminance | 0.2294 | 0.2274 |
+| `neutralShare` | 0.0567 | 0.2001 |
+| reference adaptation strength | 0.000 | 0.461 |
+
+On the phone the white reference still closes (`neutralGains` at one), but the reference adaptation
+stays open, because its evidence ramp starts at a share of 0.06. On the Mac the share fell to 0.0567,
+0.0033 under that step. So the Mac result was a near miss, not a margin.
+
+The 48 px analysis sample is drawn with a plain affine transform, a 114 times reduction of a 5472 px
+photo. The default sampler reads a few source pixels per output pixel, and what it reads differs
+between the two platforms.
+
+Lesson: a rule that depends on the white reference's candidates cannot be tuned on the Mac harness.
+Check it on the phone.
+
+### What was tried after that
+
+| attempt | result |
+|---|---|
+| a ceiling on how far the white reference raises red | DSC03687 did not move: there the damage is the blue cut |
+| a threshold on the reference's chroma | m5's reference reads 0.112 on the Mac. DSC03687's reads 0.081 on the Mac and 0.099 on the phone. A cut that drops DSC03687 drops m5 first |
+| a ceiling on the adaptation's gains | m5's red gain is 4.23 on the Mac. DSC03687's is 2.67 on the phone. A ceiling that stops DSC03687 stops m5 first |
+| the reference adaptation switched off | m5 breaks: photo-path dE 12.98 to 22.73 |
+| the candidate test as a smooth weight | the phone is fixed, but m5 breaks: 12.98 to 21.29 |
+| Lanczos sampling and a hue trust gate (v2) | the phone is fixed, m5 holds at 13.22, but see below |
+
+The hue trust gate uses the angle between the reference's hue and the water's hue. A surface lit by
+the water has nearly the water's hue, so it is not taken as white. On the phone v2 gives 0.336, 0.241
+and 0.300 for the three reefs.
+
+v2 has two costs. In `videosim` the 4K clip `Tune_22_Oct/13832750` moves by 3.00 (mean
+OKLab distance times 100): brighter, paler and bluer, and the rocks lose their warm tone. The manta
+belly goes to chroma 0.043. Both have one cause: a white belly lit by the water has nearly the water's
+hue too. Its angle is 23.5 degrees, against 18.6 to 20.8 for the coral. No bound fits safely in that
+gap.
+
+A third cost showed when the photos that lose their white reference were rendered. Across the 36
+photos, 11 sit under 25 degrees and had a reference doing some work. Six of them were rendered against
+`main` at 1600 px:
+
+| photo | mean OKLab distance x100 | by eye |
+|---|---|---|
+| IMG_7259 | 0.70 | about the same |
+| IMG_7256 | 1.03 | about the same; the reef at the edge a little less warm |
+| IMG_7253 | 0.39 | the same |
+| m1 | 1.37 | the yellow coral goes duller and the scene cools toward green |
+| m6 | 0.77 | about the same |
+| O1 | 0.33 | the same |
+
+Jake looked at all three costs and chose v2 for 1.1.4 (23 Oct 2026). He called the video difference
+small. v2 ships; branch `jpeg-input-v2` holds the same change as a parked copy.
+
+The hue gate reverses a rule the code stated on purpose: "sand lit by blue water ... no colour test
+tells them apart". `testAnalysisFindsBrightNeutralSurfacesAndBrightShare` encoded it, with sand 27.5
+degrees from the water's hue, inside the ramp. The test now checks both sides with values clear of
+it: sand 55 degrees away is a white reference, a pale surface 7 degrees away is not.
+
+### Video
+
+`videosim` on three clips, a frame every 2 s, against `main`. The numbers are mean OKLab distance
+times 100 over all frames, with the largest frame in brackets.
+
+| clip | the J3 change alone | with v2, which ships |
+|---|---|---|
+| A, `Tune_20_Oct/VID_20230118_095241_0018.MP4`, 21 frames | 0.00 (0.01) | 0.20 (0.24) |
+| B, the whale shark clip in `challenge_video/video3`, 16 frames | 0.00 (0.00) | 0.32 (0.47) |
+| K, `Tune_22_Oct/13832750_2160_3840_60fps.MP4`, 7 frames | 0.07 (0.08) | 3.00 (3.24) |
+
+None of the three clips has a reef in frame, so they test that the video does not change. They do not
+test the reef fix itself.
+
+### Tests for 1.1.4
+
+| where | tests | result |
+|---|---|---|
+| iPhone 17 | VideoTests, VideoRestorationTests, VideoSceneTests, LongVideoTests | 43 passed |
+| iPhone 17 | RestorationTests, PhotoFormatTests, PresetTests, PhotoTests | 98 passed |
+| iPhone 18 Pro simulator | all unit tests except PurchaseTests | 221 run, 7 skipped, 3 failed |
+
+The three simulator failures:
+
+- the old white-reference test, since rewritten; it passes on the iPhone
+- `LongVideoTests` memory, 257 MB against 220 MB, with other work running; it passes on the iPhone,
+  as `Verification.md` records for a run on its own
+- `PhotoFormatTests` 4:4:4 JPEG, the chroma read as 2x2; it passes on the iPhone, so the simulator's
+  encoder differs from the phone's
+
+The simulator run hung after its last test, as `Verification.md` records, and was stopped by hand.
+
+## Next
+
+These go into the subject work, as one track (Jake, 23 Oct 2026). All three touch `SubjectMask`.
+
+1. Find out whether the pale ring around fish on photos (`Verification.md`) sits on the subject
+   mask's edge. One measurement decides it. If it does not, the ring may come from the detail layer,
+   which lifts fine contrast on subjects to 1.4 to 2.1 times the source, and it can be fixed first.
+2. Tie the white reference to the subject mask. A belly on a detected subject should count as white.
+   A pale patch of reef should not. That separates the coral of DSC03687 from the manta belly, and the
+   analysis sample alone cannot.
+3. The subject emphasis itself (`SubjectEmphasis.md`).
+
 
 ## Rules for this work
 

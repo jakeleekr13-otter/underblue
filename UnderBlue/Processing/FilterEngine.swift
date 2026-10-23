@@ -12,6 +12,7 @@ final class FilterEngine: Sendable {
     private let lumaKernel: CIColorKernel?
     private let offsetKernel: CIColorKernel?
     private let lightDetailKernel: CIColorKernel?
+    private let subjectLiftKernel: CIColorKernel?
     private let calmKernels: [String: CIColorKernel]
     /// False when the finishing kernel failed to load. Output then uses the weaker colour-matrix
     /// fallback, so owners with a DiagnosticRecorder report it.
@@ -37,10 +38,63 @@ final class FilterEngine: Sendable {
         lumaKernel = MetalKernels.color("UnderBlueLumaTransfer")
         offsetKernel = MetalKernels.color("UnderBlueBlackOffset")
         lightDetailKernel = MetalKernels.color("UnderBlueLightDetail")
+        subjectLiftKernel = MetalKernels.color("UnderBlueSubjectLift")
         var calm: [String: CIColorKernel] = [:]
         for name in ["UnderBlueCalmShare", "UnderBlueCalmSpread", "UnderBlueCalmWeight", "UnderBlueCalmPremultiply",
                      "UnderBlueWaterCalm", "UnderBlueCalmKeep", "UnderBlueVioletCalm"] { calm[name] = MetalKernels.color(name) }
         calmKernels = calm
+    }
+
+    /// The subject lift. RestorationEngine.combined runs it once, on the blended output, before the
+    /// violet calm. Inside the finishing kernel it would run on both paths and the blend would dilute it.
+    /// The per-pixel water share, before the calm chain spreads it. Tier two of the lift reads its
+    /// complement: a reef or a wreck is not open water, and Vision rarely returns one.
+    func waterShare(_ basis: CIImage, correction v: ColorCorrection) -> CIImage? {
+        guard let shareKernel = calmKernels["UnderBlueCalmShare"] else { return nil }
+        let short = Float(min(basis.extent.width, basis.extent.height))
+        let blur = CIFilter.gaussianBlur()
+        blur.inputImage = basis.clampedToExtent()
+        blur.radius = max(0.5, FinishingMath.calmBlurRadius * (short.isFinite && short > 0 ? short : 480))
+        let smooth = (blur.outputImage ?? basis).cropped(to: basis.extent)
+        return shareKernel.apply(extent: basis.extent, arguments: [smooth,
+            CIVector(x: CGFloat(v.castGains.x), y: CGFloat(v.castGains.y), z: CGFloat(v.castGains.z), w: 0),
+            CIVector(x: CGFloat(v.waterRedness), y: CGFloat(v.waterChroma), z: 0, w: 0),
+            CIVector(x: CGFloat(v.waterLit.x), y: CGFloat(v.waterLit.y), z: CGFloat(v.waterLit.z), w: CGFloat(v.lightGradient))])
+    }
+
+    func subjectLift(_ image: CIImage, lift: SubjectLift, waterShare: CIImage? = nil, depth: CIImage? = nil) -> CIImage {
+        guard let subjectLiftKernel else { return image }
+        let mask = lift.mask.image(matching: image.extent)
+        // No share image means tier two is off: a fully water-like stand-in makes its term zero.
+        let share = waterShare ?? CIImage(color: .white).cropped(to: image.extent)
+        // No depth image means every tier-two pixel counts as near, which is tier two alone.
+        let depthImage = depth ?? CIImage(color: .black).cropped(to: image.extent)
+        let short = min(image.extent.width, image.extent.height)
+        func blur(_ input: CIImage, _ radius: Float) -> CIImage {
+            let f = CIFilter.gaussianBlur()
+            f.inputImage = input.clampedToExtent()
+            f.radius = max(0.5, radius)
+            return (f.outputImage ?? input).cropped(to: image.extent)
+        }
+        // A subject-only blur was tried here on 22 Oct 2026 and reverted. It cut the change just inside
+        // the outline by about 20%, but the divide by a near-zero weight raised the change in the water
+        // 0 to 4 px out from 0.0155 to 0.0207. The water side is the one that reads as a halo.
+        let blurred = blur(image, Float(lift.detailRadius) * Float(short))
+        let wide = blur(image, Float(lift.clarityRadius) * Float(short))
+        let out = subjectLiftKernel.apply(extent: image.extent, arguments: [
+            image, mask, blurred, wide, share, depthImage,
+            CIVector(x: CGFloat(lift.strength), y: CGFloat(lift.chromaCap),
+                     z: CGFloat(lift.highlightStart), w: CGFloat(lift.noiseFloor)),
+            CIVector(x: CGFloat(lift.chromaExponent), y: CGFloat(lift.contrast),
+                     z: CGFloat(lift.contrastPivot), w: CGFloat(lift.tier2)),
+            CIVector(x: CGFloat(lift.detail), y: CGFloat(lift.detailEdgeLow),
+                     z: CGFloat(lift.detailEdgeHigh), w: CGFloat(lift.clarity)),
+            CIVector(x: CGFloat(lift.highlights), y: CGFloat(lift.highlightKnee),
+                     z: CGFloat(lift.maskLow), w: CGFloat(lift.maskHigh)),
+            CIVector(x: CGFloat(lift.tier3), y: CGFloat(lift.highlights2),
+                     z: CGFloat(lift.highlights3), w: CGFloat(lift.depthSplit)),
+            CIVector(x: CGFloat(lift.textureFalloff), y: 0, z: 0, w: 0)])
+        return (out ?? image).cropped(to: image.extent)
     }
 
     func apply(_ image: CIImage, settings: FilterSettings) -> CIImage {

@@ -171,6 +171,7 @@ actor PhotoProcessor {
     static func applying(_ choice: SubjectChoice, to plan: RestorationPlan?) -> RestorationPlan? {
         guard var plan, case .picked(let mask) = choice else { return plan }
         plan.subjectMask = mask
+        if var lift = plan.subjectLift { lift.mask = mask ?? lift.mask; plan.subjectLift = mask == nil ? nil : lift }
         return plan
     }
 
@@ -198,6 +199,16 @@ actor PhotoProcessor {
             try Task.checkCancellation()
             var plan = try waterEstimator.estimate(image: source, depth: depth, legacy: analysis, context: engine.context)
             plan.subjectMask = SubjectMask.estimate(source)
+            // The lift takes its own mask, at its own cap: the veil's 0.25 rejects a reef that is
+            // the photo's subject, and the lift wants it (docs/SubjectEmphasis.md, E2).
+            var liftOff = false
+            #if DEBUG
+            // UB_NO_LIFT runs the photo path with no lift, as the control for a device check.
+            liftOff = ProcessInfo.processInfo.environment["UB_NO_LIFT"] != nil
+            #endif
+            if !liftOff, let liftMask = SubjectMask.estimate(source, cap: SubjectMask.liftMaximumShare) {
+                plan.subjectLift = SubjectLift(mask: liftMask)
+            }
             restorationPlan = plan
             #if DEBUG
             logger.debug("Binf=(\(plan.backscatterInfinity.x),\(plan.backscatterInfinity.y),\(plan.backscatterInfinity.z)) betaD=(\(plan.betaDirect.x),\(plan.betaDirect.y),\(plan.betaDirect.z)) betaB=(\(plan.betaBackscatter.x),\(plan.betaBackscatter.y),\(plan.betaBackscatter.z)) confidence=\(plan.confidence) floorPixels=\(plan.transmissionFloorPixelPercentage)% maxGainPixels=\(plan.maximumGainPixelPercentage)%")
@@ -238,7 +249,8 @@ actor PhotoProcessor {
             }
             // The one colour entry point shared with video preview and export. Low-confidence fits
             // approach the exact existing UnderBlue output.
-            return try restorationEngine.combined(source, plan: plan, settings: settings, filter: engine)
+            return try restorationEngine.combined(source, plan: plan, settings: settings, filter: engine,
+                                                  subjectLift: plan.subjectLift)
         } catch {
             if !recordedRenderFallback, let diagnostics {
                 recordedRenderFallback = true

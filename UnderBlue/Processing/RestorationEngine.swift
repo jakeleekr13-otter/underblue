@@ -262,20 +262,27 @@ final class RestorationEngine: Sendable {
     }
 
     func combined(_ image: CIImage, plan: RestorationPlan, settings: FilterSettings,
-                  filter: FilterEngine) throws -> CIImage {
+                  filter: FilterEngine, subjectLift: SubjectLift? = nil) throws -> CIImage {
         try combined(image, plan: plan, values: corrections(settings: settings, plan: plan),
-                     settings: settings, filter: filter)
+                     settings: settings, filter: filter, subjectLift: subjectLift)
     }
 
     /// combined() with correction values the caller already made. Video mixes two scenes' values here.
     func combined(_ image: CIImage, plan: RestorationPlan,
                   values: (current: ColorCorrection, restored: ColorCorrection),
-                  settings: FilterSettings, filter: FilterEngine, video: Bool = false) throws -> CIImage {
+                  settings: FilterSettings, filter: FilterEngine, video: Bool = false,
+                  subjectLift: SubjectLift? = nil) throws -> CIImage {
         let amount = min(1, max(0, settings.appliedIntensity))
         guard settings.preset != .original, amount > 0 else { return image }
         // Both paths calm the water the source shows. On the restored image the water test read 0.65
         // in far water and below 0.2 near a subject, which left a noisy band (IMG_7260, 8 Oct 2026).
         let calm = filter.waterCalmWeight(image, correction: values.current)
+        // Tier two of the lift reads the raw water share, not the spread calm weight.
+        let share = (subjectLift?.tier2 ?? 0) > 0 || (subjectLift?.tier3 ?? 0) > 0
+            ? filter.waterShare(image, correction: values.current) : nil
+        // Tier three needs distance. Without it every tier-two pixel counts as near.
+        let needsDepth = (subjectLift?.tier3 ?? 0) > 0 || (subjectLift?.textureFalloff ?? 0) > 0
+        let liftDepth = needsDepth ? try? depthImage(plan.depth, matching: image.extent) : nil
         let current = filter.apply(image, correction: values.current, intensity: amount, calmWeight: calm, violetCalm: false, openWaterRed: video)
         let physicallyRestored = try restore(image, plan: plan, liftDark: video)
         let finished = filter.finishing(physicallyRestored, correction: values.restored, reference: image, calmWeight: calm, openWaterRed: video)
@@ -289,12 +296,22 @@ final class RestorationEngine: Sendable {
         let values = plan.depth.values
         guard let nearest = values.min(), let farthest = values.max(), farthest - nearest > 0.05,
               let depthBlendKernel else {
-            return filter.violetCalm(filter.blend(current, depthAware, amount: weight), source: image, calmWeight: calm)
+            return filter.violetCalm(lifted(filter.blend(current, depthAware, amount: weight), subjectLift, filter, share, liftDepth),
+                                     source: image, calmWeight: calm)
         }
         let depth = try depthImage(plan.depth, matching: image.extent)
         let mixed = depthBlendKernel.apply(extent: image.extent, arguments: [current, depthAware, depth,
             CIVector(x: CGFloat(weight), y: CGFloat(Self.nearDepth), z: 0, w: 0)])
-        return filter.violetCalm((mixed ?? filter.blend(current, depthAware, amount: weight)).cropped(to: image.extent), source: image, calmWeight: calm)
+        let blended = (mixed ?? filter.blend(current, depthAware, amount: weight)).cropped(to: image.extent)
+        return filter.violetCalm(lifted(blended, subjectLift, filter, share, liftDepth), source: image, calmWeight: calm)
+    }
+
+    /// The subject lift, at the one place it may run. Both of combined()'s return points go through here,
+    /// so a fix cannot land on only one of them (docs/SubjectEmphasis.md).
+    private func lifted(_ image: CIImage, _ lift: SubjectLift?, _ filter: FilterEngine,
+                        _ waterShare: CIImage?, _ depth: CIImage?) -> CIImage {
+        guard let lift else { return image }
+        return filter.subjectLift(image, lift: lift, waterShare: waterShare, depth: depth)
     }
 
     /// The correction values combined applies: one set for the source image, one for the restored image.

@@ -22,20 +22,32 @@ let waterEstimator = WaterModelEstimator()
 let restoration = RestorationEngine()
 let sRGB = CGColorSpace(name: CGColorSpace.sRGB)!
 
-func load(_ url: URL) -> CIImage? { CIImage(contentsOf: url, options: [.applyOrientationProperty: true]) }
+func load(_ url: URL) -> CIImage? {
+    // Camera RAW goes through CIRAWFilter, as PhotoProcessor.openRAW does. CIImage(contentsOf:) would
+    // hand back the small embedded preview instead. A camera JPEG and its RAW are different starting
+    // images, and the pipeline lands differently on each (docs/SubjectEmphasis.md, E14).
+    if UTType(filenameExtension: url.pathExtension)?.conforms(to: .rawImage) == true {
+        return CIRAWFilter(imageURL: url)?.outputImage
+    }
+    return CIImage(contentsOf: url, options: [.applyOrientationProperty: true])
+}
 func fit(_ image: CIImage, width: Int, height: Int) -> CIImage {
     let t = image.transformed(by: CGAffineTransform(translationX: -image.extent.minX, y: -image.extent.minY))
     return t.transformed(by: CGAffineTransform(scaleX: CGFloat(width) / t.extent.width, y: CGFloat(height) / t.extent.height))
         .cropped(to: CGRect(x: 0, y: 0, width: width, height: height))
 }
+// HT_EVAL_P3=1 writes the app's own output space (FilterEngine.photoSpace, Display P3) instead of
+// sRGB. PhotoProcessor saves in P3, so an sRGB sheet is not what the app shows: a saturated orange
+// reef is pushed to the sRGB gamut edge and reads redder there (23 Oct 2026).
+let outputSpace = ProcessInfo.processInfo.environment["HT_EVAL_P3"] == "1" ? FilterEngine.photoSpace : sRGB
 func render(_ image: CIImage, _ w: Int, _ h: Int) -> [UInt8] {
     var px = [UInt8](repeating: 0, count: w * h * 4)
     engine.context.render(image, toBitmap: &px, rowBytes: w * 4, bounds: CGRect(x: 0, y: 0, width: w, height: h),
-                          format: .RGBA8, colorSpace: sRGB)
+                          format: .RGBA8, colorSpace: outputSpace)
     return px
 }
 func save(_ image: CIImage, _ url: URL) {
-    guard let cg = engine.context.createCGImage(image, from: image.extent, format: .RGBA8, colorSpace: sRGB),
+    guard let cg = engine.context.createCGImage(image, from: image.extent, format: .RGBA8, colorSpace: outputSpace),
           let d = CGImageDestinationCreateWithURL(url as CFURL, UTType.jpeg.identifier as CFString, 1, nil) else { return }
     CGImageDestinationAddImage(d, cg, [kCGImageDestinationLossyCompressionQuality: 0.85] as CFDictionary)
     CGImageDestinationFinalize(d)
@@ -73,7 +85,21 @@ func lab(_ r8: UInt8, _ g8: UInt8, _ b8: UInt8) -> SIMD3<Float> {
 struct Metrics { var psnr = Float.nan, ssim = Float.nan, deltaE = Float.nan
     var farHue: Float = 0, farChroma: Float = 0, nearA: Float = 0, nearRG: Float = 0, contrastL: Float = 0
     var meanL: Float = 0, localContrast: Float = 0, farLocalContrast: Float = 0
-    var farHueOK: Float = 0, farChromaOK: Float = 0 }
+    var farHueOK: Float = 0, farChromaOK: Float = 0
+    // Subject lift metrics (docs/SubjectEmphasis.md, E3). Nil mask leaves them at nan, not 0:
+    // a zero would read as measured. See the plan's note on unmeasured cells.
+    var subjectShare = Float.nan, subjectL = Float.nan, outsideL = Float.nan
+    var subjectChroma = Float.nan, subjectViolet = Float.nan, clipped: Float = 0, subjectClipped = Float.nan
+    var outsideChroma = Float.nan
+    // Subject-only texture. The plain localContrast is the whole frame, which hides the subject.
+    var subjectLocalContrast = Float.nan, subjectOvershoot = Float.nan }
+
+/// Middle value of an unsorted array. Nan when empty.
+func median(_ v: [Float]) -> Float {
+    guard !v.isEmpty else { return .nan }
+    let s = v.sorted()
+    return s.count % 2 == 1 ? s[s.count / 2] : (s[s.count / 2 - 1] + s[s.count / 2]) / 2
+}
 
 // OKLab (a, b) of an sRGB8 pixel. OKLab hue separates azure, blue, indigo and violet, where CIELAB hue does not.
 func okab(_ r8: UInt8, _ g8: UInt8, _ b8: UInt8) -> SIMD2<Float> {
@@ -84,11 +110,14 @@ func okab(_ r8: UInt8, _ g8: UInt8, _ b8: UInt8) -> SIMD2<Float> {
     let s = cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
     return SIMD2(1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s)
 }
-func toneMetrics(_ px: [UInt8], _ w: Int, _ h: Int, depth: NormalizedDepthMap) -> Metrics {
+func toneMetrics(_ px: [UInt8], _ w: Int, _ h: Int, depth: NormalizedDepthMap, mask: SubjectMask? = nil) -> Metrics {
     var m = Metrics()
     var farOK = SIMD2<Float>(0, 0)
     var far = SIMD2<Float>(0, 0), farN: Float = 0, nearA: Float = 0, nearR: Float = 0, nearG: Float = 0, nearN: Float = 0
     var Ls: [Float] = []; Ls.reserveCapacity(w * h)
+    // Inside the mask against outside it. A pixel counts as subject above 0.5, as the picker does.
+    var subjectLs: [Float] = [], outsideLs: [Float] = [], subjectCs: [Float] = [], outsideCs: [Float] = []
+    var maskSum: Float = 0, violetN: Float = 0, subjectN: Float = 0, clipped: Float = 0, subjectClipped: Float = 0
     let sorted = depth.values.sorted()
     let farCut = sorted[sorted.count * 7 / 10], nearCut = sorted[sorted.count * 3 / 10]
     for y in 0..<h { for x in 0..<w {
@@ -97,6 +126,24 @@ func toneMetrics(_ px: [UInt8], _ w: Int, _ h: Int, depth: NormalizedDepthMap) -
         let d = depth.values[(y * depth.height / h) * depth.width + (x * depth.width / w)]
         if d >= farCut { far += SIMD2(l.y, l.z); farOK += okab(px[i], px[i+1], px[i+2]); farN += 1 }
         if d <= nearCut { nearA += l.y; nearR += Float(px[i]); nearG += Float(px[i+1]); nearN += 1 }
+        if px[i] == 255 || px[i+1] == 255 || px[i+2] == 255 { clipped += 1 }
+        if let mask {
+            let mv = mask.values[(y * mask.height / h) * mask.width + (x * mask.width / w)]
+            maskSum += mv
+            guard mv > 0.5 else {
+                // The lift scales chroma, so the water guard has to watch chroma, not only L.
+                let ab = okab(px[i], px[i+1], px[i+2])
+                outsideLs.append(l.x); outsideCs.append(sqrt(ab.x * ab.x + ab.y * ab.y)); continue
+            }
+            let ab = okab(px[i], px[i+1], px[i+2])
+            let chroma = sqrt(ab.x * ab.x + ab.y * ab.y)
+            subjectLs.append(l.x); subjectCs.append(chroma); subjectN += 1
+            if px[i] == 255 || px[i+1] == 255 || px[i+2] == 255 { subjectClipped += 1 }
+            var hue = atan2(ab.y, ab.x) * 180 / .pi; if hue < 0 { hue += 360 }
+            // Violet band from scripts/color-eval/README.md, with the 0.03 chroma floor the
+            // ColorAlgorithm Rejected table uses, so near-grey pixels do not count.
+            if hue >= 282, chroma >= 0.03 { violetN += 1 }
+        }
     } }
     far /= max(1, farN)
     var hue = atan2(far.y, far.x) * 180 / .pi; if hue < 0 { hue += 360 }
@@ -110,6 +157,7 @@ func toneMetrics(_ px: [UInt8], _ w: Int, _ h: Int, depth: NormalizedDepthMap) -
     m.meanL = mean
     // Haze proxy independent of hue: a veil lowers local L* contrast. 16x16 non-overlapping windows.
     var local: Float = 0, localN: Float = 0, farLocal: Float = 0, farLocalN: Float = 0
+    var subjLocal: Float = 0, subjLocalN: Float = 0, over: Float = 0
     for y0 in stride(from: 0, through: h - 16, by: 16) { for x0 in stride(from: 0, through: w - 16, by: 16) {
         var s: Float = 0, s2: Float = 0
         for y in y0..<(y0 + 16) { for x in x0..<(x0 + 16) { let v = Ls[y * w + x]; s += v; s2 += v * v } }
@@ -117,8 +165,26 @@ func toneMetrics(_ px: [UInt8], _ w: Int, _ h: Int, depth: NormalizedDepthMap) -
         local += sd; localN += 1
         let d = depth.values[((y0 + 8) * depth.height / h) * depth.width + ((x0 + 8) * depth.width / w)]
         if d >= farCut { farLocal += sd; farLocalN += 1 }
+        if let mask, mask.values[((y0 + 8) * mask.height / h) * mask.width + ((x0 + 8) * mask.width / w)] > 0.5 {
+            // How far the window's brightest and darkest pixels sit from its mean. A halo shows up here
+            // before it shows up in the standard deviation.
+            var hi = -Float.greatestFiniteMagnitude, lo = Float.greatestFiniteMagnitude
+            for y in y0..<(y0 + 16) { for x in x0..<(x0 + 16) {
+                hi = max(hi, Ls[y * w + x]); lo = min(lo, Ls[y * w + x])
+            } }
+            subjLocal += sd; subjLocalN += 1; over += (hi - s / 256) + (s / 256 - lo)
+        }
     } }
     m.localContrast = local / max(1, localN); m.farLocalContrast = farLocal / max(1, farLocalN)
+    m.clipped = clipped / Float(w * h)
+    if mask != nil {
+        m.subjectShare = maskSum / Float(w * h)
+        m.subjectL = median(subjectLs); m.outsideL = median(outsideLs); m.subjectChroma = median(subjectCs)
+        m.outsideChroma = median(outsideCs)
+        if subjLocalN > 0 { m.subjectLocalContrast = subjLocal / subjLocalN; m.subjectOvershoot = over / subjLocalN }
+        m.subjectViolet = subjectN > 0 ? violetN / subjectN : .nan
+        m.subjectClipped = subjectN > 0 ? subjectClipped / subjectN : .nan
+    }
     return m
 }
 func fullReference(_ a: [UInt8], _ b: [UInt8], _ w: Int, _ h: Int, into m: inout Metrics) {
@@ -147,9 +213,9 @@ func fullReference(_ a: [UInt8], _ b: [UInt8], _ w: Int, _ h: Int, into m: inout
     m.ssim = total / max(1, n)
 }
 
-let variants = ["original", "grayworld", "current", "restoration", "combined", "uniform", "reference"]
-var csv = "image,variant,psnr,ssim,deltaE,farHue,farChroma,nearA,nearRG,contrastL,meanL,localContrast,farLocalContrast,farHueOK,farChromaOK,fallback,confidence,depthConf,waterConf,betaDR,betaDG,betaDB,binfR,binfG,binfB,floorPct,gainPct,recR\n"
-let files = try FileManager.default.contentsOfDirectory(atPath: rawDir.path).filter { [".png", ".jpg", ".jpeg"].contains(where: $0.lowercased().hasSuffix) }.sorted()
+let variants = ["original", "grayworld", "current", "restoration", "combined", "lift", "uniform", "reference"]
+var csv = "image,variant,psnr,ssim,deltaE,farHue,farChroma,nearA,nearRG,contrastL,meanL,localContrast,farLocalContrast,farHueOK,farChromaOK,fallback,confidence,depthConf,waterConf,betaDR,betaDG,betaDB,binfR,binfG,binfB,floorPct,gainPct,recR,subjectShare,subjectL,outsideL,subjectChroma,subjectViolet,clipped,subjectClipped,outsideChroma,subjectLocalContrast,subjectOvershoot\n"
+let files = try FileManager.default.contentsOfDirectory(atPath: rawDir.path).filter { [".png", ".jpg", ".jpeg", ".arw"].contains(where: $0.lowercased().hasSuffix) }.sorted()
 let started = Date()
 var done = 0
 // "dev:N" = visual-set names + first N dev images; "holdout:N" = first N holdout images.
@@ -173,6 +239,8 @@ for name in selected {
     let source = fit(engine.sdr(rawFull), width: w, height: h)
     let analysis = engine.analyze(source)
     var settings = FilterSettings(); settings.analysis = analysis
+    // HT_EVAL_INTENSITY overrides the preset slider, to match a given app screenshot.
+    if let i = ProcessInfo.processInfo.environment["HT_EVAL_INTENSITY"], let v = Float(i) { settings.intensity = v }
     // HT_EVAL_CUSTOM="brightness,contrast,saturation,clarity,temperature" renders the Custom preset at those slider positions.
     if let custom = ProcessInfo.processInfo.environment["HT_EVAL_CUSTOM"] {
         let p = custom.split(separator: ",").compactMap { Float($0) }
@@ -182,12 +250,15 @@ for name in selected {
     }
     var plan: RestorationPlan?
     var depthMap: NormalizedDepthMap?
+    var liftMask: SubjectMask?
     do {
         let depth = try await depthEstimator.monocularDepth(for: source)
         depthMap = depth.map
         plan = try waterEstimator.estimate(image: source, depth: depth, legacy: analysis, context: engine.context)
         // As PhotoProcessor does. The uniform (video) plan below has no mask, as video has none.
         plan?.subjectMask = SubjectMask.estimate(source)
+        // The subject lift has its own cap (docs/SubjectEmphasis.md, E2), so m5's coral block counts.
+        liftMask = SubjectMask.estimate(source, cap: SubjectMask.liftMaximumShare)
         if ProcessInfo.processInfo.environment["HT_EVAL_LOG"] != nil, let m = plan?.subjectMask { print("\(name) subjects: \(m.width)x\(m.height) share=\(m.values.reduce(0, +) / Float(m.values.count))") }
     } catch { }
     guard let depthMap else { print("depth failed \(name)"); continue }
@@ -233,6 +304,22 @@ for name in selected {
     if let plan, let raw = try? restoration.restore(source, plan: plan) {
         outputs["restoration"] = engine.blend(source, raw, amount: plan.confidence)
         outputs["combined"] = (try? restoration.combined(source, plan: plan, settings: settings, filter: engine)) ?? current
+        // HT_EVAL_LIFT="strength,chromaCap,highlightStart,noiseFloor,chromaExponent,contrast" renders the lift as its own
+        // variant (docs/SubjectEmphasis.md, E4). Without the mask the lift output equals combined.
+        if let liftMask, let spec = ProcessInfo.processInfo.environment["HT_EVAL_LIFT"] {
+            let v = spec.split(separator: ",").compactMap { Float($0) }
+            precondition(v.count == 17, "HT_EVAL_LIFT: strength,chromaCap,highlightStart,noiseFloor,chromaExponent,contrast,detail,clarity,highlights,maskLow,maskHigh,tier2,tier3,depthSplit,highlights2,highlights3,textureFalloff")
+            let lift = SubjectLift(mask: liftMask, strength: v[0], chromaCap: v[1], tier2: v[11],
+                                   textureFalloff: v[16], tier3: v[12], depthSplit: v[13],
+                                   highlights2: v[14], highlights3: v[15],
+                                   maskLow: v[9], maskHigh: v[10], clarity: v[7], highlights: v[8],
+                                   detail: v[6], contrast: v[5], chromaExponent: v[4],
+                                   highlightStart: v[2], noiseFloor: v[3])
+            outputs["lift"] = (try? restoration.combined(source, plan: plan, settings: settings, filter: engine,
+                                                         subjectLift: lift)) ?? outputs["combined"]
+        } else {
+            outputs["lift"] = outputs["combined"]
+        }
         if let uniform = try? plan.withUniformDepth() {
             // The video entry point (correction values passed in), as video frames are rendered.
             outputs["uniform"] = (try? restoration.combined(source, plan: uniform, values: restoration.corrections(settings: settings, plan: uniform),
@@ -240,6 +327,7 @@ for name in selected {
         }
     } else {
         outputs["restoration"] = source; outputs["combined"] = current; outputs["uniform"] = current
+        outputs["lift"] = current
     }
     var refPx: [UInt8]?
     if let refDir, let ref = load(refDir.appendingPathComponent(name)) {
@@ -248,14 +336,15 @@ for name in selected {
     for v in variants {
         guard let img = outputs[v] else { continue }
         let px = v == "reference" ? refPx! : render(img, w, h)
-        var m = toneMetrics(px, w, h, depth: depthMap)
+        var m = toneMetrics(px, w, h, depth: depthMap, mask: liftMask)
         if let refPx, v != "reference" { fullReference(px, refPx, w, h, into: &m) }
         let p = plan
         let fields: [String] = [name, v, "\(m.psnr)", "\(m.ssim)", "\(m.deltaE)", "\(m.farHue)", "\(m.farChroma)", "\(m.nearA)",
             "\(m.nearRG)", "\(m.contrastL)", "\(m.meanL)", "\(m.localContrast)", "\(m.farLocalContrast)", "\(m.farHueOK)", "\(m.farChromaOK)", p == nil ? "1" : "0", "\(p?.confidence ?? 0)", "\(p?.depthConfidence ?? 0)",
             "\(p?.waterFitConfidence ?? 0)", "\(p?.betaDirect.x ?? 0)", "\(p?.betaDirect.y ?? 0)", "\(p?.betaDirect.z ?? 0)",
             "\(p?.backscatterInfinity.x ?? 0)", "\(p?.backscatterInfinity.y ?? 0)", "\(p?.backscatterInfinity.z ?? 0)",
-            "\(p?.transmissionFloorPixelPercentage ?? 0)", "\(p?.maximumGainPixelPercentage ?? 0)", "\(p?.channelRecoverability.x ?? 0)"]
+            "\(p?.transmissionFloorPixelPercentage ?? 0)", "\(p?.maximumGainPixelPercentage ?? 0)", "\(p?.channelRecoverability.x ?? 0)",
+            "\(m.subjectShare)", "\(m.subjectL)", "\(m.outsideL)", "\(m.subjectChroma)", "\(m.subjectViolet)", "\(m.clipped)", "\(m.subjectClipped)", "\(m.outsideChroma)", "\(m.subjectLocalContrast)", "\(m.subjectOvershoot)"]
         csv += fields.joined(separator: ",") + "\n"
         if let sheetDir, sheetNames?.contains(name) ?? true { save(img, sheetDir.appendingPathComponent("\(name.split(separator: ".")[0])__\(v).jpg")) }
     }

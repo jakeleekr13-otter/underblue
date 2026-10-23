@@ -22,7 +22,7 @@ The layout is `scripts/app_store_screenshots/screens.html`. Every caption has a 
 
 ## Other languages
 
-A language uses `<locale>/source` for its device captures and writes `<locale>/final`. A missing capture falls back to `en-US/source`, and the script prints a warning. Never upload a set that printed a warning, because its phone screens are still in English.
+A language uses `<locale>/source` for its device captures and writes `<locale>/final`. A missing capture falls back to `en-US/source`, and the script prints a warning. A set that printed a warning shows English phone screens under translated captions.
 
 Capture the five screens on the iPhone with the app language set to that language (Settings → Apps → UnderBlue → Language). Use the same states as `en-US/source`:
 
@@ -36,7 +36,7 @@ Capture the five screens on the iPhone with the app language set to that languag
 
 The video frame pair (`video_frame_*.HEIC`) has no UI, so every language reuses `en-US`.
 
-Status (23 Oct 2026): `ko` captions are written; captures are still to come. `ja`, `zh-Hans` and `zh-Hant` need captions and full App Store metadata first.
+Status (23 Oct 2026): `ko/final` is committed. Its captions are Korean, but its phone screens are the en-US captures, because the Korean captures are on hold. Whether this set was uploaded for 1.1.4 is not recorded. `ja`, `zh-Hans` and `zh-Hant` need captions and full App Store metadata first.
 
 `en-US-outdated` keeps the older sets for comparison only.
 

@@ -66,9 +66,9 @@ Still open:
   result from the camera JPEG, and 95 against 84 per cent for the ARW. So it is in both results and
   in neither source, and the ARW is the stronger one. It is not a camera JPEG problem. The cause was
   not looked for. It may be the same local veil as the video halo above, but on the photo path.
-  **Narrowed 23 Oct 2026, not fixed.** It is not the local veil, the mask, the detail layer or the
-  colour kernel's water test. The source has a pale glow around each fish. A per-pixel step in the
-  finishing path takes more chroma from it than from the water. See `SubjectEmphasis.md`, E18.
+  **Cause found 23 Oct 2026, not fixed.** The source has a pale glow around each fish. The subject
+  light removal (`subjectTone`) greys it, per pixel. It is not the local veil, the mask or the
+  detail layer. See `SubjectEmphasis.md`, E18.
 - Not checked: 4K and HDR clips, the whole whale shark clip by eye (only the first 12 s), the Mac app's own export output (the test sandbox hides it), the iPhone export of the red-ring fix on the whale shark clip beyond the first 12 s.
 
 ## Dark corner in video: shadow floor (22 Oct 2026)

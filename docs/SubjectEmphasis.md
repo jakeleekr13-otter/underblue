@@ -734,7 +734,7 @@ The branch merged main at `287743d`. Every number above E15 predates that merge.
 | E15 | Make the Vision input the same at every size | Mask share of one photo at four sizes | Done |
 | E16 | Trust a white reference on a subject | Unit test, gate, analysis on 31 photos | Done |
 | E17 | Split the tiers by the water, not by a depth cut | Transmission maps, metrics, full-size crops | Adopted (Jake, 23 Oct 2026) |
-| E18 | Find the cause of the pale ring around fish | Ring chroma with each stage switched off | Narrowed to a per-pixel step. Not fixed |
+| E18 | Find the cause of the pale ring around fish | Ring chroma with each stage switched off | Cause: the subject light removal. Fix needs Jake |
 | E19 | Device check of E15 to E17 | Parity analysis and export on the iPhone | Done: the phone agrees with the Mac |
 
 ### E15, the Vision input, 23 Oct 2026
@@ -875,7 +875,28 @@ Which step does it is not known. These were switched off in the colour kernel an
 | water test, chroma term | 0.936 |
 | water test, redness term | 0.936 |
 | water test, both (every pixel counts as water) | 0.941 |
-| uncast, the surface-light rule | 0.939 | The cast gains alone are ruled out too. Applied by hand to the source, they move the glow's share of the water's chroma only from 0.79 to 0.77, against 0.54 in the result. Next to test, one at a time: the water tone and water saturation, the tone curve, vibrance. Not fixed.
+| uncast, the surface-light rule | 0.939 | The cast gains alone are ruled out too. Applied by hand to the source, they move the glow's share of the water's chroma only from 0.79 to 0.77, against 0.54 in the result.
+
+**The cause.** 2000 glow pixels and 2000 far-water pixels went through `FinishingMath.color`, the CPU mirror of the colour kernel. One field was set to neutral at a time:
+
+| colour kernel | glow chroma over water chroma |
+|---|---|
+| source, no kernel | 0.792 |
+| full kernel | 0.630 |
+| cast gains 1 | 0.652 |
+| water tone 1 | 0.641 |
+| water saturation 1 | 0.622 |
+| neutral gains 1 | 0.630 |
+| red rebuild 0 | 0.641 |
+| tone curve and mid lift 0 | 0.626 |
+| reference 0 | 0.630 |
+| **subject tone 1** | **0.999** |
+
+The subject light removal (`subjectTone`) makes the ring. The glow is a pale blue between the water and a subject. The water test gives it some subject weight, so the removal takes the water's colour out of it.
+
+Treating it as water does not help either. With the water test forced to 1 on the GPU (the table above, 0.941), the glow gets the water tone. Its hue moves from 248 to 209 and its chroma stays at 0.051.
+
+A pale, water-lit white belly is the same colour class, and there the removal is wanted. Colour alone cannot tell a glow from a belly. Only position can: the belly sits on the Vision mask, the glow does not. A fix would weaken the removal off the mask for pale pixels at the water's hue. That changes pale sand and pale coral too, so it needs Jake's decision. Not fixed.
 
 ### E19, the device check, 23 Oct 2026
 

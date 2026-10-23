@@ -463,7 +463,7 @@ These go into the subject work, as one track (Jake, 23 Oct 2026). All three touc
 
 State on 23 Oct 2026, on branch `subject-picker` (`SubjectEmphasis.md`, E15 to E18):
 
-- Item 1: the ring is not on the mask edge and not from the detail layer. A per-pixel finishing step makes it. Not fixed.
+- Item 1: the ring is not on the mask edge and not from the detail layer. The subject light removal makes it. Not fixed.
 - Item 2: done (E16). The manta gets its reference back. m1 does not improve: its coral is not on a subject.
 - Item 3: the tiers now follow the water's transmission (E17). Adopted by Jake.
 

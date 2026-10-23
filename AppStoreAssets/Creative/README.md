@@ -5,6 +5,7 @@
 - Key art sits in Apple's "Art Safe Area" from the Photoshop universal template: x 1921–3323, y 660–1622.
 - No text, so every language uses this file.
 - Source: the en-US video frame pair (`Screenshots/en-US/source/video_frame_*.HEIC`), the same media as screenshot 01.
+- The frames are mirrored (24 Oct 2026, Jake): the clownfish faces right, its tail on the "before" side and its head on the "after" side.
 
 Regenerate from the repo root:
 

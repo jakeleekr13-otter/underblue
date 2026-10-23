@@ -17,7 +17,8 @@ const work = fs.mkdtempSync(path.join(os.tmpdir(), 'underblue-creative-'));
 fs.mkdirSync(path.join(work, 'assets'));
 fs.copyFileSync(path.join(__dirname, 'creative.html'), path.join(work, 'creative.html'));
 for (const n of ['video_frame_before', 'video_frame_after']) {
-  execFileSync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '95',
+  // Mirrored, so the clownfish faces right (see creative.html).
+  execFileSync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '95', '--flip', 'horizontal',
     path.join(source, n + '.HEIC'), '--out', path.join(work, 'assets', n + '.jpg')], { stdio: 'ignore' });
 }
 

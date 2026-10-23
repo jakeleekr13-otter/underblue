@@ -22,19 +22,23 @@
   .rays { position: absolute; inset: 0;
     background: repeating-conic-gradient(from 200deg at 62% -12%, rgba(140, 255, 240, 0.05) 0deg 3deg, transparent 3deg 8deg);
     mask-image: linear-gradient(180deg, #000 0%, transparent 70%); }
-  /* The key art: the before/after frame, centred on the art safe area (2622, 1141) and faded into the background.
-     3200 x 1800 is 1.67x the 1920 x 1080 source. No hard edges, because the crop per device is not known. */
+  /* The key art: the before/after frame, faded into the background. 3200 x 1800 is 1.67x the 1920 x 1080 source.
+     No hard edges, because the crop per device is not known.
+     The frames are mirrored, so the clownfish faces right. The split line crosses the fish at (1305, 662):
+     its tail is on the "before" side, its head on the "after" side. The frame moves 363 px right,
+     so the knob (1237, 900) lands on the art safe area centre (2622, 1141). The left fade starts after that gap. */
   .card { position: absolute; left: 1022px; top: 241px; width: 3200px; height: 1800px; z-index: 10;
-    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%),
+    -webkit-mask-image: linear-gradient(90deg, transparent 363px, #000 1067px, #000 78%, transparent 100%),
                         linear-gradient(180deg, transparent 0%, #000 14%, #000 80%, transparent 100%);
     -webkit-mask-composite: source-in;
-    mask-image: linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%),
+    mask-image: linear-gradient(90deg, transparent 363px, #000 1067px, #000 78%, transparent 100%),
                 linear-gradient(180deg, transparent 0%, #000 14%, #000 80%, transparent 100%);
     mask-composite: intersect; }
-  .card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  .card .before { clip-path: polygon(0 0, 58% 0, 42% 100%, 0 100%); }
-  .card svg.diag { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; }
-  .knob { position: absolute; left: 50%; top: 50%; z-index: 3; width: 96px; height: 96px; margin: -48px 0 0 -48px;
+  .frame { position: absolute; inset: 0; transform: translateX(363px); }
+  .frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .frame .before { clip-path: polygon(0 0, 46.67% 0, 30.67% 100%, 0 100%); }
+  .frame svg.diag { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; }
+  .knob { position: absolute; left: 38.66%; top: 50%; z-index: 3; width: 96px; height: 96px; margin: -48px 0 0 -48px;
     border-radius: 50%; background: #fff; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
     display: flex; align-items: center; justify-content: center; }
   .knob svg { width: 56px; height: 56px; }
@@ -45,14 +49,14 @@
   <img class="bleed" src="assets/video_frame_after.jpg">
   <div class="tint"></div>
   <div class="rays"></div>
-  <div class="card">
+  <div class="card"><div class="frame">
     <img src="assets/video_frame_after.jpg">
     <img class="before" src="assets/video_frame_before.jpg">
     <svg class="diag" viewBox="0 0 100 100" preserveAspectRatio="none">
-      <line x1="58" y1="0" x2="42" y2="100" stroke="#fff" stroke-width="6" vector-effect="non-scaling-stroke"/>
+      <line x1="46.67" y1="0" x2="30.67" y2="100" stroke="#fff" stroke-width="6" vector-effect="non-scaling-stroke"/>
     </svg>
     <div class="knob"><svg viewBox="0 0 24 24"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6" fill="none" stroke="#06201d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-  </div>
+  </div></div>
 </section>
 </body>
 </html>

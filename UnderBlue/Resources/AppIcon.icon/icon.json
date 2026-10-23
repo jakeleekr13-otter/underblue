@@ -1,0 +1,27 @@
+{
+  "fill" : {
+    "solid" : "srgb:0.03137,0.10980,0.13333,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "image-name" : "wave-1-top.svg",
+          "name" : "wave-1-top"
+        },
+        {
+          "image-name" : "wave-2-middle.svg",
+          "name" : "wave-2-middle"
+        },
+        {
+          "image-name" : "wave-3-bottom.svg",
+          "name" : "wave-3-bottom"
+        }
+      ],
+      "name" : "Waves"
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : "shared"
+  }
+}

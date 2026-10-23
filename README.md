@@ -58,7 +58,7 @@ xcrun simctl privacy booted grant photos-add com.underblue.app
 
 The app has a DEBUG-only launch argument for isolated real Keychain storage in UI tests. It does not bypass StoreKit verification and is excluded from Release.
 
-Synthetic media fixtures are checked in. `scripts/make_test_media.py` regenerates the main codec/HDR fixtures using a developer-installed ffmpeg; ffmpeg is not included in the app. `scripts/create_project.py` reproducibly generates the Xcode project, whose source folders synchronize automatically. `scripts/make_icon.py` regenerates the wave icon.
+Synthetic media fixtures are checked in. `scripts/make_test_media.py` regenerates the main codec/HDR fixtures using a developer-installed ffmpeg; ffmpeg is not included in the app. `scripts/create_project.py` reproducibly generates the Xcode project, whose source folders synchronize automatically. The app icon is `UnderBlue/Resources/AppIcon.icon` (Icon Composer); see `docs/IconComposer.md`.
 
 See [QA matrix](docs/QA.md), [processing decisions](docs/Architecture.md), and [diagnostics review](docs/Diagnostics.md) for verification and remaining release checks.
 

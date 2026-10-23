@@ -6,13 +6,11 @@ Last reviewed: 2026-10-23
 
 iPhone only. The Mac targets stay at 1.0 (1) and were not checked for this build.
 
-Since 1.1.2 (build 8): faster 4K video export, the video halo and layer fixes, the export memory fix
-for long clips, the 3 s preview fix, Custom Contrast down, and the camera JPEG reef colour. The
-subject picker and subject emphasis are not in it; they live on branch `subject-picker`.
+New since 1.1.3: the camera JPEG reef colour, and the Icon Composer app icon (`IconComposer.md`,
+step 3). The video work of 22 Oct 2026 shipped in 1.1.3. The subject picker and subject emphasis are
+not in it; they live on branch `subject-picker`.
 
-Release note: "Faster, more reliable video export with fewer rings around fish, and more natural
-reef colours in JPEG photos." The rings are the video halo. The pale ring around fish on photos is
-still open (`Verification.md`).
+Release note: "More natural reef colours in JPEG photos." It does not mention the new icon.
 
 Checks run for it are in `Verification.md`, "Camera JPEG reef colour".
 

@@ -65,6 +65,8 @@
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
   .sub { margin-top: 44px; font-size: 46px; line-height: 1.3; font-weight: 500; color: var(--muted); max-width: 1080px; }
+  /* Japanese has no spaces, so break only between phrases. */
+  :lang(ja) .sub { word-break: auto-phrase; }
 
   .glass {
     background: rgba(8, 26, 32, 0.55);

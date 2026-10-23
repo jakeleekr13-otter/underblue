@@ -8,9 +8,13 @@
 
 **Korean subtitle:** 수중 촬영의 색을 되찾다
 
+**Japanese subtitle:** 水中写真とビデオの色を取り戻す
+
 **English promotional text:** Bring natural colour and clarity back to underwater photos and videos with private, depth-aware processing on your iPhone.
 
 **Korean promotional text:** iPhone에서만 처리되는 깊이 인식 보정으로 수중 사진과 영상의 자연스러운 색과 선명함을 되찾으세요.
+
+**Japanese promotional text:** iPhone上で完結する、深度を考慮した補正で、水中の写真とビデオに自然な色と鮮明さを取り戻します。
 
 ## English description
 
@@ -58,17 +62,44 @@ UnderBlue는 수중 사진과 영상에서 사라진 색과 선명함을 자연�
 
 UnderBlue는 레저 다이빙의 추억을 위한 앱이며 과학적 색 측정이나 전문가용 컬러 그레이딩 도구가 아닙니다.
 
+## Japanese description
+
+UnderBlueは、水中の写真とビデオに自然な色と鮮明さを取り戻します。
+
+写真やビデオを読み込んで効果を選び、オリジナルと比較してみましょう。効果の強度を調整したり、「カスタム」で明るさ・コントラスト・彩度・明瞭度・色温度を自分で設定したりできます。UnderBlueは深度を考慮した水中補正で、色の減衰と、浮遊物による白いもや（後方散乱）を抑えます。仕上がりは自然で、ビデオでも色が安定します。
+
+主な機能：
+
+• ナチュラルダイブ、トロピカル、ディープダイブの3つの効果
+• 5つの調整スライダーを備えた「カスタム」
+• 深度を考慮した写真とビデオの補正
+• フレーム間で色を安定させるビデオ補正
+• 元の解像度・4Kでのビデオ書き出し（UnderBlue Pro）
+• SDR、および対応環境でのHLG/PQ HDRビデオ出力
+• ゲインマップ付きHDR写真の書き出し（UnderBlue Pro）
+• 「写真」アプリ、「ファイル」アプリ（カメラのRAWを含む）、共有シートから読み込み
+• 元のフレームレート、タイミング、向き、音声を維持
+• アカウント不要、クラウドへのアップロードなしの完全オンデバイス処理
+
+写真1枚と、ビデオ1本の最初の10秒を無料で書き出せます。UnderBlue Proは買い切りです。購入すると、写真の無制限書き出し（一度に最大10枚）、ビデオの全編書き出し、4K書き出し、対応環境でのHDR書き出しが使えるようになります。
+
+UnderBlueはレジャーダイビングの思い出のためのアプリです。科学的な色測定や、プロ向けのカラーグレーディングのためのツールではありません。
+
 ## Keywords
 
 **English:** underwater,diving,scuba,snorkel,photo,video,color,colour,restore,enhance,reef,ocean,coral,marine
 
 **Korean:** 수중,다이빙,스쿠버,사진,영상,색보정,복원,바다,산호,필터
 
+**Japanese:** ダイビング,スキューバ,シュノーケル,水中撮影,水中動画,色補正,サンゴ礁 (99 bytes; the limit is 100 bytes, and each keyword needs more than two characters)
+
 ## What's New (1.1.4)
 
 **English:** Faster, more reliable video export with fewer rings around fish, and more natural reef colours in JPEG photos.
 
 **Korean:** 동영상 내보내기가 더 빠르고 안정적이 되었으며, 물고기 주변에 생기던 테두리가 줄었습니다. JPEG 사진의 산호초 색도 더 자연스러워졌습니다.
+
+**Japanese:** ビデオの書き出しが速くなり、より安定しました。魚のまわりに出ていた縁取りも減りました。JPEG写真のサンゴ礁の色も、より自然になりました。
 
 ## Screenshot set
 
@@ -93,6 +124,8 @@ An App Preview video isn't required for the first release. If produced later, sh
 **Description:** Unlimited photos, full video, 4K and HDR
 
 **Korean:** 사진·전체 영상·4K·HDR 무제한 내보내기
+
+**Japanese:** 写真・全編ビデオ・4K・HDRを無制限に書き出し
 
 The IAP review screenshot is ready at `AppStoreAssets/IAP/UnderBluePro-Review-1206x2622.png`.
 It is a real iPhone purchase screen showing the one-time purchase wording, feature list, production

@@ -36,7 +36,9 @@ Capture the five screens on the iPhone with the app language set to that languag
 
 The video frame pair (`video_frame_*.HEIC`) has no UI, so every language reuses `en-US`.
 
-Status (23 Oct 2026): `ko/final` is committed. Its captions are Korean, but its phone screens are the en-US captures, because the Korean captures are on hold. Whether this set was uploaded for 1.1.4 is not recorded. `ja`, `zh-Hans` and `zh-Hant` need captions and full App Store metadata first.
+Status (23 Oct 2026): `ko/final` is committed. Its captions are Korean, but its phone screens are the en-US captures, because the Korean captures are on hold. Whether this set was uploaded for 1.1.4 is not recorded. `ja/final` (24 Oct 2026) is the same kind of set: Japanese captions over the en-US captures. An independent reviewer checked the Japanese copy, because Jake cannot review it. `zh-Hans` and `zh-Hant` need captions and full App Store metadata first.
+
+The app UI translates "Look" as 効果 (ja) and 효과 (ko). The Japanese store copy uses 効果 to match. The Korean captions and description still say 룩.
 
 `en-US-outdated` keeps the older sets for comparison only.
 

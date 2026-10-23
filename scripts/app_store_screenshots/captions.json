@@ -1,6 +1,6 @@
 {
   "ko": {
-    "s1.title": "진짜 색을<br><em>찾습니다.</em>",
+    "s1.title": "<em>진짜 색</em>을<br>찾습니다.",
     "s1.sub": "수중 사진과 동영상을 자연스러운 색으로.",
     "chip.photos": "사진",
     "chip.videos": "동영상",
@@ -23,7 +23,7 @@
     "s5.badge2": "계정 없음<small>바로 열고 편집</small>"
   },
   "ja": {
-    "s1.title": "本当の色を、<br><em>取り戻す。</em>",
+    "s1.title": "<em>本当の色</em>を、<br>取り戻す。",
     "s1.sub": "水中の写真とビデオを、自然な色に。",
     "chip.photos": "写真",
     "chip.videos": "ビデオ",

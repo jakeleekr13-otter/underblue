@@ -40,6 +40,13 @@ The `LongVideoTests` memory failure in Known issues may have the same cause. It 
 
 Still open:
 - **Dark blob on photos in bright open blue water (checked 22 Oct 2026).** Photo r13: with the middle-channel highlight rule, the per-pixel depth map darkens a wide patch around the subject (centre over side brightness 0.908; one constant depth 0.999; source 0.954). The local veil is not the cause: changing its bounds did nothing. So photos keep the old rule, and the video path is safe because it uses one depth per scene (r13 as a 4 s clip: 0.998). Not done: making the middle rule safe for photos (it would need a limit on how much the depth map may change the gain in bright blue water). The photo layer edge the middle rule removes on video was not looked for in photos.
+- **Pale ring around fish on photos (seen by Jake, 23 Oct 2026).** DSC03545 in
+  `DeveloperMedia/subjectpicker/`, Mac render at 4000 px, Natural Dive at 0.8. The water right
+  around the two fish loses chroma. Measured in a ring 8 to 40 px out against a ring 100 to 160 px
+  out: the near ring holds 94 per cent of the far ring's chroma in the source and 86 per cent in the
+  result from the camera JPEG, and 95 against 84 per cent for the ARW. So it is in both results and
+  in neither source, and the ARW is the stronger one. It is not a camera JPEG problem. The cause was
+  not looked for. It may be the same local veil as the video halo above, but on the photo path.
 - Not checked: 4K and HDR clips, the whole whale shark clip by eye (only the first 12 s), the Mac app's own export output (the test sandbox hides it), the iPhone export of the red-ring fix on the whale shark clip beyond the first 12 s.
 
 ## Dark corner in video: shadow floor (22 Oct 2026)

@@ -736,6 +736,7 @@ The branch merged main at `287743d`. Every number above E15 predates that merge.
 | E17 | Split the tiers by the water, not by a depth cut | Transmission maps, metrics, full-size crops | Adopted (Jake, 23 Oct 2026) |
 | E18 | Find the cause of the pale ring around fish | Ring chroma with each stage switched off | Cause: the subject light removal. Fix needs Jake |
 | E19 | Device check of E15 to E17 | Parity analysis and export on the iPhone | Done: the phone agrees with the Mac |
+| E20 | Green cast check on r14 and r15 | Sand colour, gate, m5, 25 video frames | r14 fixed on the Mac. Device check open |
 
 ### E15, the Vision input, 23 Oct 2026
 
@@ -912,6 +913,29 @@ iPhone 17, `PhotoParityTests`, Natural Dive at 0.8. White reference share from t
 - The manta gets its reference back on the phone too.
 - The DSC03687 coral stays out on the phone, so the red-reef fix holds.
 - The exports of all four photos were looked at. No halo, no red reef. On the phone the manta belly reads a little whiter than the Mac render.
+
+### E20, the green cast check, 23 Oct 2026
+
+r15 (teal water) is as Jake accepted it on 20 Oct. The lift only brightens the diver: mean L 46.5 to 48.0.
+
+r14 (blue water, sand lit green) kept mint sand. The sand had no white reference: its chroma, 0.133, sat above the water's, and the chroma ceiling dropped it. 1.1.3 renders the same mint, so this is old, not a 1.1.4 regression.
+
+Change: a bright candidate above the water's chroma still counts when its hue is at least 35 degrees from the water's. The chroma ceiling lost its slack in J3 because blue-lit coral got in. That coral sits at the water's hue, so the hue gate now keeps it out.
+
+| r14 sand, 4000 px | L | chroma | hue | mean RGB |
+|---|---|---|---|---|
+| source | 0.825 | 0.1328 | 185 | 61, 225, 209 |
+| 1.1.3 | 0.871 | 0.0745 | 167 | 165, 229, 202 |
+| main (1.1.4) | 0.872 | 0.0745 | 167 | 166, 229, 203 |
+| E20 | 0.885 | 0.0295 | 156 | 203, 223, 210 |
+
+- r14's white reference share goes from 0 to 0.20.
+- 3 more photos of 31 move: DSC03696 ARW, m2, r10. None moved its far hue, and mean L moved by 0.05 or less.
+- The AquaColorFix gate and m5 do not move.
+- 25 frames from 9 test clips: no frame changes its analysis.
+- Test: `testGreenLitSandIsAWhiteReferenceUnderBlueWater`. The simulator ran `RestorationTests`, `PhotoTests`, `PresetTests` and `VideoRestorationTests`: 120 tests, 0 failures, 2 skipped.
+
+Not done: the iPhone check of r14.
 
 ### The control photos
 

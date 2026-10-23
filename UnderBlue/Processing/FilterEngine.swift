@@ -417,11 +417,20 @@ final class FilterEngine: Sendable {
         // (docs/JpegInput.md, J3).
         let waterChroma = ColorCorrection.oklch(water).y, waterLuminance = (water * ColorCorrection.luma).sum()
         let brightCut = max(luminance[min(luminance.count - 1, luminance.count * 8 / 10)], waterLuminance * 1.25)
+        // A candidate more colourful than the water still counts when its hue is far from the water's.
+        // Sand lit green under blue water is that case: r14's sand held chroma 0.133, above its water's,
+        // so it was no reference and stayed mint in every version (docs/SubjectEmphasis.md, E20).
+        // Blue-lit coral, the reason the slack went in J3, sits at the water's hue and stays out.
+        let waterHue = ColorCorrection.oklch(water).z
+        func farFromWater(_ c: SIMD3<Float>) -> Bool {
+            let gap = abs(ColorCorrection.oklch(c).z - waterHue).truncatingRemainder(dividingBy: 360)
+            return min(gap, 360 - gap) >= Self.neutralHueHigh
+        }
         // Each candidate is split by its subject weight s: s of it is on a subject, 1 - s is scene.
         var scene = SIMD3<Float>(repeating: 0), sceneCount: Float = 0
         var subject = SIMD3<Float>(repeating: 0), subjectCount: Float = 0
         for (c, s) in colors.dropFirst(waterCount) where (c * ColorCorrection.luma).sum() >= brightCut
-            && ColorCorrection.oklch(c).y <= min(0.2, waterChroma) {
+            && (ColorCorrection.oklch(c).y <= min(0.2, waterChroma) || (ColorCorrection.oklch(c).y <= 0.2 && farFromWater(c))) {
             scene += c * (1 - s); sceneCount += 1 - s
             subject += c * s; subjectCount += s
         }

@@ -1166,6 +1166,27 @@ final class RestorationTests: XCTestCase {
         XCTAssertEqual(plain.highShare, 0)
     }
 
+    func testGreenLitSandIsAWhiteReferenceUnderBlueWater() {
+        // Dark blue water (chroma 0.082, hue 247) and bright sand lit green (chroma 0.167, hue 184), as in
+        // r14. The sand is more colourful than the water, but 63 degrees away from it (E20).
+        func scene(_ surface: [Float]) -> WaterAnalysis {
+            let width = 48, height = 48
+            var rgba = [Float]()
+            for _ in 0..<height { for x in 0..<width {
+                rgba += x < 30 ? [0.04, 0.07, 0.16, 1] : surface
+            } }
+            let data = rgba.withUnsafeBytes { Data($0) }
+            let image = CIImage(bitmapData: data, bytesPerRow: width * 16, size: CGSize(width: width, height: height),
+                                format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+            return FilterEngine().analyze(image)
+        }
+        let sand = scene([0.25, 0.75, 0.65, 1])
+        XCTAssertGreaterThan(sand.neutralShare, 0.2)
+        XCTAssertEqual(sand.neutralGreen, 0.75, accuracy: 0.05)
+        // A colourful bright patch at the water's own hue is still no reference (J3, J5).
+        XCTAssertEqual(scene([0.15, 0.35, 0.95, 1]).neutralShare, 0)
+    }
+
     func testWhiteReferenceOnASubjectSkipsTheHueGate() {
         // The water-lit surface of the test above, now covered by a subject mask: a manta's belly,
         // not coral. The hue gate alone gave it nothing (docs/SubjectEmphasis.md, E16).

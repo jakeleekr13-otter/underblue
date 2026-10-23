@@ -64,6 +64,12 @@ UnderBlue는 레저 다이빙의 추억을 위한 앱이며 과학적 색 측정
 
 **Korean:** 수중,다이빙,스쿠버,사진,영상,색보정,복원,바다,산호,필터
 
+## What's New (1.1.4)
+
+**English:** Faster, more reliable video export with fewer rings around fish, and more natural reef colours in JPEG photos.
+
+**Korean:** 동영상 내보내기가 더 빠르고 안정적이 되었으며, 물고기 주변에 생기던 테두리가 줄었습니다. JPEG 사진의 산호초 색도 더 자연스러워졌습니다.
+
 ## Screenshot set
 
 Five upload-ready English portrait screenshots are in `AppStoreAssets/Screenshots/en-US/final`. They use the accepted 6.9-inch **1320 × 2868 px** size and are RGB JPEGs without alpha.

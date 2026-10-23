@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>UnderBlue Creative Asset</title>
+<style>
+  /* App Store universal creative asset, 16:9, 5244 x 2950. One image serves the product page header and search results.
+     Art safe area from Apple's Photoshop template: x 1921-3323, y 660-1622. Key art stays inside it.
+     No text, so every language uses the same file. */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #01080c; }
+  section { position: relative; width: 5244px; height: 2950px; overflow: hidden; background: #01080c; }
+  /* Full-bleed, blurred copy of the corrected frame. It only sets the mood, so its low resolution does not show. */
+  .bleed { position: absolute; inset: -160px; width: calc(100% + 320px); height: calc(100% + 320px);
+    object-fit: cover; filter: blur(60px) brightness(0.42) saturate(1.15); }
+  /* Same light and rays as the screenshots. No grain: it triples the PNG size. */
+  .tint { position: absolute; inset: 0;
+    background:
+      radial-gradient(2600px 1700px at 50% 38%, transparent 30%, rgba(1, 8, 12, 0.75) 100%),
+      radial-gradient(2400px 1400px at 80% -10%, rgba(3, 214, 194, 0.22), transparent 60%),
+      radial-gradient(2000px 1600px at 5% 60%, rgba(40, 120, 255, 0.14), transparent 60%); }
+  .rays { position: absolute; inset: 0;
+    background: repeating-conic-gradient(from 200deg at 62% -12%, rgba(140, 255, 240, 0.05) 0deg 3deg, transparent 3deg 8deg);
+    mask-image: linear-gradient(180deg, #000 0%, transparent 70%); }
+  /* The key art: the before/after frame, centred on the art safe area (2622, 1141) and faded into the background.
+     3200 x 1800 is 1.67x the 1920 x 1080 source. No hard edges, because the crop per device is not known. */
+  .card { position: absolute; left: 1022px; top: 241px; width: 3200px; height: 1800px; z-index: 10;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%),
+                        linear-gradient(180deg, transparent 0%, #000 14%, #000 80%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%),
+                linear-gradient(180deg, transparent 0%, #000 14%, #000 80%, transparent 100%);
+    mask-composite: intersect; }
+  .card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .card .before { clip-path: polygon(0 0, 58% 0, 42% 100%, 0 100%); }
+  .card svg.diag { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; }
+  .knob { position: absolute; left: 50%; top: 50%; z-index: 3; width: 96px; height: 96px; margin: -48px 0 0 -48px;
+    border-radius: 50%; background: #fff; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    display: flex; align-items: center; justify-content: center; }
+  .knob svg { width: 56px; height: 56px; }
+</style>
+</head>
+<body>
+<section>
+  <img class="bleed" src="assets/video_frame_after.jpg">
+  <div class="tint"></div>
+  <div class="rays"></div>
+  <div class="card">
+    <img src="assets/video_frame_after.jpg">
+    <img class="before" src="assets/video_frame_before.jpg">
+    <svg class="diag" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <line x1="58" y1="0" x2="42" y2="100" stroke="#fff" stroke-width="6" vector-effect="non-scaling-stroke"/>
+    </svg>
+    <div class="knob"><svg viewBox="0 0 24 24"><path d="M9 6l-6 6 6 6M15 6l6 6-6 6" fill="none" stroke="#06201d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  </div>
+</section>
+</body>
+</html>

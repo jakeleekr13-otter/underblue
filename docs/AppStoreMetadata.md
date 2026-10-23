@@ -10,11 +10,19 @@
 
 **Japanese subtitle:** 水中写真とビデオの色を取り戻す
 
+**Simplified Chinese subtitle:** 还原水下照片与视频的色彩
+
+**Traditional Chinese subtitle:** 還原水下照片與影片的色彩
+
 **English promotional text:** Bring natural colour and clarity back to underwater photos and videos with private, depth-aware processing on your iPhone.
 
 **Korean promotional text:** iPhone에서만 처리되는 깊이 인식 보정으로 수중 사진과 영상의 자연스러운 색과 선명함을 되찾으세요.
 
 **Japanese promotional text:** iPhone上で完結する、深度を考慮した補正で、水中の写真とビデオに自然な色と鮮明さを取り戻します。
+
+**Simplified Chinese promotional text:** 在 iPhone 本机完成、保护隐私的深度感知还原，为水下照片和视频找回自然的色彩与清晰度。
+
+**Traditional Chinese promotional text:** 在 iPhone 本機完成、保護隱私的深度感知還原，為水下照片與影片找回自然的色彩與清晰度。
 
 ## English description
 
@@ -85,6 +93,52 @@ UnderBlueは、水中の写真とビデオに自然な色と鮮明さを取り�
 
 UnderBlueはレジャーダイビングの思い出のためのアプリです。科学的な色測定や、プロ向けのカラーグレーディングのためのツールではありません。
 
+## Simplified Chinese description
+
+UnderBlue 为水下照片和视频还原自然的色彩与清晰度。
+
+导入照片或视频，选择效果，然后与原始画面对比。你可以调整效果的强度，也可以在“自定义”中自行设置亮度、对比度、饱和度、清晰度和色温。UnderBlue 采用深度感知的水下还原技术，减少色彩衰减和悬浮物造成的白色雾感（后向散射），同时保持画面自然，视频色彩也稳定。
+
+主要功能：
+
+• 自然潜水、热带、深潜三种效果
+• 带有 5 个调节滑块的“自定义”
+• 深度感知的照片和视频还原
+• 帧与帧之间色彩稳定的视频校正
+• 原始分辨率和 4K 视频导出（UnderBlue Pro）
+• SDR 及受支持的 HLG/PQ HDR 视频输出
+• 带增益图的 HDR 照片导出（UnderBlue Pro）
+• 从“照片”App、“文件”App（包括相机 RAW）和共享表单导入
+• 保留原始帧率、时序、方向和音频
+• 完全在设备上处理，无需账户，也不上传到云端
+
+可免费导出 1 张照片，以及 1 个视频的前 10 秒。UnderBlue Pro 为一次性购买。购买后可无限导出照片（每次最多 10 张），并可导出完整视频和 4K 视频，在支持的环境下还可导出 HDR。
+
+UnderBlue 专为记录休闲潜水回忆而设计，不是科学测色工具，也不是专业调色工具。
+
+## Traditional Chinese description
+
+UnderBlue 為水下照片與影片還原自然的色彩與清晰度。
+
+匯入照片或影片，選擇效果，然後與原始畫面比較。你可以調整效果的強度，也可以在「自訂」中自行設定亮度、對比度、飽和度、清晰度和色溫。UnderBlue 採用深度感知的水下還原技術，減少色彩衰減和懸浮物造成的白色霧感（後向散射），同時保持畫面自然，影片色彩也穩定。
+
+主要功能：
+
+• 自然潛水、熱帶、深潛三種效果
+• 具備 5 個調整滑桿的「自訂」
+• 深度感知的照片與影片還原
+• 每一格畫面色彩穩定的影片校正
+• 原始解析度與 4K 影片匯出（UnderBlue Pro）
+• SDR 及支援的 HLG/PQ HDR 影片輸出
+• 含增益圖的 HDR 照片匯出（UnderBlue Pro）
+• 從「照片」App、「檔案」App（包含相機 RAW）和分享表單匯入
+• 保留原始影格速率、時序、方向和音訊
+• 完全在裝置上處理，無需帳號，也不上傳到雲端
+
+可免費匯出 1 張照片，以及 1 部影片的前 10 秒。UnderBlue Pro 為一次性購買。購買後可無限匯出照片（每次最多 10 張），並可匯出完整影片和 4K 影片，在支援的環境下還可匯出 HDR。
+
+UnderBlue 專為記錄休閒潛水回憶而設計，不是科學測色工具，也不是專業調色工具。
+
 ## Keywords
 
 **English:** underwater,diving,scuba,snorkel,photo,video,color,colour,restore,enhance,reef,ocean,coral,marine
@@ -93,6 +147,10 @@ UnderBlueはレジャーダイビングの思い出のためのアプリです�
 
 **Japanese:** ダイビング,スキューバ,シュノーケル,水中撮影,水中動画,色補正,サンゴ礁 (99 bytes; the limit is 100 bytes, and each keyword needs more than two characters)
 
+**Simplified Chinese:** 潜水摄影,水下摄影,水下视频,水肺潜水,色彩校正,珊瑚礁,水下修图,浮潜摄影 (100 bytes)
+
+**Traditional Chinese:** 潛水攝影,水下攝影,水中攝影,水下影片,水肺潛水,色彩校正,珊瑚礁,浮潛攝影 (100 bytes)
+
 ## What's New (1.1.4)
 
 **English:** Faster, more reliable video export with fewer rings around fish, and more natural reef colours in JPEG photos.
@@ -100,6 +158,10 @@ UnderBlueはレジャーダイビングの思い出のためのアプリです�
 **Korean:** 동영상 내보내기가 더 빠르고 안정적이 되었으며, 물고기 주변에 생기던 테두리가 줄었습니다. JPEG 사진의 산호초 색도 더 자연스러워졌습니다.
 
 **Japanese:** ビデオの書き出しが速くなり、より安定しました。魚のまわりに出ていた縁取りも減りました。JPEG写真のサンゴ礁の色も、より自然になりました。
+
+**Simplified Chinese:** 视频导出更快、更稳定，鱼身周围的白边也减少了。JPEG 照片中的珊瑚礁色彩也更加自然。
+
+**Traditional Chinese:** 影片匯出更快、更穩定，魚身周圍的白邊也減少了。JPEG 照片中的珊瑚礁色彩也更加自然。
 
 ## Screenshot set
 
@@ -126,6 +188,10 @@ An App Preview video isn't required for the first release. If produced later, sh
 **Korean:** 사진·전체 영상·4K·HDR 무제한 내보내기
 
 **Japanese:** 写真・全編ビデオ・4K・HDRを無制限に書き出し
+
+**Simplified Chinese:** 无限导出照片、完整视频、4K 和 HDR
+
+**Traditional Chinese:** 無限匯出照片、完整影片、4K 與 HDR
 
 The IAP review screenshot is ready at `AppStoreAssets/IAP/UnderBluePro-Review-1206x2622.png`.
 It is a real iPhone purchase screen showing the one-time purchase wording, feature list, production

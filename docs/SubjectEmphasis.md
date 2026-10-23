@@ -868,7 +868,14 @@ The cause is per pixel. The source already has a pale glow around each fish. Lig
 
 The glow holds 79% of the water's chroma in the source and 54% in the result. So the finishing path takes more chroma from a pale pixel than from the water, per pixel.
 
-Which step does it is not known. The colour kernel's water test was checked and ruled out. With its chroma term removed the ring reads 0.936. With its redness term removed it also reads 0.936. The cast gains alone are ruled out too. Applied by hand to the source, they move the glow's share of the water's chroma only from 0.79 to 0.77, against 0.54 in the result. Next to test, one at a time: the water tone and water saturation, the tone curve, vibrance. Not fixed.
+Which step does it is not known. These were switched off in the colour kernel and ruled out:
+
+| switched off | near over far chroma |
+|---|---|
+| water test, chroma term | 0.936 |
+| water test, redness term | 0.936 |
+| water test, both (every pixel counts as water) | 0.941 |
+| uncast, the surface-light rule | 0.939 | The cast gains alone are ruled out too. Applied by hand to the source, they move the glow's share of the water's chroma only from 0.79 to 0.77, against 0.54 in the result. Next to test, one at a time: the water tone and water saturation, the tone curve, vibrance. Not fixed.
 
 ### The control photos
 

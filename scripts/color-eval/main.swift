@@ -22,20 +22,29 @@ let waterEstimator = WaterModelEstimator()
 let restoration = RestorationEngine()
 let sRGB = CGColorSpace(name: CGColorSpace.sRGB)!
 
-func load(_ url: URL) -> CIImage? { CIImage(contentsOf: url, options: [.applyOrientationProperty: true]) }
+func load(_ url: URL) -> CIImage? {
+    // Camera RAW goes through CIRAWFilter, as PhotoProcessor.openRAW does. CIImage(contentsOf:) would
+    // hand back the small embedded preview instead. A camera JPEG and its RAW are different starting
+    // images, and the pipeline lands differently on each (docs/JpegInput.md).
+    if UTType(filenameExtension: url.pathExtension)?.conforms(to: .rawImage) == true {
+        return CIRAWFilter(imageURL: url)?.outputImage
+    }
+    return CIImage(contentsOf: url, options: [.applyOrientationProperty: true])
+}
 func fit(_ image: CIImage, width: Int, height: Int) -> CIImage {
     let t = image.transformed(by: CGAffineTransform(translationX: -image.extent.minX, y: -image.extent.minY))
     return t.transformed(by: CGAffineTransform(scaleX: CGFloat(width) / t.extent.width, y: CGFloat(height) / t.extent.height))
         .cropped(to: CGRect(x: 0, y: 0, width: width, height: height))
 }
+let outputSpace = ProcessInfo.processInfo.environment["HT_EVAL_P3"] == "1" ? FilterEngine.photoSpace : sRGB
 func render(_ image: CIImage, _ w: Int, _ h: Int) -> [UInt8] {
     var px = [UInt8](repeating: 0, count: w * h * 4)
     engine.context.render(image, toBitmap: &px, rowBytes: w * 4, bounds: CGRect(x: 0, y: 0, width: w, height: h),
-                          format: .RGBA8, colorSpace: sRGB)
+                          format: .RGBA8, colorSpace: outputSpace)
     return px
 }
 func save(_ image: CIImage, _ url: URL) {
-    guard let cg = engine.context.createCGImage(image, from: image.extent, format: .RGBA8, colorSpace: sRGB),
+    guard let cg = engine.context.createCGImage(image, from: image.extent, format: .RGBA8, colorSpace: outputSpace),
           let d = CGImageDestinationCreateWithURL(url as CFURL, UTType.jpeg.identifier as CFString, 1, nil) else { return }
     CGImageDestinationAddImage(d, cg, [kCGImageDestinationLossyCompressionQuality: 0.85] as CFDictionary)
     CGImageDestinationFinalize(d)
@@ -149,7 +158,7 @@ func fullReference(_ a: [UInt8], _ b: [UInt8], _ w: Int, _ h: Int, into m: inout
 
 let variants = ["original", "grayworld", "current", "restoration", "combined", "uniform", "reference"]
 var csv = "image,variant,psnr,ssim,deltaE,farHue,farChroma,nearA,nearRG,contrastL,meanL,localContrast,farLocalContrast,farHueOK,farChromaOK,fallback,confidence,depthConf,waterConf,betaDR,betaDG,betaDB,binfR,binfG,binfB,floorPct,gainPct,recR\n"
-let files = try FileManager.default.contentsOfDirectory(atPath: rawDir.path).filter { [".png", ".jpg", ".jpeg"].contains(where: $0.lowercased().hasSuffix) }.sorted()
+let files = try FileManager.default.contentsOfDirectory(atPath: rawDir.path).filter { [".png", ".jpg", ".jpeg", ".arw"].contains(where: $0.lowercased().hasSuffix) }.sorted()
 let started = Date()
 var done = 0
 // "dev:N" = visual-set names + first N dev images; "holdout:N" = first N holdout images.
@@ -173,6 +182,8 @@ for name in selected {
     let source = fit(engine.sdr(rawFull), width: w, height: h)
     let analysis = engine.analyze(source)
     var settings = FilterSettings(); settings.analysis = analysis
+    // HT_EVAL_INTENSITY overrides the preset slider, to match a given app export.
+    if let i = ProcessInfo.processInfo.environment["HT_EVAL_INTENSITY"], let v = Float(i) { settings.intensity = v }
     // HT_EVAL_CUSTOM="brightness,contrast,saturation,clarity,temperature" renders the Custom preset at those slider positions.
     if let custom = ProcessInfo.processInfo.environment["HT_EVAL_CUSTOM"] {
         let p = custom.split(separator: ",").compactMap { Float($0) }

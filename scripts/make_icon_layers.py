@@ -1,6 +1,6 @@
 """Write the app icon's three waves as SVG layers for Icon Composer.
 
-The waves use the same curve as make_icon.py: y = offset + 45 sin(2 pi (x - 240) / 540), x from 230 to 794.
+The waves use the curve of the first PNG icon: y = offset + 45 sin(2 pi (x - 240) / 540), x from 230 to 794.
 Each wave is its own 1024 x 1024 SVG with a transparent background, so Icon Composer keeps its position.
 Drag the Waves folder into the Icon Composer sidebar: the folder becomes a group, each file a layer.
 The background is not a layer. Set it in Icon Composer as a fill: #081C22.
@@ -11,7 +11,7 @@ from pathlib import Path
 
 OUT = Path('AppStoreAssets/IconComposer/Waves')
 WAVES = {'wave-1-top': 342, 'wave-2-middle': 502, 'wave-3-bottom': 662}
-COLOR, WIDTH = '#6AE6C8', 44  # 44, not 48: make_icon.py measures thickness vertically, so its slopes are thinner
+COLOR, WIDTH = '#6AE6C8', 44  # 44, not 48: the PNG icon measured thickness vertically, so its slopes were thinner
 
 
 def wave_path(offset):

@@ -6,8 +6,9 @@ Source: Apple, "Creating your app icon using Icon Composer" (Xcode documentation
 
 ## Current state (23 Oct 2026)
 
-- iPhone: `AppIcon.appiconset`, one 1024 px PNG drawn by `scripts/make_icon.py`. Build setting `ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon`.
-- Mac: `AppIconMac.appiconset`, a draft from `scripts/make_mac_icon.py`. Build setting `AppIconMac`.
+- iPhone: `UnderBlue/Resources/AppIcon.icon` since step 3. Build setting `ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon`. The old PNG set and `scripts/make_icon.py` are removed.
+- Mac: `AppIconMac.appiconset`, a draft from `scripts/make_mac_icon.py`. Build setting `AppIconMac`. That script read the old iPhone PNG, so it cannot run now. Step 4 removes it.
+- The `UnderBlueMac` target also syncs the `UnderBlue/` folder, so `AppIcon.icon` is already in the Mac target. Step 4 only needs the Mac icon name changed to `AppIcon`.
 - iOS minimum: 26.0. Xcode makes fallback images for releases before 27 from the `.icon` file.
 
 ## Plan, one step per session
@@ -20,17 +21,16 @@ Source: Apple, "Creating your app icon using Icon Composer" (Xcode documentation
 | 4 | Mac target: use the same file. Remove the `make_mac_icon.py` draft. | The Mac app builds. The icon shows in the Dock. |
 | 5 | Upload a build. Check the icon in App Store Connect and TestFlight. | The icon on the store page matches the device. |
 
-Keep the `.icon` file outside `UnderBlue/` until step 3. `UnderBlue/` is a synced folder, so any file there joins the build.
 
 ## Layers
 
 `scripts/make_icon_layers.py` writes three SVG files to `AppStoreAssets/IconComposer/Waves/`. One file per wave, 1024 × 1024, transparent.
 
-- Same curve as `make_icon.py`. Stroke width is 44 (not 48), because the old script measured thickness vertically.
+- Same curve as the removed `make_icon.py`. Stroke width is 44 (not 48), because the old script measured thickness vertically.
 - Overlap with the current PNG: IoU 0.942 (Quick Look render, 23 Oct 2026). The only visible change is round wave ends.
 - The background is not a layer. Set it in Icon Composer: solid fill `#081C22`.
 - ImageMagick draws these SVG files as empty images. Use Quick Look (`qlmanage -t -s 1024`) to preview them.
-- `AppIcon.icon/Assets/` holds copies of the SVG files. After you change a layer, copy it there again.
+- `UnderBlue/Resources/AppIcon.icon/Assets/` holds copies of the SVG files. After you change a layer, copy it there again.
 
 ## Render without the app
 
@@ -38,7 +38,7 @@ Keep the `.icon` file outside `UnderBlue/` until step 3. `UnderBlue/` is a synce
 
 ```sh
 "/Applications/Xcode.app/Contents/Applications/Icon Composer.app/Contents/Executables/ictool" \
-  AppStoreAssets/IconComposer/AppIcon.icon --export-image --output-file out.png \
+  UnderBlue/Resources/AppIcon.icon --export-image --output-file out.png \
   --platform iOS --rendition Default --width 1024 --height 1024 --scale 1
 ```
 

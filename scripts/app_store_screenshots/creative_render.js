@@ -1,5 +1,5 @@
 // Render the App Store universal creative asset (product page header and search results).
-// Output: AppStoreAssets/Creative/universal-5244x2950.png, RGB PNG without alpha.
+// Output: AppStoreAssets/Screenshots/header/universal-5244x2950.png, RGB PNG without alpha.
 // Run from the repo root: npm i --no-save playwright && node scripts/app_store_screenshots/creative_render.js
 const { chromium } = require('playwright');
 const { execFileSync } = require('child_process');
@@ -9,7 +9,7 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '../..');
 const source = path.join(root, 'AppStoreAssets/Screenshots/en-US/source');
-const out = path.join(root, 'AppStoreAssets/Creative');
+const out = path.join(root, 'AppStoreAssets/Screenshots/header');
 const file = path.join(out, 'universal-5244x2950.png');
 
 // Chromium cannot read HEIC, so stage the frames as JPEG next to the page.

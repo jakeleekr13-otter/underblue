@@ -1,10 +1,10 @@
-# App Store creative assets
+# App Store header and search results image
 
 `universal-5244x2950.png` is one 16:9 image for both the product page header and search results (iOS 27 and later). RGB PNG, no alpha.
 
 - Key art sits in Apple's "Art Safe Area" from the Photoshop universal template: x 1921–3323, y 660–1622.
 - No text, so every language uses this file.
-- Source: the en-US video frame pair (`Screenshots/en-US/source/video_frame_*.HEIC`), the same media as screenshot 01.
+- Source: the en-US video frame pair (`../en-US/source/video_frame_*.HEIC`), the same media as screenshot 01.
 - The frames are mirrored (24 Oct 2026, Jake): the clownfish faces right, its tail on the "before" side and its head on the "after" side.
 
 Regenerate from the repo root:

@@ -1,94 +1,1077 @@
 // !$*UTF8*$!
-{ archiveVersion = 1; classes = {}; objectVersion = 77; objects = {
-89E1FD6268CC0F221A2BE178 = { isa = XCBuildConfiguration; buildSettings = { SWIFT_VERSION = "6.0"; IPHONEOS_DEPLOYMENT_TARGET = "26.0"; SDKROOT = "iphoneos"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; TARGETED_DEVICE_FAMILY = "1"; SUPPORTS_MACCATALYST = "NO"; SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = "NO"; SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = "NO"; CLANG_ENABLE_MODULES = "YES"; SWIFT_APPROACHABLE_CONCURRENCY = "YES"; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; DEBUG_INFORMATION_FORMAT = "dwarf"; ENABLE_TESTABILITY = "YES"; SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG"; COPY_PHASE_STRIP = "NO"; }; name = Debug; };
-E6DE6C99132752C914FEF632 = { isa = XCBuildConfiguration; buildSettings = { SWIFT_VERSION = "6.0"; IPHONEOS_DEPLOYMENT_TARGET = "26.0"; SDKROOT = "iphoneos"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; TARGETED_DEVICE_FAMILY = "1"; SUPPORTS_MACCATALYST = "NO"; SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = "NO"; SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = "NO"; CLANG_ENABLE_MODULES = "YES"; SWIFT_APPROACHABLE_CONCURRENCY = "YES"; SWIFT_OPTIMIZATION_LEVEL = "-O"; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; ENABLE_TESTABILITY = "NO"; SWIFT_ACTIVE_COMPILATION_CONDITIONS = ""; SWIFT_COMPILATION_MODE = "wholemodule"; VALIDATE_PRODUCT = "YES"; DEAD_CODE_STRIPPING = "YES"; COPY_PHASE_STRIP = "YES"; ENABLE_NS_ASSERTIONS = "NO"; }; name = Release; };
-BC7E287B75C6D3E574547D08 = { isa = XCConfigurationList; buildConfigurations = (89E1FD6268CC0F221A2BE178,E6DE6C99132752C914FEF632,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-E9B2E96ABC5F6856F2BE79CF = { isa = XCBuildConfiguration; buildSettings = { SWIFT_VERSION = "6.0"; IPHONEOS_DEPLOYMENT_TARGET = "26.0"; SDKROOT = "iphoneos"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; TARGETED_DEVICE_FAMILY = "1"; SUPPORTS_MACCATALYST = "NO"; SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = "NO"; SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = "NO"; CLANG_ENABLE_MODULES = "YES"; SWIFT_APPROACHABLE_CONCURRENCY = "YES"; PRODUCT_NAME = "$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = "com.underblue.app"; GENERATE_INFOPLIST_FILE = "YES"; CODE_SIGN_STYLE = "Automatic"; DEVELOPMENT_TEAM = "M3HJ7YK7N7"; INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save your finished photos and videos to your library."; INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = "NO"; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography"; INFOPLIST_KEY_UILaunchScreen_Generation = "YES"; INFOPLIST_KEY_UIApplicationSceneManifest_Generation = "YES"; INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"; CODE_SIGN_ENTITLEMENTS = "UnderBlue/Resources/UnderBlue.entitlements"; ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon"; MARKETING_VERSION = "1.1.3"; CURRENT_PROJECT_VERSION = "9"; INFOPLIST_KEY_CFBundleDisplayName = "UnderBlue"; INFOPLIST_FILE = "UnderBlue/Resources/Info.plist"; }; name = Debug; };
-5A8C91857F674E16E2724F47 = { isa = XCBuildConfiguration; buildSettings = { SWIFT_VERSION = "6.0"; IPHONEOS_DEPLOYMENT_TARGET = "26.0"; SDKROOT = "iphoneos"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; TARGETED_DEVICE_FAMILY = "1"; SUPPORTS_MACCATALYST = "NO"; SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = "NO"; SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = "NO"; CLANG_ENABLE_MODULES = "YES"; SWIFT_APPROACHABLE_CONCURRENCY = "YES"; PRODUCT_NAME = "$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = "com.underblue.app"; GENERATE_INFOPLIST_FILE = "YES"; CODE_SIGN_STYLE = "Automatic"; DEVELOPMENT_TEAM = "M3HJ7YK7N7"; INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save your finished photos and videos to your library."; INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = "NO"; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography"; INFOPLIST_KEY_UILaunchScreen_Generation = "YES"; INFOPLIST_KEY_UIApplicationSceneManifest_Generation = "YES"; INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"; CODE_SIGN_ENTITLEMENTS = "UnderBlue/Resources/UnderBlue.entitlements"; ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon"; MARKETING_VERSION = "1.1.3"; CURRENT_PROJECT_VERSION = "9"; INFOPLIST_KEY_CFBundleDisplayName = "UnderBlue"; INFOPLIST_FILE = "UnderBlue/Resources/Info.plist"; }; name = Release; };
-60EA43DB068BD71C9709BED5 = { isa = XCConfigurationList; buildConfigurations = (E9B2E96ABC5F6856F2BE79CF,5A8C91857F674E16E2724F47,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-0F3D67935A4F199E058A017A = { isa = XCBuildConfiguration; buildSettings = { SWIFT_VERSION = "6.0"; IPHONEOS_DEPLOYMENT_TARGET = "26.0"; SDKROOT = "iphoneos"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; TARGETED_DEVICE_FAMILY = "1"; SUPPORTS_MACCATALYST = "NO"; SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = "NO"; SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = "NO"; CLANG_ENABLE_MODULES = "YES"; SWIFT_APPROACHABLE_CONCURRENCY = "YES"; PRODUCT_NAME = "$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = "com.underblue.tests"; GENERATE_INFOPLIST_FILE = "YES"; CODE_SIGN_STYLE = "Automatic"; DEVELOPMENT_TEAM = "M3HJ7YK7N7"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/UnderBlue.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/UnderBlue"; BUNDLE_LOADER = "$(TEST_HOST)"; }; name = Debug; };
-20B70E15FDC36C625E57F658 = { isa = XCBuildConfiguration; buildSettings = { SWIFT_VERSION = "6.0"; IPHONEOS_DEPLOYMENT_TARGET = "26.0"; SDKROOT = "iphoneos"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; TARGETED_DEVICE_FAMILY = "1"; SUPPORTS_MACCATALYST = "NO"; SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = "NO"; SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = "NO"; CLANG_ENABLE_MODULES = "YES"; SWIFT_APPROACHABLE_CONCURRENCY = "YES"; PRODUCT_NAME = "$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = "com.underblue.tests"; GENERATE_INFOPLIST_FILE = "YES"; CODE_SIGN_STYLE = "Automatic"; DEVELOPMENT_TEAM = "M3HJ7YK7N7"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/UnderBlue.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/UnderBlue"; BUNDLE_LOADER = "$(TEST_HOST)"; }; name = Release; };
-EC78861A60CD111A3D8A2421 = { isa = XCConfigurationList; buildConfigurations = (0F3D67935A4F199E058A017A,20B70E15FDC36C625E57F658,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-FB520F6E62C2A172230C620F = { isa = XCBuildConfiguration; buildSettings = { SWIFT_VERSION = "6.0"; IPHONEOS_DEPLOYMENT_TARGET = "26.0"; SDKROOT = "iphoneos"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; TARGETED_DEVICE_FAMILY = "1"; SUPPORTS_MACCATALYST = "NO"; SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = "NO"; SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = "NO"; CLANG_ENABLE_MODULES = "YES"; SWIFT_APPROACHABLE_CONCURRENCY = "YES"; PRODUCT_NAME = "$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = "com.underblue.uitests"; GENERATE_INFOPLIST_FILE = "YES"; CODE_SIGN_STYLE = "Automatic"; DEVELOPMENT_TEAM = "M3HJ7YK7N7"; TEST_TARGET_NAME = "UnderBlue"; }; name = Debug; };
-FECE8ECE4507AB75FB580D0F = { isa = XCBuildConfiguration; buildSettings = { SWIFT_VERSION = "6.0"; IPHONEOS_DEPLOYMENT_TARGET = "26.0"; SDKROOT = "iphoneos"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; TARGETED_DEVICE_FAMILY = "1"; SUPPORTS_MACCATALYST = "NO"; SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = "NO"; SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = "NO"; CLANG_ENABLE_MODULES = "YES"; SWIFT_APPROACHABLE_CONCURRENCY = "YES"; PRODUCT_NAME = "$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = "com.underblue.uitests"; GENERATE_INFOPLIST_FILE = "YES"; CODE_SIGN_STYLE = "Automatic"; DEVELOPMENT_TEAM = "M3HJ7YK7N7"; TEST_TARGET_NAME = "UnderBlue"; }; name = Release; };
-661F4FB61ADF9739C517CA60 = { isa = XCConfigurationList; buildConfigurations = (FB520F6E62C2A172230C620F,FECE8ECE4507AB75FB580D0F,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-786CFAEB3CB570C35644C8C6 = { isa = XCBuildConfiguration; buildSettings = { SWIFT_VERSION = "6.0"; IPHONEOS_DEPLOYMENT_TARGET = "26.0"; SDKROOT = "iphoneos"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; TARGETED_DEVICE_FAMILY = "1"; SUPPORTS_MACCATALYST = "NO"; SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = "NO"; SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = "NO"; CLANG_ENABLE_MODULES = "YES"; SWIFT_APPROACHABLE_CONCURRENCY = "YES"; PRODUCT_NAME = "$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = "com.underblue.app.share"; GENERATE_INFOPLIST_FILE = "YES"; CODE_SIGN_STYLE = "Automatic"; DEVELOPMENT_TEAM = "M3HJ7YK7N7"; CODE_SIGN_ENTITLEMENTS = "UnderBlueShare/UnderBlueShare.entitlements"; INFOPLIST_FILE = "UnderBlueShare/Info.plist"; INFOPLIST_KEY_CFBundleDisplayName = "UnderBlue"; MARKETING_VERSION = "1.1.3"; CURRENT_PROJECT_VERSION = "9"; SKIP_INSTALL = "YES"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"; }; name = Debug; };
-07F40AAD161B1D59E1448C9A = { isa = XCBuildConfiguration; buildSettings = { SWIFT_VERSION = "6.0"; IPHONEOS_DEPLOYMENT_TARGET = "26.0"; SDKROOT = "iphoneos"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; TARGETED_DEVICE_FAMILY = "1"; SUPPORTS_MACCATALYST = "NO"; SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = "NO"; SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = "NO"; CLANG_ENABLE_MODULES = "YES"; SWIFT_APPROACHABLE_CONCURRENCY = "YES"; PRODUCT_NAME = "$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = "com.underblue.app.share"; GENERATE_INFOPLIST_FILE = "YES"; CODE_SIGN_STYLE = "Automatic"; DEVELOPMENT_TEAM = "M3HJ7YK7N7"; CODE_SIGN_ENTITLEMENTS = "UnderBlueShare/UnderBlueShare.entitlements"; INFOPLIST_FILE = "UnderBlueShare/Info.plist"; INFOPLIST_KEY_CFBundleDisplayName = "UnderBlue"; MARKETING_VERSION = "1.1.3"; CURRENT_PROJECT_VERSION = "9"; SKIP_INSTALL = "YES"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"; }; name = Release; };
-BFF22C3EF9FBA0C7C5AEF748 = { isa = XCConfigurationList; buildConfigurations = (786CFAEB3CB570C35644C8C6,07F40AAD161B1D59E1448C9A,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-FCEC940375E41513E5F12B9E = { isa = XCBuildConfiguration; buildSettings = { SWIFT_VERSION = "6.0"; SDKROOT = "macosx"; SUPPORTED_PLATFORMS = "macosx"; CLANG_ENABLE_MODULES = "YES"; SWIFT_APPROACHABLE_CONCURRENCY = "YES"; MACOSX_DEPLOYMENT_TARGET = "26.0"; ARCHS = "arm64"; PRODUCT_NAME = "UnderBlue"; PRODUCT_BUNDLE_IDENTIFIER = "com.underblue.mac"; GENERATE_INFOPLIST_FILE = "YES"; CODE_SIGN_STYLE = "Automatic"; DEVELOPMENT_TEAM = "M3HJ7YK7N7"; INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save your finished photos and videos to your library."; INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = "NO"; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography"; INFOPLIST_KEY_CFBundleDisplayName = "UnderBlue"; INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 Enheart"; INFOPLIST_FILE = "UnderBlueMac/Info.plist"; CODE_SIGN_ENTITLEMENTS = "UnderBlueMac/UnderBlueMac.entitlements"; ENABLE_HARDENED_RUNTIME = "YES"; OTHER_LDFLAGS = "-framework AVKit"; ASSETCATALOG_COMPILER_APPICON_NAME = "AppIconMac"; MARKETING_VERSION = "1.0"; CURRENT_PROJECT_VERSION = "1"; }; name = Debug; };
-1109CF6EAE1A139E1319B4A7 = { isa = XCBuildConfiguration; buildSettings = { SWIFT_VERSION = "6.0"; SDKROOT = "macosx"; SUPPORTED_PLATFORMS = "macosx"; CLANG_ENABLE_MODULES = "YES"; SWIFT_APPROACHABLE_CONCURRENCY = "YES"; MACOSX_DEPLOYMENT_TARGET = "26.0"; ARCHS = "arm64"; PRODUCT_NAME = "UnderBlue"; PRODUCT_BUNDLE_IDENTIFIER = "com.underblue.mac"; GENERATE_INFOPLIST_FILE = "YES"; CODE_SIGN_STYLE = "Automatic"; DEVELOPMENT_TEAM = "M3HJ7YK7N7"; INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save your finished photos and videos to your library."; INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = "NO"; INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography"; INFOPLIST_KEY_CFBundleDisplayName = "UnderBlue"; INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 Enheart"; INFOPLIST_FILE = "UnderBlueMac/Info.plist"; CODE_SIGN_ENTITLEMENTS = "UnderBlueMac/UnderBlueMac.entitlements"; ENABLE_HARDENED_RUNTIME = "YES"; OTHER_LDFLAGS = "-framework AVKit"; ASSETCATALOG_COMPILER_APPICON_NAME = "AppIconMac"; MARKETING_VERSION = "1.0"; CURRENT_PROJECT_VERSION = "1"; }; name = Release; };
-B9B6B44595E1B03C1E6CFB74 = { isa = XCConfigurationList; buildConfigurations = (FCEC940375E41513E5F12B9E,1109CF6EAE1A139E1319B4A7,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-6A2DA62ACBAD3D9973A142B8 = { isa = XCBuildConfiguration; buildSettings = { SWIFT_VERSION = "6.0"; SDKROOT = "macosx"; SUPPORTED_PLATFORMS = "macosx"; CLANG_ENABLE_MODULES = "YES"; SWIFT_APPROACHABLE_CONCURRENCY = "YES"; MACOSX_DEPLOYMENT_TARGET = "26.0"; ARCHS = "arm64"; PRODUCT_NAME = "$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = "com.underblue.mac.share"; GENERATE_INFOPLIST_FILE = "YES"; CODE_SIGN_STYLE = "Automatic"; DEVELOPMENT_TEAM = "M3HJ7YK7N7"; CODE_SIGN_ENTITLEMENTS = "UnderBlueMacShare/UnderBlueMacShare.entitlements"; INFOPLIST_FILE = "UnderBlueMacShare/Info.plist"; INFOPLIST_KEY_CFBundleDisplayName = "UnderBlue"; MARKETING_VERSION = "1.0"; CURRENT_PROJECT_VERSION = "1"; SKIP_INSTALL = "YES"; ENABLE_HARDENED_RUNTIME = "YES"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks"; }; name = Debug; };
-CDD46369D4DF3E5D8E574DD3 = { isa = XCBuildConfiguration; buildSettings = { SWIFT_VERSION = "6.0"; SDKROOT = "macosx"; SUPPORTED_PLATFORMS = "macosx"; CLANG_ENABLE_MODULES = "YES"; SWIFT_APPROACHABLE_CONCURRENCY = "YES"; MACOSX_DEPLOYMENT_TARGET = "26.0"; ARCHS = "arm64"; PRODUCT_NAME = "$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = "com.underblue.mac.share"; GENERATE_INFOPLIST_FILE = "YES"; CODE_SIGN_STYLE = "Automatic"; DEVELOPMENT_TEAM = "M3HJ7YK7N7"; CODE_SIGN_ENTITLEMENTS = "UnderBlueMacShare/UnderBlueMacShare.entitlements"; INFOPLIST_FILE = "UnderBlueMacShare/Info.plist"; INFOPLIST_KEY_CFBundleDisplayName = "UnderBlue"; MARKETING_VERSION = "1.0"; CURRENT_PROJECT_VERSION = "1"; SKIP_INSTALL = "YES"; ENABLE_HARDENED_RUNTIME = "YES"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks"; }; name = Release; };
-5BEE9C8F7DEEFD242C4D25EB = { isa = XCConfigurationList; buildConfigurations = (6A2DA62ACBAD3D9973A142B8,CDD46369D4DF3E5D8E574DD3,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-CEF19CDD6B04CCD9DBD0A617 = { isa = XCBuildConfiguration; buildSettings = { SWIFT_VERSION = "6.0"; SDKROOT = "macosx"; SUPPORTED_PLATFORMS = "macosx"; CLANG_ENABLE_MODULES = "YES"; SWIFT_APPROACHABLE_CONCURRENCY = "YES"; MACOSX_DEPLOYMENT_TARGET = "26.0"; ARCHS = "arm64"; PRODUCT_NAME = "$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = "com.underblue.mactests"; GENERATE_INFOPLIST_FILE = "YES"; CODE_SIGN_STYLE = "Automatic"; DEVELOPMENT_TEAM = "M3HJ7YK7N7"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/UnderBlue.app/Contents/MacOS/UnderBlue"; BUNDLE_LOADER = "$(TEST_HOST)"; }; name = Debug; };
-12C60214201DC2844D4FFC54 = { isa = XCBuildConfiguration; buildSettings = { SWIFT_VERSION = "6.0"; SDKROOT = "macosx"; SUPPORTED_PLATFORMS = "macosx"; CLANG_ENABLE_MODULES = "YES"; SWIFT_APPROACHABLE_CONCURRENCY = "YES"; MACOSX_DEPLOYMENT_TARGET = "26.0"; ARCHS = "arm64"; PRODUCT_NAME = "$(TARGET_NAME)"; PRODUCT_BUNDLE_IDENTIFIER = "com.underblue.mactests"; GENERATE_INFOPLIST_FILE = "YES"; CODE_SIGN_STYLE = "Automatic"; DEVELOPMENT_TEAM = "M3HJ7YK7N7"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/UnderBlue.app/Contents/MacOS/UnderBlue"; BUNDLE_LOADER = "$(TEST_HOST)"; }; name = Release; };
-25091439EB0CCC123306DBAD = { isa = XCConfigurationList; buildConfigurations = (CEF19CDD6B04CCD9DBD0A617,12C60214201DC2844D4FFC54,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-7364889A612B6B38A2343DB0 = { isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = (Import/SharedInbox.swift,Import/ShareModel.swift,); target = 4BE864FAE2B9E4DE7821A052; };
-A5D875C65189FDCE63406F9E = { isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = (Resources/Info.plist,); target = 4F6027D858B72CC70E5CC8E9; };
-D771C449FABDB5F3C15C8CD0 = { isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = (App/UnderBlueApp.swift,Resources/Info.plist,Resources/UnderBlue.entitlements,Views/BatchView.swift,Views/EditorView.swift,Views/ExportView.swift,Views/HomeView.swift,); target = 436D0079A3B0F0C56CF1A10C; };
-B3D0337E5F7A28246D42C5BA = { isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = (Import/SharedInbox.swift,Import/ShareModel.swift,); target = C093E950651F6F0E4F911883; };
-3A2A88DEEFF3D1D23E496597 = { isa = PBXFileSystemSynchronizedRootGroup; exceptions = (7364889A612B6B38A2343DB0,A5D875C65189FDCE63406F9E,D771C449FABDB5F3C15C8CD0,B3D0337E5F7A28246D42C5BA,); path = UnderBlue; sourceTree = "<group>"; };
-E6FC57C251E9E1BEC1D3C0D2 = { isa = PBXFileReference; explicitFileType = wrapper.application; path = UnderBlue.app; sourceTree = BUILT_PRODUCTS_DIR; };
-971ED9D05B25DB6C4D7680D4 = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-78AE8C6BEB2A40A6D824CCEE = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-364863F9F2E558B0F50473FC = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-A31B16B689E7147A7A516055 = { isa = PBXBuildFile; fileRef = 60C8EEF058AB26576B3289F7; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-BD735BE812B6D674BADC855E = { isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = ""; dstSubfolderSpec = 13; files = (A31B16B689E7147A7A516055,); name = "Embed Foundation Extensions"; runOnlyForDeploymentPostprocessing = 0; };
-928B116133AAED9036C514C7 = { isa = PBXContainerItemProxy; containerPortal = 98F54143AB4E86B28C3AFEE0; proxyType = 1; remoteGlobalIDString = 4BE864FAE2B9E4DE7821A052; remoteInfo = UnderBlueShare; };
-48535669712E096CB36328AD = { isa = PBXTargetDependency; target = 4BE864FAE2B9E4DE7821A052; targetProxy = 928B116133AAED9036C514C7; };
-4F6027D858B72CC70E5CC8E9 = { isa = PBXNativeTarget; buildConfigurationList = 60EA43DB068BD71C9709BED5; buildPhases = (971ED9D05B25DB6C4D7680D4,78AE8C6BEB2A40A6D824CCEE,364863F9F2E558B0F50473FC,BD735BE812B6D674BADC855E,); buildRules = (); dependencies = (48535669712E096CB36328AD); fileSystemSynchronizedGroups = (3A2A88DEEFF3D1D23E496597,); name = UnderBlue; productName = UnderBlue; productReference = E6FC57C251E9E1BEC1D3C0D2; productType = "com.apple.product-type.application"; };
-3621C0422EE7C5945C0F66F5 = { isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = (Info.plist,); target = 436D0079A3B0F0C56CF1A10C; };
-0D069BD07DDE7BEE712E9AFD = { isa = PBXFileSystemSynchronizedRootGroup; exceptions = (3621C0422EE7C5945C0F66F5,); path = UnderBlueMac; sourceTree = "<group>"; };
-7732347C4E6FB5542BA05AC9 = { isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = UnderBlue.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-3375EA04324642D337D927D6 = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-2A8C225853EEDD85673D1D85 = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-29FFF143ECDD60E83EF9035A = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-947440819B45E4BEEE15C25F = { isa = PBXBuildFile; fileRef = 305F96DC1C5423D87C308D4C; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-216B15644C722570793663E2 = { isa = PBXCopyFilesBuildPhase; buildActionMask = 2147483647; dstPath = ""; dstSubfolderSpec = 13; files = (947440819B45E4BEEE15C25F,); name = "Embed Foundation Extensions"; runOnlyForDeploymentPostprocessing = 0; };
-794DFD129C2217ABC520C4DC = { isa = PBXContainerItemProxy; containerPortal = 98F54143AB4E86B28C3AFEE0; proxyType = 1; remoteGlobalIDString = C093E950651F6F0E4F911883; remoteInfo = UnderBlueMacShare; };
-803C8790EEB3AB1EF41F1D51 = { isa = PBXTargetDependency; target = C093E950651F6F0E4F911883; targetProxy = 794DFD129C2217ABC520C4DC; };
-436D0079A3B0F0C56CF1A10C = { isa = PBXNativeTarget; buildConfigurationList = B9B6B44595E1B03C1E6CFB74; buildPhases = (3375EA04324642D337D927D6,2A8C225853EEDD85673D1D85,29FFF143ECDD60E83EF9035A,216B15644C722570793663E2,); buildRules = (); dependencies = (803C8790EEB3AB1EF41F1D51); fileSystemSynchronizedGroups = (0D069BD07DDE7BEE712E9AFD,3A2A88DEEFF3D1D23E496597,); name = UnderBlueMac; productName = UnderBlueMac; productReference = 7732347C4E6FB5542BA05AC9; productType = "com.apple.product-type.application"; };
-2108519B748D0A923E2567E1 = { isa = PBXFileSystemSynchronizedRootGroup; path = UnderBlueMacTests; sourceTree = "<group>"; };
-F38557E404D2E60341A34233 = { isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = UnderBlueMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-EBF3F8371BD7DF7E9D06498F = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-30570592BEF4E263A64B8DBB = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-0C5F0339A704CDA08190032C = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-9F391B459BCFEDCA499F5BB0 = { isa = PBXContainerItemProxy; containerPortal = 98F54143AB4E86B28C3AFEE0; proxyType = 1; remoteGlobalIDString = 436D0079A3B0F0C56CF1A10C; remoteInfo = UnderBlueMac; };
-AD8581063AB563872AF185D3 = { isa = PBXTargetDependency; target = 436D0079A3B0F0C56CF1A10C; targetProxy = 9F391B459BCFEDCA499F5BB0; };
-71CD5C2A00536DB95F594BC9 = { isa = PBXNativeTarget; buildConfigurationList = 25091439EB0CCC123306DBAD; buildPhases = (EBF3F8371BD7DF7E9D06498F,30570592BEF4E263A64B8DBB,0C5F0339A704CDA08190032C,); buildRules = (); dependencies = (AD8581063AB563872AF185D3); fileSystemSynchronizedGroups = (2108519B748D0A923E2567E1,); name = UnderBlueMacTests; productName = UnderBlueMacTests; productReference = F38557E404D2E60341A34233; productType = "com.apple.product-type.bundle.unit-test"; };
-F80B2C2021F097DC9FAA009C = { isa = PBXFileSystemSynchronizedRootGroup; path = UnderBlueTests; sourceTree = "<group>"; };
-AD5D520508EF8024D25C00BA = { isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = UnderBlueTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-87578F7D47DE44A504256C73 = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-32BD75FE04B3CDF992A510FD = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-1544DFBBD36E4A0D68754A27 = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-00FA7595418DE673442D4E14 = { isa = PBXContainerItemProxy; containerPortal = 98F54143AB4E86B28C3AFEE0; proxyType = 1; remoteGlobalIDString = 4F6027D858B72CC70E5CC8E9; remoteInfo = UnderBlue; };
-BBAAC9B14F10DD891F7A8816 = { isa = PBXTargetDependency; target = 4F6027D858B72CC70E5CC8E9; targetProxy = 00FA7595418DE673442D4E14; };
-002378A4B0AB8ED6C3038A81 = { isa = PBXNativeTarget; buildConfigurationList = EC78861A60CD111A3D8A2421; buildPhases = (87578F7D47DE44A504256C73,32BD75FE04B3CDF992A510FD,1544DFBBD36E4A0D68754A27,); buildRules = (); dependencies = (BBAAC9B14F10DD891F7A8816); fileSystemSynchronizedGroups = (F80B2C2021F097DC9FAA009C,); name = UnderBlueTests; productName = UnderBlueTests; productReference = AD5D520508EF8024D25C00BA; productType = "com.apple.product-type.bundle.unit-test"; };
-5FA060BA93CA7D761DC0AA1D = { isa = PBXFileSystemSynchronizedRootGroup; path = UnderBlueUITests; sourceTree = "<group>"; };
-B22D326D03B77788C7376316 = { isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = UnderBlueUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-0C9EC29799D8656EFFBB3686 = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-568DA1E24DAA16B51B299506 = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-6142FDE1B74BF44BB99CE1B1 = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-CEDAC8F28FDB4B718B5D1BEB = { isa = PBXContainerItemProxy; containerPortal = 98F54143AB4E86B28C3AFEE0; proxyType = 1; remoteGlobalIDString = 4F6027D858B72CC70E5CC8E9; remoteInfo = UnderBlue; };
-A875EB7D356C9AA9654C80EB = { isa = PBXTargetDependency; target = 4F6027D858B72CC70E5CC8E9; targetProxy = CEDAC8F28FDB4B718B5D1BEB; };
-4D630F78F997333C57512D1C = { isa = PBXNativeTarget; buildConfigurationList = 661F4FB61ADF9739C517CA60; buildPhases = (0C9EC29799D8656EFFBB3686,568DA1E24DAA16B51B299506,6142FDE1B74BF44BB99CE1B1,); buildRules = (); dependencies = (A875EB7D356C9AA9654C80EB); fileSystemSynchronizedGroups = (5FA060BA93CA7D761DC0AA1D,); name = UnderBlueUITests; productName = UnderBlueUITests; productReference = B22D326D03B77788C7376316; productType = "com.apple.product-type.bundle.ui-testing"; };
-C87D41F98C1BF0983C3F3C8A = { isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = (Info.plist,); target = 4BE864FAE2B9E4DE7821A052; };
-F41142F0A9AB6E40C8EC43A5 = { isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = (ShareViewController.swift,Info.plist,UnderBlueShare.entitlements,); target = C093E950651F6F0E4F911883; };
-54768AA1BA5D709B3AD4DD6D = { isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C87D41F98C1BF0983C3F3C8A,F41142F0A9AB6E40C8EC43A5,); path = UnderBlueShare; sourceTree = "<group>"; };
-60C8EEF058AB26576B3289F7 = { isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; path = UnderBlueShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-E8565067C7E9FFB9C0A35143 = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-78B2D48B424437FD6CB82EF5 = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-7C93D5413C07B225E29BF1A2 = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-4BE864FAE2B9E4DE7821A052 = { isa = PBXNativeTarget; buildConfigurationList = BFF22C3EF9FBA0C7C5AEF748; buildPhases = (E8565067C7E9FFB9C0A35143,78B2D48B424437FD6CB82EF5,7C93D5413C07B225E29BF1A2,); buildRules = (); dependencies = (); fileSystemSynchronizedGroups = (54768AA1BA5D709B3AD4DD6D,); name = UnderBlueShare; productName = UnderBlueShare; productReference = 60C8EEF058AB26576B3289F7; productType = "com.apple.product-type.app-extension"; };
-E6D9F40517C03B9BDE603B42 = { isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = (Info.plist,); target = C093E950651F6F0E4F911883; };
-AB4E843D104AB35A8EAB23F5 = { isa = PBXFileSystemSynchronizedRootGroup; exceptions = (E6D9F40517C03B9BDE603B42,); path = UnderBlueMacShare; sourceTree = "<group>"; };
-305F96DC1C5423D87C308D4C = { isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; path = UnderBlueMacShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-EA85A3F119EF4788202A4FED = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-C8E97AC19293AED85FF12999 = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-1973DBD791C2033D8B51F8B3 = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-C093E950651F6F0E4F911883 = { isa = PBXNativeTarget; buildConfigurationList = 5BEE9C8F7DEEFD242C4D25EB; buildPhases = (EA85A3F119EF4788202A4FED,C8E97AC19293AED85FF12999,1973DBD791C2033D8B51F8B3,); buildRules = (); dependencies = (); fileSystemSynchronizedGroups = (AB4E843D104AB35A8EAB23F5,54768AA1BA5D709B3AD4DD6D,); name = UnderBlueMacShare; productName = UnderBlueMacShare; productReference = 305F96DC1C5423D87C308D4C; productType = "com.apple.product-type.app-extension"; };
-FBDC4F23F93125BBEEAE800C = { isa = PBXGroup; children = (E6FC57C251E9E1BEC1D3C0D2,7732347C4E6FB5542BA05AC9,F38557E404D2E60341A34233,AD5D520508EF8024D25C00BA,B22D326D03B77788C7376316,60C8EEF058AB26576B3289F7,305F96DC1C5423D87C308D4C,); name = Products; sourceTree = "<group>"; };
-B28B7AF69320201D1CF206EB = { isa = PBXGroup; children = (3A2A88DEEFF3D1D23E496597,0D069BD07DDE7BEE712E9AFD,2108519B748D0A923E2567E1,F80B2C2021F097DC9FAA009C,5FA060BA93CA7D761DC0AA1D,54768AA1BA5D709B3AD4DD6D,AB4E843D104AB35A8EAB23F5,FBDC4F23F93125BBEEAE800C,); sourceTree = "<group>"; };
-98F54143AB4E86B28C3AFEE0 = { isa = PBXProject; attributes = { BuildIndependentTargetsInParallel = YES; LastUpgradeCheck = 2700; }; buildConfigurationList = BC7E287B75C6D3E574547D08; compatibilityVersion = "Xcode 16.0"; developmentRegion = en; knownRegions = (en,Base,ko,ja,"zh-Hans","zh-Hant"); mainGroup = B28B7AF69320201D1CF206EB; productRefGroup = FBDC4F23F93125BBEEAE800C; projectDirPath = ""; projectRoot = ""; targets = (4F6027D858B72CC70E5CC8E9,436D0079A3B0F0C56CF1A10C,71CD5C2A00536DB95F594BC9,002378A4B0AB8ED6C3038A81,4D630F78F997333C57512D1C,4BE864FAE2B9E4DE7821A052,C093E950651F6F0E4F911883,); preferredProjectObjectVersion = 77; };
-}; rootObject = 98F54143AB4E86B28C3AFEE0; }
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 71;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		947440819B45E4BEEE15C25F /* UnderBlueMacShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 305F96DC1C5423D87C308D4C /* UnderBlueMacShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A31B16B689E7147A7A516055 /* UnderBlueShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 60C8EEF058AB26576B3289F7 /* UnderBlueShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		00FA7595418DE673442D4E14 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 98F54143AB4E86B28C3AFEE0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4F6027D858B72CC70E5CC8E9;
+			remoteInfo = UnderBlue;
+		};
+		794DFD129C2217ABC520C4DC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 98F54143AB4E86B28C3AFEE0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C093E950651F6F0E4F911883;
+			remoteInfo = UnderBlueMacShare;
+		};
+		928B116133AAED9036C514C7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 98F54143AB4E86B28C3AFEE0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4BE864FAE2B9E4DE7821A052;
+			remoteInfo = UnderBlueShare;
+		};
+		9F391B459BCFEDCA499F5BB0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 98F54143AB4E86B28C3AFEE0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 436D0079A3B0F0C56CF1A10C;
+			remoteInfo = UnderBlueMac;
+		};
+		CEDAC8F28FDB4B718B5D1BEB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 98F54143AB4E86B28C3AFEE0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4F6027D858B72CC70E5CC8E9;
+			remoteInfo = UnderBlue;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		216B15644C722570793663E2 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				947440819B45E4BEEE15C25F /* UnderBlueMacShare.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BD735BE812B6D674BADC855E /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A31B16B689E7147A7A516055 /* UnderBlueShare.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		305F96DC1C5423D87C308D4C /* UnderBlueMacShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; path = UnderBlueMacShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		60C8EEF058AB26576B3289F7 /* UnderBlueShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; path = UnderBlueShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7732347C4E6FB5542BA05AC9 /* UnderBlue.app */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = UnderBlue.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AD5D520508EF8024D25C00BA /* UnderBlueTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = UnderBlueTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B22D326D03B77788C7376316 /* UnderBlueUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = UnderBlueUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E6FC57C251E9E1BEC1D3C0D2 /* UnderBlue.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = UnderBlue.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F38557E404D2E60341A34233 /* UnderBlueMacTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = UnderBlueMacTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		3621C0422EE7C5945C0F66F5 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 436D0079A3B0F0C56CF1A10C /* UnderBlueMac */;
+		};
+		7364889A612B6B38A2343DB0 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Import/SharedInbox.swift,
+				Import/ShareModel.swift,
+			);
+			target = 4BE864FAE2B9E4DE7821A052 /* UnderBlueShare */;
+		};
+		A5D875C65189FDCE63406F9E /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Resources/Info.plist,
+			);
+			target = 4F6027D858B72CC70E5CC8E9 /* UnderBlue */;
+		};
+		B3D0337E5F7A28246D42C5BA /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Import/SharedInbox.swift,
+				Import/ShareModel.swift,
+			);
+			target = C093E950651F6F0E4F911883 /* UnderBlueMacShare */;
+		};
+		C87D41F98C1BF0983C3F3C8A /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4BE864FAE2B9E4DE7821A052 /* UnderBlueShare */;
+		};
+		D771C449FABDB5F3C15C8CD0 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				App/UnderBlueApp.swift,
+				Resources/Info.plist,
+				Views/BatchView.swift,
+				Views/EditorView.swift,
+				Views/ExportView.swift,
+				Views/HomeView.swift,
+			);
+			target = 436D0079A3B0F0C56CF1A10C /* UnderBlueMac */;
+		};
+		E6D9F40517C03B9BDE603B42 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C093E950651F6F0E4F911883 /* UnderBlueMacShare */;
+		};
+		F41142F0A9AB6E40C8EC43A5 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				ShareViewController.swift,
+			);
+			target = C093E950651F6F0E4F911883 /* UnderBlueMacShare */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		0D069BD07DDE7BEE712E9AFD /* UnderBlueMac */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (3621C0422EE7C5945C0F66F5 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = UnderBlueMac; sourceTree = "<group>"; };
+		2108519B748D0A923E2567E1 /* UnderBlueMacTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = UnderBlueMacTests; sourceTree = "<group>"; };
+		3A2A88DEEFF3D1D23E496597 /* UnderBlue */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A5D875C65189FDCE63406F9E /* PBXFileSystemSynchronizedBuildFileExceptionSet */, D771C449FABDB5F3C15C8CD0 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, 7364889A612B6B38A2343DB0 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, B3D0337E5F7A28246D42C5BA /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = UnderBlue; sourceTree = "<group>"; };
+		54768AA1BA5D709B3AD4DD6D /* UnderBlueShare */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (C87D41F98C1BF0983C3F3C8A /* PBXFileSystemSynchronizedBuildFileExceptionSet */, F41142F0A9AB6E40C8EC43A5 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = UnderBlueShare; sourceTree = "<group>"; };
+		5FA060BA93CA7D761DC0AA1D /* UnderBlueUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = UnderBlueUITests; sourceTree = "<group>"; };
+		AB4E843D104AB35A8EAB23F5 /* UnderBlueMacShare */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (E6D9F40517C03B9BDE603B42 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = UnderBlueMacShare; sourceTree = "<group>"; };
+		F80B2C2021F097DC9FAA009C /* UnderBlueTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = UnderBlueTests; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		2A8C225853EEDD85673D1D85 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		30570592BEF4E263A64B8DBB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		32BD75FE04B3CDF992A510FD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		568DA1E24DAA16B51B299506 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		78AE8C6BEB2A40A6D824CCEE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		78B2D48B424437FD6CB82EF5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C8E97AC19293AED85FF12999 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		B28B7AF69320201D1CF206EB = {
+			isa = PBXGroup;
+			children = (
+				3A2A88DEEFF3D1D23E496597 /* UnderBlue */,
+				0D069BD07DDE7BEE712E9AFD /* UnderBlueMac */,
+				2108519B748D0A923E2567E1 /* UnderBlueMacTests */,
+				F80B2C2021F097DC9FAA009C /* UnderBlueTests */,
+				5FA060BA93CA7D761DC0AA1D /* UnderBlueUITests */,
+				54768AA1BA5D709B3AD4DD6D /* UnderBlueShare */,
+				AB4E843D104AB35A8EAB23F5 /* UnderBlueMacShare */,
+				FBDC4F23F93125BBEEAE800C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		FBDC4F23F93125BBEEAE800C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E6FC57C251E9E1BEC1D3C0D2 /* UnderBlue.app */,
+				7732347C4E6FB5542BA05AC9 /* UnderBlue.app */,
+				F38557E404D2E60341A34233 /* UnderBlueMacTests.xctest */,
+				AD5D520508EF8024D25C00BA /* UnderBlueTests.xctest */,
+				B22D326D03B77788C7376316 /* UnderBlueUITests.xctest */,
+				60C8EEF058AB26576B3289F7 /* UnderBlueShare.appex */,
+				305F96DC1C5423D87C308D4C /* UnderBlueMacShare.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		002378A4B0AB8ED6C3038A81 /* UnderBlueTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EC78861A60CD111A3D8A2421 /* Build configuration list for PBXNativeTarget "UnderBlueTests" */;
+			buildPhases = (
+				87578F7D47DE44A504256C73 /* Sources */,
+				32BD75FE04B3CDF992A510FD /* Frameworks */,
+				1544DFBBD36E4A0D68754A27 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BBAAC9B14F10DD891F7A8816 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				F80B2C2021F097DC9FAA009C /* UnderBlueTests */,
+			);
+			name = UnderBlueTests;
+			productName = UnderBlueTests;
+			productReference = AD5D520508EF8024D25C00BA /* UnderBlueTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		436D0079A3B0F0C56CF1A10C /* UnderBlueMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B9B6B44595E1B03C1E6CFB74 /* Build configuration list for PBXNativeTarget "UnderBlueMac" */;
+			buildPhases = (
+				3375EA04324642D337D927D6 /* Sources */,
+				2A8C225853EEDD85673D1D85 /* Frameworks */,
+				29FFF143ECDD60E83EF9035A /* Resources */,
+				216B15644C722570793663E2 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				803C8790EEB3AB1EF41F1D51 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				0D069BD07DDE7BEE712E9AFD /* UnderBlueMac */,
+				3A2A88DEEFF3D1D23E496597 /* UnderBlue */,
+			);
+			name = UnderBlueMac;
+			productName = UnderBlueMac;
+			productReference = 7732347C4E6FB5542BA05AC9 /* UnderBlue.app */;
+			productType = "com.apple.product-type.application";
+		};
+		4BE864FAE2B9E4DE7821A052 /* UnderBlueShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BFF22C3EF9FBA0C7C5AEF748 /* Build configuration list for PBXNativeTarget "UnderBlueShare" */;
+			buildPhases = (
+				E8565067C7E9FFB9C0A35143 /* Sources */,
+				78B2D48B424437FD6CB82EF5 /* Frameworks */,
+				7C93D5413C07B225E29BF1A2 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				54768AA1BA5D709B3AD4DD6D /* UnderBlueShare */,
+			);
+			name = UnderBlueShare;
+			productName = UnderBlueShare;
+			productReference = 60C8EEF058AB26576B3289F7 /* UnderBlueShare.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		4D630F78F997333C57512D1C /* UnderBlueUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 661F4FB61ADF9739C517CA60 /* Build configuration list for PBXNativeTarget "UnderBlueUITests" */;
+			buildPhases = (
+				0C9EC29799D8656EFFBB3686 /* Sources */,
+				568DA1E24DAA16B51B299506 /* Frameworks */,
+				6142FDE1B74BF44BB99CE1B1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A875EB7D356C9AA9654C80EB /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				5FA060BA93CA7D761DC0AA1D /* UnderBlueUITests */,
+			);
+			name = UnderBlueUITests;
+			productName = UnderBlueUITests;
+			productReference = B22D326D03B77788C7376316 /* UnderBlueUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		4F6027D858B72CC70E5CC8E9 /* UnderBlue */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 60EA43DB068BD71C9709BED5 /* Build configuration list for PBXNativeTarget "UnderBlue" */;
+			buildPhases = (
+				971ED9D05B25DB6C4D7680D4 /* Sources */,
+				78AE8C6BEB2A40A6D824CCEE /* Frameworks */,
+				364863F9F2E558B0F50473FC /* Resources */,
+				BD735BE812B6D674BADC855E /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				48535669712E096CB36328AD /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				3A2A88DEEFF3D1D23E496597 /* UnderBlue */,
+			);
+			name = UnderBlue;
+			productName = UnderBlue;
+			productReference = E6FC57C251E9E1BEC1D3C0D2 /* UnderBlue.app */;
+			productType = "com.apple.product-type.application";
+		};
+		71CD5C2A00536DB95F594BC9 /* UnderBlueMacTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 25091439EB0CCC123306DBAD /* Build configuration list for PBXNativeTarget "UnderBlueMacTests" */;
+			buildPhases = (
+				EBF3F8371BD7DF7E9D06498F /* Sources */,
+				30570592BEF4E263A64B8DBB /* Frameworks */,
+				0C5F0339A704CDA08190032C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AD8581063AB563872AF185D3 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				2108519B748D0A923E2567E1 /* UnderBlueMacTests */,
+			);
+			name = UnderBlueMacTests;
+			productName = UnderBlueMacTests;
+			productReference = F38557E404D2E60341A34233 /* UnderBlueMacTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		C093E950651F6F0E4F911883 /* UnderBlueMacShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5BEE9C8F7DEEFD242C4D25EB /* Build configuration list for PBXNativeTarget "UnderBlueMacShare" */;
+			buildPhases = (
+				EA85A3F119EF4788202A4FED /* Sources */,
+				C8E97AC19293AED85FF12999 /* Frameworks */,
+				1973DBD791C2033D8B51F8B3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				54768AA1BA5D709B3AD4DD6D /* UnderBlueShare */,
+				AB4E843D104AB35A8EAB23F5 /* UnderBlueMacShare */,
+			);
+			name = UnderBlueMacShare;
+			productName = UnderBlueMacShare;
+			productReference = 305F96DC1C5423D87C308D4C /* UnderBlueMacShare.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		98F54143AB4E86B28C3AFEE0 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2700;
+			};
+			buildConfigurationList = BC7E287B75C6D3E574547D08 /* Build configuration list for PBXProject "UnderBlue" */;
+			compatibilityVersion = "Xcode 16.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+				ko,
+				ja,
+				"zh-Hans",
+				"zh-Hant",
+			);
+			mainGroup = B28B7AF69320201D1CF206EB;
+			productRefGroup = FBDC4F23F93125BBEEAE800C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				4F6027D858B72CC70E5CC8E9 /* UnderBlue */,
+				436D0079A3B0F0C56CF1A10C /* UnderBlueMac */,
+				71CD5C2A00536DB95F594BC9 /* UnderBlueMacTests */,
+				002378A4B0AB8ED6C3038A81 /* UnderBlueTests */,
+				4D630F78F997333C57512D1C /* UnderBlueUITests */,
+				4BE864FAE2B9E4DE7821A052 /* UnderBlueShare */,
+				C093E950651F6F0E4F911883 /* UnderBlueMacShare */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0C5F0339A704CDA08190032C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1544DFBBD36E4A0D68754A27 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1973DBD791C2033D8B51F8B3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		29FFF143ECDD60E83EF9035A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		364863F9F2E558B0F50473FC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6142FDE1B74BF44BB99CE1B1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7C93D5413C07B225E29BF1A2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0C9EC29799D8656EFFBB3686 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3375EA04324642D337D927D6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		87578F7D47DE44A504256C73 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		971ED9D05B25DB6C4D7680D4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E8565067C7E9FFB9C0A35143 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EA85A3F119EF4788202A4FED /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EBF3F8371BD7DF7E9D06498F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		48535669712E096CB36328AD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4BE864FAE2B9E4DE7821A052 /* UnderBlueShare */;
+			targetProxy = 928B116133AAED9036C514C7 /* PBXContainerItemProxy */;
+		};
+		803C8790EEB3AB1EF41F1D51 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C093E950651F6F0E4F911883 /* UnderBlueMacShare */;
+			targetProxy = 794DFD129C2217ABC520C4DC /* PBXContainerItemProxy */;
+		};
+		A875EB7D356C9AA9654C80EB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4F6027D858B72CC70E5CC8E9 /* UnderBlue */;
+			targetProxy = CEDAC8F28FDB4B718B5D1BEB /* PBXContainerItemProxy */;
+		};
+		AD8581063AB563872AF185D3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 436D0079A3B0F0C56CF1A10C /* UnderBlueMac */;
+			targetProxy = 9F391B459BCFEDCA499F5BB0 /* PBXContainerItemProxy */;
+		};
+		BBAAC9B14F10DD891F7A8816 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4F6027D858B72CC70E5CC8E9 /* UnderBlue */;
+			targetProxy = 00FA7595418DE673442D4E14 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		07F40AAD161B1D59E1448C9A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = UnderBlueShare/UnderBlueShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 9;
+				DEVELOPMENT_TEAM = M3HJ7YK7N7;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = UnderBlueShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = UnderBlue;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.3;
+				PRODUCT_BUNDLE_IDENTIFIER = com.underblue.app.share;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		0F3D67935A4F199E058A017A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = M3HJ7YK7N7;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.underblue.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/UnderBlue.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/UnderBlue";
+			};
+			name = Debug;
+		};
+		1109CF6EAE1A139E1319B4A7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIconMac;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = UnderBlueMac/UnderBlueMac.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = M3HJ7YK7N7;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = UnderBlueMac/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = UnderBlue;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 Enheart";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save your finished photos and videos to your library.";
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					AVKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.underblue.mac;
+				PRODUCT_NAME = UnderBlue;
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		12C60214201DC2844D4FFC54 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = M3HJ7YK7N7;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.underblue.mactests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/UnderBlue.app/Contents/MacOS/UnderBlue";
+			};
+			name = Release;
+		};
+		20B70E15FDC36C625E57F658 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = M3HJ7YK7N7;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.underblue.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/UnderBlue.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/UnderBlue";
+			};
+			name = Release;
+		};
+		5A8C91857F674E16E2724F47 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = UnderBlue/Resources/UnderBlue.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 9;
+				DEVELOPMENT_TEAM = M3HJ7YK7N7;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = UnderBlue/Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = UnderBlue;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save your finished photos and videos to your library.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.1.3;
+				PRODUCT_BUNDLE_IDENTIFIER = com.underblue.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		6A2DA62ACBAD3D9973A142B8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = UnderBlueMacShare/UnderBlueMacShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = M3HJ7YK7N7;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = UnderBlueMacShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = UnderBlue;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.underblue.mac.share;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		786CFAEB3CB570C35644C8C6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = UnderBlueShare/UnderBlueShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 9;
+				DEVELOPMENT_TEAM = M3HJ7YK7N7;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = UnderBlueShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = UnderBlue;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.3;
+				PRODUCT_BUNDLE_IDENTIFIER = com.underblue.app.share;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		89E1FD6268CC0F221A2BE178 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		CDD46369D4DF3E5D8E574DD3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = UnderBlueMacShare/UnderBlueMacShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = M3HJ7YK7N7;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = UnderBlueMacShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = UnderBlue;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.underblue.mac.share;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		CEF19CDD6B04CCD9DBD0A617 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = M3HJ7YK7N7;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.underblue.mactests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/UnderBlue.app/Contents/MacOS/UnderBlue";
+			};
+			name = Debug;
+		};
+		E6DE6C99132752C914FEF632 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				COPY_PHASE_STRIP = YES;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_TESTABILITY = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		E9B2E96ABC5F6856F2BE79CF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = UnderBlue/Resources/UnderBlue.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 9;
+				DEVELOPMENT_TEAM = M3HJ7YK7N7;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = UnderBlue/Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = UnderBlue;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save your finished photos and videos to your library.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.1.3;
+				PRODUCT_BUNDLE_IDENTIFIER = com.underblue.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		FB520F6E62C2A172230C620F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = M3HJ7YK7N7;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.underblue.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = UnderBlue;
+			};
+			name = Debug;
+		};
+		FCEC940375E41513E5F12B9E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIconMac;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = UnderBlueMac/UnderBlueMac.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = M3HJ7YK7N7;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = UnderBlueMac/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = UnderBlue;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2026 Enheart";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save your finished photos and videos to your library.";
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					AVKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.underblue.mac;
+				PRODUCT_NAME = UnderBlue;
+				SDKROOT = macosx;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		FECE8ECE4507AB75FB580D0F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = M3HJ7YK7N7;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.underblue.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = UnderBlue;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		25091439EB0CCC123306DBAD /* Build configuration list for PBXNativeTarget "UnderBlueMacTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CEF19CDD6B04CCD9DBD0A617 /* Debug */,
+				12C60214201DC2844D4FFC54 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5BEE9C8F7DEEFD242C4D25EB /* Build configuration list for PBXNativeTarget "UnderBlueMacShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6A2DA62ACBAD3D9973A142B8 /* Debug */,
+				CDD46369D4DF3E5D8E574DD3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		60EA43DB068BD71C9709BED5 /* Build configuration list for PBXNativeTarget "UnderBlue" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E9B2E96ABC5F6856F2BE79CF /* Debug */,
+				5A8C91857F674E16E2724F47 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		661F4FB61ADF9739C517CA60 /* Build configuration list for PBXNativeTarget "UnderBlueUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FB520F6E62C2A172230C620F /* Debug */,
+				FECE8ECE4507AB75FB580D0F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B9B6B44595E1B03C1E6CFB74 /* Build configuration list for PBXNativeTarget "UnderBlueMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FCEC940375E41513E5F12B9E /* Debug */,
+				1109CF6EAE1A139E1319B4A7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BC7E287B75C6D3E574547D08 /* Build configuration list for PBXProject "UnderBlue" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				89E1FD6268CC0F221A2BE178 /* Debug */,
+				E6DE6C99132752C914FEF632 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BFF22C3EF9FBA0C7C5AEF748 /* Build configuration list for PBXNativeTarget "UnderBlueShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				786CFAEB3CB570C35644C8C6 /* Debug */,
+				07F40AAD161B1D59E1448C9A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EC78861A60CD111A3D8A2421 /* Build configuration list for PBXNativeTarget "UnderBlueTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0F3D67935A4F199E058A017A /* Debug */,
+				20B70E15FDC36C625E57F658 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 98F54143AB4E86B28C3AFEE0 /* Project object */;
+}

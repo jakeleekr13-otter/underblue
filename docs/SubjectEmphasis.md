@@ -733,9 +733,9 @@ The branch merged main at `287743d`. Every number above E15 predates that merge.
 |---|---|---|---|
 | E15 | Make the Vision input the same at every size | Mask share of one photo at four sizes | Done |
 | E16 | Trust a white reference on a subject | Unit test, gate, analysis on 31 photos | Done |
-| E17 | Split the tiers by the water, not by a depth cut | Transmission maps, metrics, full-size crops | Built. Jake judges the look |
+| E17 | Split the tiers by the water, not by a depth cut | Transmission maps, metrics, full-size crops | Adopted (Jake, 23 Oct 2026) |
 | E18 | Find the cause of the pale ring around fish | Ring chroma with each stage switched off | Narrowed to a per-pixel step. Not fixed |
-| E19 | Device check of E15 to E17 | Parity export on the iPhone | Not done: the phone was locked |
+| E19 | Device check of E15 to E17 | Parity analysis and export on the iPhone | Done: the phone agrees with the Mac |
 
 ### E15, the Vision input, 23 Oct 2026
 
@@ -831,7 +831,7 @@ Measured at 1600 px, E11 against E17, both with the lift:
 - Clipping on DSC03687 rises from 0.0054 to 0.0069. Main is 0.0031.
 - Outside chroma changes by 0.0003 or less, except r13 (+0.0013).
 
-Whether the sharper background reads natural is Jake's call. The full-size crops are main, E11 and E17 side by side.
+Jake looked at full-size crops of main, E11 and E17 side by side. He saw no clear difference and adopted E17, because the measured contrast is better (23 Oct 2026).
 
 ### E18, the pale ring around fish, 23 Oct 2026
 
@@ -876,6 +876,21 @@ Which step does it is not known. These were switched off in the colour kernel an
 | water test, redness term | 0.936 |
 | water test, both (every pixel counts as water) | 0.941 |
 | uncast, the surface-light rule | 0.939 | The cast gains alone are ruled out too. Applied by hand to the source, they move the glow's share of the water's chroma only from 0.79 to 0.77, against 0.54 in the result. Next to test, one at a time: the water tone and water saturation, the tone curve, vibrance. Not fixed.
+
+### E19, the device check, 23 Oct 2026
+
+iPhone 17, `PhotoParityTests`, Natural Dive at 0.8. White reference share from the analysis:
+
+| photo | iPhone | Mac harness |
+|---|---|---|
+| AquaColorFix pair 4 (manta) | 0.0317 | 0.0307 |
+| DSC03545 ARW | 0.0775 | 0.0779 |
+| DSC03545 camera JPEG | 0.00001 | 0.0003 |
+| DSC03687 camera JPEG | 0.0000002 | 0.000000001 |
+
+- The manta gets its reference back on the phone too.
+- The DSC03687 coral stays out on the phone, so the red-reef fix holds.
+- The exports of all four photos were looked at. No halo, no red reef. On the phone the manta belly reads a little whiter than the Mac render.
 
 ### The control photos
 

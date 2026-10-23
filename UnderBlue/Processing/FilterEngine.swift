@@ -333,12 +333,15 @@ final class FilterEngine: Sendable {
         let waterCount = max(1, colors.count / 3)
         let water = colors.prefix(waterCount).reduce(SIMD3<Float>(repeating: 0), +) / Float(waterCount)
         // White reference candidates: outside the least red third (so not open water), among the
-        // brightest fifth, clearly brighter than the water and no more colourful than it.
+        // brightest fifth, clearly brighter than the water and no more colourful than it. The ceiling
+        // carried 10% of slack until 23 Oct 2026. A camera JPEG's water is more saturated, so that
+        // slack let blue-lit coral in, and the white reference then greyed it by adding red
+        // (docs/JpegInput.md, J3).
         let waterChroma = ColorCorrection.oklch(water).y, waterLuminance = (water * ColorCorrection.luma).sum()
         let brightCut = max(luminance[min(luminance.count - 1, luminance.count * 8 / 10)], waterLuminance * 1.25)
         var neutral = SIMD3<Float>(repeating: 0), neutralCount: Float = 0
         for c in colors.dropFirst(waterCount) where (c * ColorCorrection.luma).sum() >= brightCut
-            && ColorCorrection.oklch(c).y <= min(0.2, waterChroma * 1.1) {
+            && ColorCorrection.oklch(c).y <= min(0.2, waterChroma) {
             neutral += c; neutralCount += 1
         }
         if neutralCount > 0 { neutral /= neutralCount }

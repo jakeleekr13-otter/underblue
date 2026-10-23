@@ -5,6 +5,17 @@ import simd
 import ImageIO
 import UniformTypeIdentifiers
 
+// Analysis fields by name, for HT_EVAL_ANALYSIS_FIELDS. WaterAnalysis.fields holds the same key
+// paths, but without the names an environment variable needs.
+let analysisKeys: [String: WritableKeyPath<WaterAnalysis, Float>] = [
+    "redLoss": \.redLoss, "cyanDominance": \.cyanDominance, "exposure": \.exposure,
+    "contrast": \.contrast, "saturation": \.saturation,
+    "meanRed": \.meanRed, "meanGreen": \.meanGreen, "meanBlue": \.meanBlue,
+    "midLuminance": \.midLuminance,
+    "waterRed": \.waterRed, "waterGreen": \.waterGreen, "waterBlue": \.waterBlue,
+    "neutralRed": \.neutralRed, "neutralGreen": \.neutralGreen, "neutralBlue": \.neutralBlue,
+    "neutralShare": \.neutralShare, "highShare": \.highShare, "lightShare": \.lightShare]
+
 // Usage: eval <rawDir> <refDir|-> <outCSV> [all|dev|holdout|N] [sheetDir] [sheetNamesFile]
 let args = CommandLine.arguments
 let rawDir = URL(fileURLWithPath: args[1])
@@ -25,7 +36,7 @@ let sRGB = CGColorSpace(name: CGColorSpace.sRGB)!
 func load(_ url: URL) -> CIImage? {
     // Camera RAW goes through CIRAWFilter, as PhotoProcessor.openRAW does. CIImage(contentsOf:) would
     // hand back the small embedded preview instead. A camera JPEG and its RAW are different starting
-    // images, and the pipeline lands differently on each (docs/SubjectEmphasis.md, E14).
+    // images, and the pipeline lands differently on each (docs/JpegInput.md).
     if UTType(filenameExtension: url.pathExtension)?.conforms(to: .rawImage) == true {
         return CIRAWFilter(imageURL: url)?.outputImage
     }
@@ -237,9 +248,30 @@ for name in selected {
     let scale = min(1, maxDim / max(rawFull.extent.width, rawFull.extent.height))
     let w = Int(rawFull.extent.width * scale), h = Int(rawFull.extent.height * scale)
     let source = fit(engine.sdr(rawFull), width: w, height: h)
-    let analysis = engine.analyze(source)
+    // HT_EVAL_ANALYSIS_SWAP="<from>:<to>" analyses a different file and renders this one with it.
+    // It answers one question: how much of a result comes from the analysis, and how much from the
+    // image itself. "_jpg.jpg:_raw.arw" renders a camera JPEG with its RAW's analysis.
+    var analysis = engine.analyze(source)
+    if let swap = ProcessInfo.processInfo.environment["HT_EVAL_ANALYSIS_SWAP"] {
+        let parts = swap.split(separator: ":").map(String.init)
+        precondition(parts.count == 2, "HT_EVAL_ANALYSIS_SWAP needs <from>:<to>")
+        guard name.hasSuffix(parts[0]) else { print("skip \(name): no \(parts[0])"); continue }
+        let other = rawDir.appendingPathComponent(String(name.dropLast(parts[0].count)) + parts[1])
+        guard let otherFull = load(other) else { print("swap failed \(other.lastPathComponent)"); continue }
+        let otherAnalysis = engine.analyze(fit(engine.sdr(otherFull), width: w, height: h))
+        // HT_EVAL_ANALYSIS_FIELDS="waterRed,waterGreen" copies only those fields. Unset copies all.
+        // One field at a time says which part of the analysis carries a result.
+        if let names = ProcessInfo.processInfo.environment["HT_EVAL_ANALYSIS_FIELDS"] {
+            for name in names.split(separator: ",").map(String.init) {
+                guard let key = analysisKeys[name] else { preconditionFailure("unknown analysis field \(name)") }
+                analysis[keyPath: key] = otherAnalysis[keyPath: key]
+            }
+        } else {
+            analysis = otherAnalysis
+        }
+    }
     var settings = FilterSettings(); settings.analysis = analysis
-    // HT_EVAL_INTENSITY overrides the preset slider, to match a given app screenshot.
+    // HT_EVAL_INTENSITY overrides the preset slider, to match a given app export.
     if let i = ProcessInfo.processInfo.environment["HT_EVAL_INTENSITY"], let v = Float(i) { settings.intensity = v }
     // HT_EVAL_CUSTOM="brightness,contrast,saturation,clarity,temperature" renders the Custom preset at those slider positions.
     if let custom = ProcessInfo.processInfo.environment["HT_EVAL_CUSTOM"] {
@@ -259,6 +291,34 @@ for name in selected {
         plan?.subjectMask = SubjectMask.estimate(source)
         // The subject lift has its own cap (docs/SubjectEmphasis.md, E2), so m5's coral block counts.
         liftMask = SubjectMask.estimate(source, cap: SubjectMask.liftMaximumShare)
+        // HT_EVAL_WATER_SWAP="<from>:<to>" fits the water model on a different file and puts it on
+        // this image's plan. Depth, limits and the subject mask stay this image's. It separates the
+        // water fit from the image, the way HT_EVAL_ANALYSIS_SWAP separates the analysis.
+        if let swap = ProcessInfo.processInfo.environment["HT_EVAL_WATER_SWAP"], let mine = plan {
+            let parts = swap.split(separator: ":").map(String.init)
+            precondition(parts.count == 2, "HT_EVAL_WATER_SWAP needs <from>:<to>")
+            let other = rawDir.appendingPathComponent(String(name.dropLast(parts[0].count)) + parts[1])
+            guard name.hasSuffix(parts[0]), let otherFull = load(other) else { print("water swap failed \(name)"); continue }
+            let otherSource = fit(engine.sdr(otherFull), width: w, height: h)
+            let otherDepth = try await depthEstimator.monocularDepth(for: otherSource)
+            guard let theirs = try? waterEstimator.estimate(image: otherSource, depth: otherDepth,
+                                                            legacy: engine.analyze(otherSource), context: engine.context)
+            else { print("water swap fit failed \(name)"); continue }
+            var swapped = RestorationPlan(depth: mine.depth, depthSource: mine.depthSource,
+                                          depthStatistics: mine.depthStatistics,
+                                          backscatterInfinity: theirs.backscatterInfinity,
+                                          betaDirect: theirs.betaDirect, betaBackscatter: theirs.betaBackscatter,
+                                          confidence: mine.confidence, limits: mine.limits,
+                                          transmissionFloorPixelPercentage: mine.transmissionFloorPixelPercentage,
+                                          maximumGainPixelPercentage: mine.maximumGainPixelPercentage,
+                                          depthConfidence: mine.depthConfidence,
+                                          waterFitConfidence: theirs.waterFitConfidence,
+                                          temporalConfidence: mine.temporalConfidence,
+                                          channelRecoverability: theirs.channelRecoverability)
+            swapped.veilLevel = mine.veilLevel
+            swapped.subjectMask = mine.subjectMask
+            plan = swapped
+        }
         if ProcessInfo.processInfo.environment["HT_EVAL_LOG"] != nil, let m = plan?.subjectMask { print("\(name) subjects: \(m.width)x\(m.height) share=\(m.values.reduce(0, +) / Float(m.values.count))") }
     } catch { }
     guard let depthMap else { print("depth failed \(name)"); continue }

@@ -415,8 +415,12 @@ struct ColorCorrection: Sendable, Equatable {
         // the bright, low-chroma surfaces, so a pale remainder of any hue is a cast. A colourful
         // remainder is a real colour, such as a yellow fish, and is kept.
         let pale = 1 - smoothstep(0.10, 0.18, lch.y)
-        // A strongly blue reference is trusted too: a white belly, a grey fish or sand lit by blue
-        // water is as blue as pale water near the surface, and no colour test tells them apart. The
+        // A blue reference is trusted when its hue is not the water's own. A white belly, a grey fish
+        // or sand lit by blue water can be as blue as pale water near the surface. Since 23 Oct 2026
+        // FilterEngine.analyze gives no evidence to a reference within 25 degrees of the water's hue:
+        // on camera JPEGs that was coral lit by the water, and greying it turned the reef red. A
+        // white belly lit by the water now loses its reference too (the manta in AquaColorFix pair 4).
+        // Telling the two apart needs the subject mask, not a colour (docs/JpegInput.md, Next). The
         // open water is safe either way, because the kernel applies the gains by neutralWeight, which
         // leaves water-like pixels alone unless they are clearly brighter than the water and of
         // another chromaticity.

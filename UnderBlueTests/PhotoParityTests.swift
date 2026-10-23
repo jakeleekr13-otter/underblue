@@ -14,6 +14,35 @@ final class PhotoParityTests: XCTestCase {
         for name in ["parity-in", "parity-out"] { try? FileManager.default.removeItem(at: documents.appendingPathComponent(name)) }
     }
 
+    /// Prints the analysis and the correction values of every photo in the parity folder. The Mac
+    /// harness prints the same fields, so a device reading can be put beside a Mac one. A colour
+    /// change that works on the Mac may not work on a phone (docs/MacApp.md). It asserts nothing.
+    func testPrintAnalysisForParityPhotos() async throws {
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let environment = ProcessInfo.processInfo.environment
+        let input = environment["UB_PARITY_IN"].map { URL(fileURLWithPath: $0, isDirectory: true) } ?? documents.appendingPathComponent("parity-in")
+        try XCTSkipUnless(FileManager.default.fileExists(atPath: input.path), "no parity-in folder")
+        let files = try FileManager.default.contentsOfDirectory(at: input, includingPropertiesForKeys: nil)
+            .filter { !$0.lastPathComponent.hasPrefix(".") }.sorted { $0.lastPathComponent < $1.lastPathComponent }
+        XCTAssertFalse(files.isEmpty)
+        for file in files {
+            let a = try await PhotoProcessor().analyze(file)
+            let v = ColorCorrection.make(analysis: a, preset: .natural)
+            let neutralChroma = ColorCorrection.oklch(a.neutralColor).y
+            let waterChroma = ColorCorrection.oklch(a.waterColor).y
+            print("PARITY analysis \(file.lastPathComponent)"
+                + " mean=(\(a.meanRed),\(a.meanGreen),\(a.meanBlue))"
+                + " water=(\(a.waterRed),\(a.waterGreen),\(a.waterBlue))"
+                + " neutral=(\(a.neutralRed),\(a.neutralGreen),\(a.neutralBlue))"
+                + " share=\(a.neutralShare) mid=\(a.midLuminance)"
+                + " waterChroma=\(waterChroma) neutralChroma=\(neutralChroma)"
+                + " type=\(v.waterType)"
+                + " neutralGains=(\(v.neutralGains.x),\(v.neutralGains.y),\(v.neutralGains.z))"
+                + " refStrength=\(v.referenceStrength)"
+                + " refGains=(\(v.referenceGains.x),\(v.referenceGains.y),\(v.referenceGains.z))")
+        }
+    }
+
     func testExportPhotosForParityCheck() async throws {
         let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let environment = ProcessInfo.processInfo.environment

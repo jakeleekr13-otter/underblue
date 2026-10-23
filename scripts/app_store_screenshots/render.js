@@ -32,8 +32,9 @@ fs.copyFileSync(path.join(__dirname, 'screens.html'), path.join(work, 'screens.h
 for (const n of ['home', 'photo_before', 'photo_after', 'video_before', 'video_after']) {
   fs.copyFileSync(sourceFile(n + '.PNG'), path.join(assets, n + '.png'));
 }
+// Mirrored, so the clownfish in screenshot 01 faces right (see screens.html).
 for (const n of ['video_frame_before', 'video_frame_after']) {
-  execFileSync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '95',
+  execFileSync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '95', '--flip', 'horizontal',
     sourceFile(n + '.HEIC'), '--out', path.join(assets, n + '.jpg')], { stdio: 'ignore' });
 }
 

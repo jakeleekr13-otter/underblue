@@ -34,7 +34,7 @@ Capture the five screens on the iPhone with the app language set to that languag
 | `video_after.PNG` | Same reef video, Natural Dive, Intensity 80% |
 | `video_before.PNG` | Same state, Compare held |
 
-The video frame pair (`video_frame_*.HEIC`) has no UI, so every language reuses `en-US`.
+The video frame pair (`video_frame_*.HEIC`) has no UI, so every language reuses `en-US`. render.js mirrors it, so the clownfish in screenshot 01 faces right: tail on the "before" side, head on the "after" side (Jake, 24 Oct 2026).
 
 Status (23 Oct 2026): `ko/final` is committed. Its captions are Korean, but its phone screens are the en-US captures, because the Korean captures are on hold. Whether this set was uploaded for 1.1.4 is not recorded. `ja/final` (24 Oct 2026) is the same kind of set: Japanese captions over the en-US captures. An independent reviewer checked the Japanese copy, because Jake cannot review it. `zh-Hans` and `zh-Hant` need captions and full App Store metadata first.
 

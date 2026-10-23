@@ -1134,20 +1134,30 @@ final class RestorationTests: XCTestCase {
     }
 
     func testAnalysisFindsBrightNeutralSurfacesAndBrightShare() {
-        // Left: blue water. Right: pale sand under the cast, brighter than the water.
-        let width = 48, height = 48
-        var rgba = [Float]()
-        for _ in 0..<height { for x in 0..<width {
-            rgba += x < 30 ? [0.02, 0.2, 0.55, 1] : [0.3, 0.6, 0.66, 1]
-        } }
-        let data = rgba.withUnsafeBytes { Data($0) }
-        let image = CIImage(bitmapData: data, bytesPerRow: width * 16, size: CGSize(width: width, height: height),
-                            format: .RGBAf, colorSpace: FilterEngine.workingSpace)
-        let analysis = FilterEngine().analyze(image)
+        // Left: blue water. Right: a pale surface brighter than the water.
+        func scene(_ surface: [Float]) -> WaterAnalysis {
+            let width = 48, height = 48
+            var rgba = [Float]()
+            for _ in 0..<height { for x in 0..<width {
+                rgba += x < 30 ? [0.02, 0.2, 0.55, 1] : surface
+            } }
+            let data = rgba.withUnsafeBytes { Data($0) }
+            let image = CIImage(bitmapData: data, bytesPerRow: width * 16, size: CGSize(width: width, height: height),
+                                format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+            return FilterEngine().analyze(image)
+        }
+        // Pale sand that keeps some of its own colour: 55 degrees from the water's hue. It is a white
+        // reference.
+        let analysis = scene([0.5, 0.6, 0.55, 1])
         XCTAssertGreaterThan(analysis.neutralShare, 0.1)
         XCTAssertGreaterThan(analysis.neutralGreen, analysis.waterGreen)
         XCTAssertGreaterThan(analysis.neutralRed, 0.2)
         XCTAssertGreaterThan(analysis.highShare, 0.3)
+        // A pale surface with the water's own hue (7 degrees away) is lit by the water, not white.
+        // It gives no evidence, but it still counts as a bright area (docs/JpegInput.md, J5).
+        let waterLit = scene([0.3, 0.5, 0.8, 1])
+        XCTAssertEqual(waterLit.neutralShare, 0)
+        XCTAssertGreaterThan(waterLit.highShare, 0.3)
         // Water only: no reference and no bright area.
         let water = CIImage(color: CIColor(red: 0.02, green: 0.2, blue: 0.55, colorSpace: FilterEngine.workingSpace)!)
             .cropped(to: CGRect(x: 0, y: 0, width: 48, height: 48))

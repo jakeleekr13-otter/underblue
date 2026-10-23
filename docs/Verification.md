@@ -2,6 +2,25 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## Camera JPEG reef colour (23 Oct 2026, iPhone 1.1.4 build 10)
+
+Commits `f96dc65`, `cca30aa`, `9e5a23b`. Details: [JpegInput](JpegInput.md).
+
+Checked on the iPhone 17: the reef red share from the camera JPEG of DSC03656, DSC03687 and DSC03696
+went from 0.405, 0.511 and 0.353 to 0.336, 0.241 and 0.300. The ARW results stayed within 0.005. The
+video, photo, preset and restoration test classes pass on the phone (141 tests).
+
+Checked on the Mac: m5 photo-path dE 12.98 to 13.22, no panel patch worse by more than 1 dE. The
+AquaColorFix gate and three video clips in `videosim` are in JpegInput.
+
+Still open:
+- **The Mac app.** Not checked. Today's build is iPhone only. Mac and iPhone read different analysis
+  samples from one file (JpegInput, J5), so the Mac app needs its own look.
+- **Manta belly.** Chroma 0.023 before today, 0.043 now. Planned with the subject work.
+- **m1 cooler.** The yellow coral is duller than before (mean OKLab distance x100 1.37).
+- **Simulator JPEG chroma.** `PhotoFormatTests` reads 2x2 chroma on the iPhone 18 Pro simulator and
+  passes on the iPhone 17.
+
 ## Video preview stutter and the 3s Preview button (22 Oct 2026)
 
 A user reported that the 3-second video preview stutters badly. The preview renders every frame live with Core Image. Cost follows the pixel count.
@@ -40,6 +59,13 @@ The `LongVideoTests` memory failure in Known issues may have the same cause. It 
 
 Still open:
 - **Dark blob on photos in bright open blue water (checked 22 Oct 2026).** Photo r13: with the middle-channel highlight rule, the per-pixel depth map darkens a wide patch around the subject (centre over side brightness 0.908; one constant depth 0.999; source 0.954). The local veil is not the cause: changing its bounds did nothing. So photos keep the old rule, and the video path is safe because it uses one depth per scene (r13 as a 4 s clip: 0.998). Not done: making the middle rule safe for photos (it would need a limit on how much the depth map may change the gain in bright blue water). The photo layer edge the middle rule removes on video was not looked for in photos.
+- **Pale ring around fish on photos (seen by Jake, 23 Oct 2026).** DSC03545 in
+  `DeveloperMedia/subjectpicker/`, Mac render at 4000 px, Natural Dive at 0.8. The water right
+  around the two fish loses chroma. Measured in a ring 8 to 40 px out against a ring 100 to 160 px
+  out: the near ring holds 94 per cent of the far ring's chroma in the source and 86 per cent in the
+  result from the camera JPEG, and 95 against 84 per cent for the ARW. So it is in both results and
+  in neither source, and the ARW is the stronger one. It is not a camera JPEG problem. The cause was
+  not looked for. It may be the same local veil as the video halo above, but on the photo path.
 - Not checked: 4K and HDR clips, the whole whale shark clip by eye (only the first 12 s), the Mac app's own export output (the test sandbox hides it), the iPhone export of the red-ring fix on the whale shark clip beyond the first 12 s.
 
 ## Dark corner in video: shadow floor (22 Oct 2026)

@@ -299,13 +299,28 @@ final class FilterEngine: Sendable {
         tone.targetHeadroom = 1
         return tone.outputImage ?? image
     }
+    /// How far the white reference's hue must sit from the water's hue, in degrees, before it is
+    /// trusted. Below the low bound it is a water-lit surface and counts for nothing.
+    static let neutralHueLow: Float = 25, neutralHueHigh: Float = 35
+
     func analyze(_ image: CIImage) -> WaterAnalysis {
         let source = sdr(image)
         let extent = source.extent
         guard !extent.isEmpty, extent.width.isFinite, extent.height.isFinite else { return .neutral }
         let size = 48
-        let scaled = source.transformed(by: CGAffineTransform(translationX: -extent.minX, y: -extent.minY))
-            .transformed(by: CGAffineTransform(scaleX: CGFloat(size) / extent.width, y: CGFloat(size) / extent.height))
+        // Lanczos, not a plain affine transform. A 48 px sample of a 5472 px photo is a 114x
+        // reduction, and the default sampler reads a handful of source pixels per output pixel. What
+        // it reads is up to the implementation, so a Mac and a phone read different samples from one
+        // file. Lanczos takes every pixel in. It brought the water colour into agreement; the white
+        // reference's share still differs, which is why the hue gate below exists (docs/JpegInput.md, J5).
+        let moved = source.transformed(by: CGAffineTransform(translationX: -extent.minX, y: -extent.minY))
+        let resample = CIFilter.lanczosScaleTransform()
+        resample.inputImage = moved
+        resample.scale = Float(CGFloat(size) / extent.height)
+        resample.aspectRatio = Float(extent.height / extent.width)
+        let scaled = (resample.outputImage ?? moved
+            .transformed(by: CGAffineTransform(scaleX: CGFloat(size) / extent.width, y: CGFloat(size) / extent.height)))
+            .cropped(to: CGRect(x: 0, y: 0, width: CGFloat(size), height: CGFloat(size)))
         var pixels = [Float](repeating: 0, count: size * size * 4)
         context.render(scaled, toBitmap: &pixels, rowBytes: size * 4 * MemoryLayout<Float>.size,
                        bounds: CGRect(x: 0, y: 0, width: size, height: size), format: .RGBAf, colorSpace: Self.workingSpace)
@@ -333,21 +348,37 @@ final class FilterEngine: Sendable {
         let waterCount = max(1, colors.count / 3)
         let water = colors.prefix(waterCount).reduce(SIMD3<Float>(repeating: 0), +) / Float(waterCount)
         // White reference candidates: outside the least red third (so not open water), among the
-        // brightest fifth, clearly brighter than the water and no more colourful than it.
+        // brightest fifth, clearly brighter than the water and no more colourful than it. The ceiling
+        // carried 10% of slack until 23 Oct 2026. A camera JPEG's water is more saturated, so that
+        // slack let blue-lit coral in, and the white reference then greyed it by adding red
+        // (docs/JpegInput.md, J3).
         let waterChroma = ColorCorrection.oklch(water).y, waterLuminance = (water * ColorCorrection.luma).sum()
         let brightCut = max(luminance[min(luminance.count - 1, luminance.count * 8 / 10)], waterLuminance * 1.25)
         var neutral = SIMD3<Float>(repeating: 0), neutralCount: Float = 0
         for c in colors.dropFirst(waterCount) where (c * ColorCorrection.luma).sum() >= brightCut
-            && ColorCorrection.oklch(c).y <= min(0.2, waterChroma * 1.1) {
+            && ColorCorrection.oklch(c).y <= min(0.2, waterChroma) {
             neutral += c; neutralCount += 1
         }
         if neutralCount > 0 { neutral /= neutralCount }
+        // A reference whose hue is the water's own hue is not a white surface. It is coral or rock
+        // lit by the water, and greying it takes the water's colour out of the whole frame: the reef
+        // then reads red (docs/JpegInput.md, J5). Trust grows with the angle between the two hues.
+        // The bounds sit in an empty band: across eval/real, eval/market, eval/aquacolorfix and the
+        // five camera pairs, the gap is either 24.8 degrees or less, or 36.7 or more. Known cost: a
+        // white belly lit by the water sits low too (the manta in AquaColorFix pair 4, 23.5 degrees),
+        // so it loses its reference and keeps more tint.
+        let hueGap = abs(ColorCorrection.oklch(neutral).z - ColorCorrection.oklch(water).z)
+            .truncatingRemainder(dividingBy: 360)
+        let angle = min(hueGap, 360 - hueGap)
+        let t = min(1, max(0, (angle - Self.neutralHueLow) / (Self.neutralHueHigh - Self.neutralHueLow)))
+        let trust = neutralCount > 0 ? t * t * (3 - 2 * t) : 0
         return WaterAnalysis(redLoss: loss, cyanDominance: max(0, min(1, (surviving - red) / surviving)),
             exposure: min(0.12, max(0, (0.22 - luminance[luminance.count/2]) * 0.6)),
             contrast: luminance[luminance.count * 9 / 10] - luminance[luminance.count / 10], saturation: saturation / n,
             meanRed: red / n, meanGreen: green / n, meanBlue: blue / n, midLuminance: luminance[luminance.count / 2],
             waterRed: water.x, waterGreen: water.y, waterBlue: water.z,
-            neutralRed: neutral.x, neutralGreen: neutral.y, neutralBlue: neutral.z, neutralShare: neutralCount / n,
+            neutralRed: neutral.x, neutralGreen: neutral.y, neutralBlue: neutral.z,
+            neutralShare: neutralCount / n * trust,
             highShare: lit > 0 ? high / lit : 0,
             lightShare: lit > 0 ? Float(litLuminance.filter { $0 >= waterLuminance * WaterAnalysis.lightShareRatio }.count) / lit : 0)
     }

@@ -186,8 +186,8 @@
 <section id="s1">
   <div class="copy">
     <span class="eyebrow"><svg><use href="#waves"/></svg>UnderBlue</span>
-    <h1>Bring back<br>the <em>real colour.</em></h1>
-    <p class="sub">Natural colour for underwater photos and videos.</p>
+    <h1 data-t="s1.title">Bring back<br>the <em>real colour.</em></h1>
+    <p class="sub" data-t="s1.sub">Natural colour for underwater photos and videos.</p>
   </div>
   <div class="hero-card">
     <img class="after" src="assets/video_frame_after.jpg">
@@ -196,22 +196,22 @@
       <line x1="60" y1="0" x2="40" y2="100" stroke="#fff" stroke-width="6" vector-effect="non-scaling-stroke"/>
     </svg>
     <div class="knob" style="left:50%;top:50%;z-index:3"><svg><use href="#arrows"/></svg></div>
-    <span class="tag glass" style="left:48px;top:48px">Before</span>
-    <span class="tag after" style="right:48px;bottom:48px">After</span>
+    <span data-t="tag.before" class="tag glass" style="left:48px;top:48px">Before</span>
+    <span data-t="tag.after" class="tag after" style="right:48px;bottom:48px">After</span>
   </div>
   <div class="chips">
-    <span class="chip glass"><svg><use href="#photo"/></svg>Photos</span>
-    <span class="chip glass"><svg><use href="#video"/></svg>Videos</span>
-    <span class="chip glass"><svg><use href="#lock"/></svg>On-device</span>
+    <span class="chip glass"><svg><use href="#photo"/></svg><span data-t="chip.photos">Photos</span></span>
+    <span class="chip glass"><svg><use href="#video"/></svg><span data-t="chip.videos">Videos</span></span>
+    <span class="chip glass"><svg><use href="#lock"/></svg><span data-t="chip.ondevice">On-device</span></span>
   </div>
 </section>
 
 <!-- 02: photo edit screen with split -->
 <section id="s2">
   <div class="copy">
-    <span class="eyebrow"><svg><use href="#photo"/></svg>Photos</span>
-    <h1>Reef colour,<br><em>restored.</em></h1>
-    <p class="sub">Depth-aware restoration brings back lost colour.</p>
+    <span class="eyebrow"><svg><use href="#photo"/></svg><span data-t="s2.eyebrow">Photos</span></span>
+    <h1 data-t="s2.title">Reef colour,<br><em>restored.</em></h1>
+    <p class="sub" data-t="s2.sub">Depth-aware restoration brings back lost colour.</p>
   </div>
   <div class="phone" style="left:204px;top:830px">
     <div class="screen">
@@ -222,16 +222,16 @@
       <div class="island"></div>
     </div>
   </div>
-  <span class="tag glass" style="left:110px;top:1300px">Before</span>
-  <span class="tag after" style="right:110px;top:1300px">After</span>
+  <span data-t="tag.before" class="tag glass" style="left:110px;top:1300px">Before</span>
+  <span data-t="tag.after" class="tag after" style="right:110px;top:1300px">After</span>
 </section>
 
 <!-- 03: video edit screen with split -->
 <section id="s3">
   <div class="copy">
-    <span class="eyebrow"><svg><use href="#video"/></svg>Videos</span>
-    <h1>Video,<br><em>fixed too.</em></h1>
-    <p class="sub">Stable colour across the whole clip.</p>
+    <span class="eyebrow"><svg><use href="#video"/></svg><span data-t="s3.eyebrow">Videos</span></span>
+    <h1 data-t="s3.title">Video,<br><em>fixed too.</em></h1>
+    <p class="sub" data-t="s3.sub">Stable colour across the whole clip.</p>
   </div>
   <div class="phone" style="left:204px;top:830px">
     <div class="screen">
@@ -244,16 +244,16 @@
       <div class="island"></div>
     </div>
   </div>
-  <span class="tag glass" style="left:110px;top:1400px">Before</span>
-  <span class="tag after" style="right:110px;top:1400px">After</span>
+  <span data-t="tag.before" class="tag glass" style="left:110px;top:1400px">Before</span>
+  <span data-t="tag.after" class="tag after" style="right:110px;top:1400px">After</span>
 </section>
 
 <!-- 04: looks and intensity, real UI crop enlarged -->
 <section id="s4">
   <div class="copy">
-    <span class="eyebrow"><svg><use href="#spark"/></svg>Looks</span>
-    <h1>Pick a look.<br><em>Set the strength.</em></h1>
-    <p class="sub">Natural Dive, Tropical or Deep Dive. Compare with the original at any time.</p>
+    <span class="eyebrow"><svg><use href="#spark"/></svg><span data-t="s4.eyebrow">Looks</span></span>
+    <h1 data-t="s4.title">Pick a look.<br><em>Set the strength.</em></h1>
+    <p class="sub" data-t="s4.sub">Natural Dive, Tropical or Deep Dive. Compare with the original at any time.</p>
   </div>
   <div class="phone" style="left:254px;top:870px;--w:760px">
     <div class="screen">
@@ -267,9 +267,9 @@
 <!-- 05: private, home screen -->
 <section id="s5">
   <div class="copy">
-    <span class="eyebrow"><svg><use href="#lock"/></svg>Private</span>
-    <h1>Stays on<br><em>your iPhone.</em></h1>
-    <p class="sub">All processing runs on the device. No account. No cloud upload.</p>
+    <span class="eyebrow"><svg><use href="#lock"/></svg><span data-t="s5.eyebrow">Private</span></span>
+    <h1 data-t="s5.title">Stays on<br><em>your iPhone.</em></h1>
+    <p class="sub" data-t="s5.sub">All processing runs on the device. No account. No cloud upload.</p>
   </div>
   <div class="phone" style="left:204px;top:830px">
     <div class="screen">
@@ -279,11 +279,11 @@
   </div>
   <div class="float-badge glass" style="left:40px;top:1380px">
     <span class="ic"><svg><use href="#chip"/></svg></span>
-    <span>On-device<small>Private processing</small></span>
+    <span data-t="s5.badge1">On-device<small>Private processing</small></span>
   </div>
   <div class="float-badge glass" style="right:40px;top:1840px">
     <span class="ic"><svg><use href="#user-off"/></svg></span>
-    <span>No account<small>Open and edit</small></span>
+    <span data-t="s5.badge2">No account<small>Open and edit</small></span>
   </div>
 </section>
 

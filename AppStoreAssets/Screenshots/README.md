@@ -14,16 +14,35 @@ Upload order and captions:
 
 ```sh
 npm i --no-save playwright
-node scripts/app_store_screenshots/render.js
+node scripts/app_store_screenshots/render.js          # en-US
+node scripts/app_store_screenshots/render.js ko       # Korean
 ```
 
-The layout is `scripts/app_store_screenshots/screens.html`.
+The layout is `scripts/app_store_screenshots/screens.html`. Every caption has a `data-t` key. Other languages take their captions from `scripts/app_store_screenshots/captions.json`.
+
+## Other languages
+
+A language uses `<locale>/source` for its device captures and writes `<locale>/final`. A missing capture falls back to `en-US/source`, and the script prints a warning. Never upload a set that printed a warning, because its phone screens are still in English.
+
+Capture the five screens on the iPhone with the app language set to that language (Settings → Apps → UnderBlue → Language). Use the same states as `en-US/source`:
+
+| File | Screen |
+|---|---|
+| `home.PNG` | Home screen |
+| `photo_after.PNG` | Same reef photo, Natural Dive, Intensity 80% |
+| `photo_before.PNG` | Same state, Compare held, so the label reads Original |
+| `video_after.PNG` | Same reef video, Natural Dive, Intensity 80% |
+| `video_before.PNG` | Same state, Compare held |
+
+The video frame pair (`video_frame_*.HEIC`) has no UI, so every language reuses `en-US`.
+
+Status (23 Oct 2026): `ko` captions are written; captures are still to come. `ja`, `zh-Hans` and `zh-Hant` need captions and full App Store metadata first.
 
 `en-US-outdated` keeps the older sets for comparison only.
 
 The UIEB files under the local developer fixtures are academic/non-commercial benchmark data and must not appear in App Store assets or be redistributed. Use only developer-owned photo/video fixtures and actual UnderBlue output.
 
-Korean caption copy and full App Store metadata are in `docs/AppStoreMetadata.md`.
+The Korean store text is in `docs/AppStoreMetadata.md`. The Korean screenshot captions are in `scripts/app_store_screenshots/captions.json`.
 
 ## Mac
 

@@ -17,7 +17,7 @@ Source: Apple, "Creating your app icon using Icon Composer" (Xcode documentation
 |---|---|---|
 | 1 | Build `AppStoreAssets/IconComposer/AppIcon.icon` from the SVG layers. Match the current icon. | Done 23 Oct 2026. `icon.json` was written by hand (Liquid Glass defaults). `ictool` renders iOS Default, Dark, ClearLight, TintedDark and macOS Default with all three waves. |
 | 2 | Tune Liquid Glass: specular, shadow, translucency. Set Dark and Mono variants. | Every preview is readable at the smallest size. |
-| 3 | iPhone target: move the file to `UnderBlue/Resources/`, remove `AppIcon.appiconset`. | 23 Oct 2026: iOS and Mac Debug builds pass. The iOS `Assets.car` holds the `AppIcon` stack with the Waves group and three vector layers. Installed on iPhone 17. Home Screen look: open. |
+| 3 | iPhone target: move the file to `UnderBlue/Resources/`, remove `AppIcon.appiconset`. | 23 Oct 2026: iOS and Mac Debug builds pass. The iOS `Assets.car` holds the `AppIcon` stack with the Waves group and three vector layers. Installed on iPhone 17. Jake accepted the Home Screen look. Ships in 1.1.4 (10). |
 | 4 | Mac target: use the same file. Remove the `make_mac_icon.py` draft. | The Mac app builds. The icon shows in the Dock. |
 | 5 | Upload a build. Check the icon in App Store Connect and TestFlight. | The icon on the store page matches the device. |
 

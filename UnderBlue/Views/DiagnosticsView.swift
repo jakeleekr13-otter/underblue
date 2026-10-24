@@ -10,6 +10,8 @@ struct DiagnosticsView: View {
     @State private var error: String?
     @State private var working = false
     @State private var showLicenses = false
+    /// Saved on the device, off by default (SubjectPickerStore).
+    @AppStorage(SubjectPickerStore.key) private var subjectPicker = false
 
     var body: some View {
         #if os(iOS)
@@ -47,6 +49,11 @@ struct DiagnosticsView: View {
                         }
                     } icon: { Image(systemName: "gift") }
                 }
+            }
+            Section {
+                Toggle(isOn: $subjectPicker) { Label("Pick subjects manually", systemImage: "flask") }
+            } header: { Label("Labs", systemImage: "flask") } footer: {
+                Text("Experimental. When you edit one photo, choose Auto or Manual for the subjects the correction protects.")
             }
             Section {
                 Link(destination: URL(string: "mailto:\(Self.supportEmail)?subject=UnderBlue%20Support")!) {

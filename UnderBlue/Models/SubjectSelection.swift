@@ -1,5 +1,15 @@
 import Foundation
 
+/// Whether the manual subject picker is offered. One value for the whole device, off by default.
+/// Off: the Auto/Manual bar is hidden and every photo uses Auto.
+struct SubjectPickerStore {
+    static let key = "subjectPicker.enabled"
+    private let defaults: UserDefaults
+    init(defaults: UserDefaults = .standard) { self.defaults = defaults }
+    func load() -> Bool { defaults.bool(forKey: Self.key) }
+    func save(_ enabled: Bool) { defaults.set(enabled, forKey: Self.key) }
+}
+
 /// The subject picker state of one photo: iPhone keeps one in `EditorModel`, Mac one per queue item.
 /// Nothing is saved between photos. A new photo starts in Auto.
 ///
@@ -19,6 +29,8 @@ struct SubjectSelection {
     /// False after Done. The mode stays Manual and the picks stay applied.
     private(set) var overlayVisible = false
     private(set) var candidates: SubjectCandidates?
+    /// Tier two and three regions, shown with the picker but not picked. Nil when none was found.
+    private(set) var tiers: SubjectTiers?
     private(set) var notice: Notice?
     /// What preview and export receive. Rebuilt on every change, not on every read.
     private(set) var choice = SubjectChoice.auto
@@ -62,6 +74,8 @@ struct SubjectSelection {
         guard candidates != nil else { return }
         mode = .manual; overlayVisible = true; notice = nil; rebuild()
     }
+
+    mutating func setTiers(_ found: SubjectTiers?) { tiers = found }
 
     mutating func done() { overlayVisible = false }
     mutating func edit() { if mode == .manual { overlayVisible = true } }

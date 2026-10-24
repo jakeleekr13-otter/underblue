@@ -62,6 +62,16 @@ final class MacModel {
     /// The subject picker state of each queue item. An item without an entry is Auto. Only a picked item changes.
     private(set) var subjectStates: [BatchEngine.Item.ID: SubjectSelection] = [:]
     var subjects: SubjectSelection { selection.flatMap { subjectStates[$0] } ?? SubjectSelection() }
+    /// The "Pick subjects manually" switch. Saved on the device, off by default.
+    /// Turning it off returns every queue item to Auto.
+    var subjectPickerEnabled: Bool {
+        didSet {
+            guard subjectPickerEnabled != oldValue else { return }
+            subjectStore.save(subjectPickerEnabled)
+            if !subjectPickerEnabled { allSubjectsToAuto() }
+        }
+    }
+    private let subjectStore = SubjectPickerStore()
     /// The picker works on a queued photo and only while no batch runs.
     var canPickSubjects: Bool { selectedItem?.kind == .photo && !engine.running }
 
@@ -90,6 +100,7 @@ final class MacModel {
         let parallel = min(4, max(1, defaults.object(forKey: Keys.parallel) as? Int ?? 1))
         parallelPhotos = parallel
         saveTarget = SaveTarget(rawValue: defaults.string(forKey: Keys.saveTarget) ?? "") ?? .folder
+        subjectPickerEnabled = subjectStore.load()
         var limits = BatchEngine.Limits()
         limits.photoExport = parallel
         engine = BatchEngine(limits: limits, sink: DirectorySink(directory: FileManager.default.temporaryDirectory), diagnostics: recorder)
@@ -425,7 +436,13 @@ final class MacModel {
         subjectStates[item.id] = state
         Task {
             var done = subjectStates[item.id] ?? SubjectSelection()
-            do { done.finishDetecting(try await previewPhotos.subjectCandidates(item.url)) }
+            do {
+                let found = try await previewPhotos.subjectCandidates(item.url)
+                done.finishDetecting(found)
+                // The outline of tiers two and three is a hint. Without it the picker still works.
+                var s = settings; s.analysis = photoAnalysis[item.id] ?? .neutral
+                done.setTiers(try? await previewPhotos.subjectTiers(item.url, settings: s, candidates: found))
+            }
             catch is CancellationError { done.useAuto() }
             catch { done.finishDetecting(nil); previewError = Failure.classify(error, operation: .preview).message }
             applySubjects(done, to: item)
@@ -436,6 +453,16 @@ final class MacModel {
     func finishSubjectPicking() { change { $0.done() } }
     func editSubjects() { change { $0.edit() } }
     func resetSubjects() { change { $0.reset() } }
+
+    private func allSubjectsToAuto() {
+        for id in Array(subjectStates.keys) {
+            guard var state = subjectStates[id] else { continue }
+            state.useAuto()
+            subjectStates[id] = state
+            engine.setSubjects(id, state.choice)
+        }
+        if !showingOriginal { refreshPreview() }
+    }
 
     private func change(_ edit: (inout SubjectSelection) -> Void) {
         guard canPickSubjects, let item = selectedItem, var state = subjectStates[item.id] else { return }

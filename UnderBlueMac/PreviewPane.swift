@@ -5,6 +5,9 @@ struct PreviewPane: View {
     @Environment(MacModel.self) private var model
     @State private var zoom = PreviewZoom()
 
+    /// The Labs switch lives in Help, a separate window on the Mac. This keeps the model in step with it.
+    @AppStorage(SubjectPickerStore.key) private var subjectPickerSwitch = false
+
     var body: some View {
         @Bindable var model = model
         ZStack {
@@ -22,11 +25,12 @@ struct PreviewPane: View {
                         .pickerStyle(.segmented).labelsHidden().frame(width: 220)
                         if model.canPickSubjects { subjectControls }
                     }
-                    if model.canPickSubjects { subjectText }
+                    if model.canPickSubjects, model.subjectPickerEnabled { subjectText }
                 }.padding(10)
             }
         }
         .onChange(of: model.selection) { _, _ in zoom = PreviewZoom() }
+        .onChange(of: subjectPickerSwitch, initial: true) { _, on in model.subjectPickerEnabled = on }
     }
 
     @ViewBuilder private var content: some View {
@@ -39,7 +43,7 @@ struct PreviewPane: View {
                     let picking = model.subjects.showsOverlay && !model.showingOriginal
                     ZoomablePreview(image: image, zoom: $zoom, overlayActive: picking) { size in
                         if picking, let candidates = model.subjects.candidates {
-                            SubjectPicker(candidates: candidates, picks: model.subjects.picks, size: size, zoom: zoom.scale) { model.toggleSubject($0) }
+                            SubjectPicker(candidates: candidates, picks: model.subjects.picks, tiers: model.subjects.tiers, size: size, zoom: zoom.scale) { model.toggleSubject($0) }
                         }
                     }
                 } else {
@@ -59,6 +63,12 @@ struct PreviewPane: View {
     private var subjectControls: some View {
         let subjects = model.subjects
         return HStack(spacing: 8) {
+            if model.subjectPickerEnabled { subjectBar(subjects) }
+        }
+    }
+
+    @ViewBuilder private func subjectBar(_ subjects: SubjectSelection) -> some View {
+        HStack(spacing: 8) {
             Picker("Subjects", selection: Binding(
                 get: { subjects.isManual },
                 set: { manual in if manual { model.chooseManualSubjects() } else { model.chooseAutoSubjects() } })) {
@@ -81,6 +91,7 @@ struct PreviewPane: View {
         let subjects = model.subjects
         return VStack(spacing: 2) {
             Text(SubjectPickerText.summary(subjects))
+            if let legend = SubjectPickerText.legend(subjects) { Text(legend).foregroundStyle(.secondary) }
             if let notice = SubjectPickerText.notice(subjects) { Text(notice).foregroundStyle(.orange) }
         }.font(.footnote).padding(.horizontal, 10).padding(.vertical, 4)
             .background(.regularMaterial, in: Capsule())

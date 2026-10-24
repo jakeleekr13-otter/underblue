@@ -136,6 +136,67 @@ If S1b shows no gain, schools stay Auto and only tap picking ships. A brush beco
 | Too many subjects found | At most 6 groups. The smallest merges into its nearest. A note says nearby ones are grouped. | Unit test with 10 instances. |
 | Too much selected | The picks may cover at most 50% of the frame. A tap past that is refused with a message. A single group over 50% shows "too large". | Unit test. |
 
+### Switch (Jake, 24 Oct 2026)
+
+- "Pick subjects manually" is a switch. It is off by default.
+- The value is saved on the device (`SubjectPickerStore`, UserDefaults key `subjectPicker.enabled`).
+- Only when it is on does the Auto or Manual bar show.
+- Off returns the photo to Auto. On the Mac, every queue item returns to Auto.
+- iPhone: the switch sits in the controls, where the Subjects row was. Mac: at the top of the preview pane.
+- Checked: both targets build. 15 tests pass, one new (off by default, saved). Not seen on screen.
+
+### Tier outlines (24 Oct 2026, not seen on a device)
+
+- Tier one: the Vision groups, mint, as before. Tiers two and three: amber and lavender lines. They are shown, not tapped.
+- `SubjectTiers` cuts the lift's own inputs: not water = 1 - water share (alpha) at least 0.5, outside the Vision groups. Then t at least 0.5 is tier two, below is tier three. 0.5 is where the lift's two weights are equal.
+- Pieces under 0.2% of the frame are removed, and holes that small are filled.
+- The regions follow the settings at the moment Manual is chosen. They do not update on a preset change.
+- Tests: 18 pass, 3 new (split, clean-up, row order).
+- Mac probe on DSC03696, DSC03545 and m5 (Natural Dive):
+
+| Photo | Tier two share | Tier three share | What the amber line covers |
+|---|---|---|---|
+| DSC03696 | 0.48 | 0 | The reef. Also the sunlit surface at the top. |
+| DSC03545 | 0.27 | 0 | The wreck. Also two bubble patches at the top. |
+| m5 | 0.30 | 0 | The sand around the coral block. |
+
+- Tier three is empty on all three. On clear water t stays above 0.5, so the lavender line does not appear.
+- Open: the lift reads the red channel of the share image, not the alpha. Red is luminance times the share. So the lift reaches open water, and the outline does not match it yet. The subject-lift session measured this on 24 Oct and takes the fix to Jake.
+
+### Depth rule and Labs switch (Jake, 24 Oct 2026)
+
+- The switch moved into Help, in a "Labs" section with a flask icon. It is still off by default and saved on the device. Help is shared by the iPhone and the Mac.
+- Tier regions now also need depth: nearer than the open water's median depth by 0.1. Open water is share at least 0.9. With less than 1% open water, the depth test is off.
+- Why: light in the water fails the colour test for water but sits at the water's depth. Measured: open water 0.91 to 1.0, surface glow 0.88 to 0.90, bubbles 0.95 to 0.97, white fish 0.73 to 0.79.
+- Mac probe after the rule: the DSC03696 surface and the DSC03545 bubbles are gone from tier two. m5 is unchanged: the sand sits in front (0.09 to 0.41).
+- The DSC03696 surface margin is thin: 0.88 against a cut near 0.85.
+- The white fish in DSC03545 are still not outlined. They pass the colour and depth tests but are below the 0.2% piece size.
+- Tests: 19 pass, 1 new (light at the water's depth).
+- The lift does not use the depth rule. That is the subject-lift session's decision.
+
+### Small pieces and DSC03545 RAW (24 Oct 2026)
+
+- Jake: the front white fish in DSC03545 should be a tier. The fish behind it may be left out.
+- Mac probe, JPG and RAW: the front fish passes the colour and depth tests (not water 1.0, depth 0.69 to 0.73, water 0.97). Its piece is 0.093% of the frame. The back fish is 0.03%.
+- So the piece minimum went from 0.2% to 0.05%. Now the front fish is amber on the JPG. The back fish is not.
+- Vision differs between the two files. JPG: one instance, the divers. RAW: two instances, the two white fish. The divers are missing on the RAW.
+- On the RAW the divers are in no tier either: the outline shows nothing around them. Not measured why.
+
+### Sand, and RAW against JPG (Jake, 24 Oct 2026)
+
+- Jake: sand is no tier. Texture test added: mean gradient of gamma luma over 1% of the short side at least 0.035. Measured: m5 sand 0.009 and 0.027, front white fish 0.045, reef, coral and wreck 0.052 to 0.10.
+- Holes inside a region up to 1% of the frame are filled. The texture test had left many small rings inside the DSC03696 reef.
+- Jake: RAW and JPG must give the same subjects. The RAW colour stays neutral: our correction runs on Apple's RAW rendering. A colour match of the RAW to the camera JPEG was tried and rejected.
+- For a RAW, Vision reads the camera's embedded preview (`PhotoProcessor.visionImage`). Only the subject search uses it.
+- Mac results:
+
+| Photo | Vision share, JPG / ARW | Tier two share, JPG / ARW |
+|---|---|---|
+| DSC03545 | 0.0255 / 0.0252 (was 0.0017, the fish only) | 0.228 / 0.219 |
+| DSC03696 | 0.1073 / 0.1074 | 0.405 / 0.405 |
+
+- Not checked on the iPhone.
+
 ### Changes from the plan
 
 - Outline is the group's bounding box, not its exact area. The fill shows the real mask.

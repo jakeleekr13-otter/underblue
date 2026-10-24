@@ -1,4 +1,5 @@
 import XCTest
+import CoreImage
 @testable import UnderBlue
 
 final class SubjectCandidatesTests: XCTestCase {
@@ -171,6 +172,94 @@ final class SubjectCandidatesTests: XCTestCase {
         XCTAssertTrue(selection.picks.isEmpty, "the picks stayed in memory")
         selection.reset()
         XCTAssertEqual(selection.picks, [0, 1])
+    }
+
+    func testPickerSwitchIsOffByDefaultAndSavedOnTheDevice() {
+        let suite = "SubjectPickerStoreTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        XCTAssertFalse(SubjectPickerStore(defaults: defaults).load(), "off by default")
+        SubjectPickerStore(defaults: defaults).save(true)
+        XCTAssertTrue(SubjectPickerStore(defaults: defaults).load(), "a new store reads the saved value")
+        SubjectPickerStore(defaults: defaults).save(false)
+        XCTAssertFalse(SubjectPickerStore(defaults: defaults).load())
+    }
+
+    // MARK: Tiers two and three
+
+    func testTiersSplitNotWaterByTransmissionAndLeaveSubjectsAndWaterOut() throws {
+        // 20 x 20. Left half water (share 1). Right half not water: top rows near (t 0.9), bottom rows far (t 0.2).
+        // A Vision subject covers x 15...19, y 0...4.
+        let w = 20, h = 20
+        var share = [Float](repeating: 1, count: w * h), t = [Float](repeating: 0.9, count: w * h), subject = [Float](repeating: 0, count: w * h)
+        for y in 0..<h { for x in 10..<w { share[y * w + x] = 0.1 } }
+        for y in 10..<h { for x in 0..<w { t[y * w + x] = 0.2 } }
+        for y in 0..<5 { for x in 15..<w { subject[y * w + x] = 1 } }
+        let tiers = try XCTUnwrap(SubjectTiers.make(waterShare: share, transmission: t, subject: subject, width: w, height: h))
+        XCTAssertEqual(tiers.tier2[2 * w + 12], 1, "near, not water")
+        XCTAssertEqual(tiers.tier3[15 * w + 12], 1, "far, not water")
+        XCTAssertEqual(tiers.tier2[2 * w + 17], 0, "a Vision subject is tier one")
+        XCTAssertEqual(tiers.tier2[2 * w + 3] + tiers.tier3[15 * w + 3], 0, "open water is in no tier")
+        XCTAssertNotNil(tiers.tier2Outline)
+        XCTAssertNotNil(tiers.tier3Outline)
+        XCTAssertFalse(tiers.isEmpty)
+        XCTAssertNil(SubjectTiers.make(waterShare: share, transmission: [0.5], subject: nil, width: w, height: h), "sizes must match")
+    }
+
+    func testLightAtTheWatersDepthIsNoTier() throws {
+        // 20 x 20, all at t 0.9. Open water (share 1, depth 0.95) fills rows 0...9.
+        // Rows 10...14: bright light that fails the water test but sits at depth 0.9 (surface glow, bubbles).
+        // Rows 15...19: an object in front, depth 0.4.
+        let w = 20, h = 20
+        var share = [Float](repeating: 1, count: w * h), depth = [Float](repeating: 0.95, count: w * h)
+        let t = [Float](repeating: 0.9, count: w * h)
+        for y in 10..<h { for x in 0..<w { share[y * w + x] = 0.1; depth[y * w + x] = y < 15 ? 0.9 : 0.4 } }
+        XCTAssertEqual(SubjectTiers.waterDepth(waterShare: share, depth: depth), 0.95)
+        let tiers = try XCTUnwrap(SubjectTiers.make(waterShare: share, transmission: t, subject: nil, depth: depth, width: w, height: h))
+        XCTAssertEqual(tiers.tier2[12 * w + 5], 0, "light at the water's depth is not an object")
+        XCTAssertEqual(tiers.tier2[17 * w + 5], 1, "the object in front stays")
+        // No open water in the frame: the depth test is off, and the light counts.
+        let noWater = [Float](repeating: 0.1, count: w * h)
+        let without = try XCTUnwrap(SubjectTiers.make(waterShare: noWater, transmission: t, subject: nil, depth: depth, width: w, height: h))
+        XCTAssertNil(SubjectTiers.waterDepth(waterShare: noWater, depth: depth))
+        XCTAssertEqual(without.tier2[12 * w + 5], 1)
+    }
+
+    func testFlatSurfaceIsNoTierButATexturedOneIs() throws {
+        // 40 x 40, nothing is water. Left half flat (sand), right half 2 px stripes (reef).
+        // A 1 px checker would read 0: the central difference compares pixels of the same colour.
+        let w = 40, h = 40
+        var luma = [Float](repeating: 0.6, count: w * h)
+        for y in 0..<h { for x in 20..<w { luma[y * w + x] = x % 4 < 2 ? 0.4 : 0.6 } }
+        let texture = SubjectTiers.texture(luma: luma, width: w, height: h)
+        XCTAssertEqual(texture[20 * w + 5], 0, accuracy: 0.0001, "flat")
+        XCTAssertGreaterThan(texture[20 * w + 35], SubjectTiers.minimumTexture)
+        let share = [Float](repeating: 0, count: w * h), t = [Float](repeating: 0.9, count: w * h)
+        let tiers = try XCTUnwrap(SubjectTiers.make(waterShare: share, transmission: t, subject: nil, texture: texture, width: w, height: h))
+        XCTAssertEqual(tiers.tier2[20 * w + 5], 0, "sand is no tier")
+        XCTAssertEqual(tiers.tier2[20 * w + 35], 1, "a reef is")
+    }
+
+    func testTierCleanUpDropsSmallPiecesAndFillsSmallHoles() {
+        let w = 10, h = 10
+        var region = [Bool](repeating: false, count: w * h)
+        for y in 0..<6 { for x in 0..<6 { region[y * w + x] = true } }
+        region[2 * w + 2] = false          // a one-pixel hole
+        region[9 * w + 9] = true           // a one-pixel speck
+        let clean = SubjectTiers.cleaned(region, width: w, height: h, minimum: 3)
+        XCTAssertTrue(clean[2 * w + 2], "the hole is filled")
+        XCTAssertFalse(clean[9 * w + 9], "the speck is removed")
+        XCTAssertTrue(clean[0], "the large piece stays")
+    }
+
+    func testChannelReadPutsTheTopRowFirst() {
+        // Core Image's origin is at the bottom. A white band at the top of the extent must land in row 0.
+        let context = CIContext(options: [.workingColorSpace: NSNull()])
+        let black = CIImage(color: CIColor(red: 0, green: 0, blue: 0)).cropped(to: CGRect(x: 0, y: 0, width: 8, height: 8))
+        let band = CIImage(color: CIColor(red: 1, green: 1, blue: 1)).cropped(to: CGRect(x: 0, y: 6, width: 8, height: 2))
+        let values = SubjectTiers.channel(band.composited(over: black), 0, width: 8, height: 8, context: context)
+        XCTAssertEqual(values[0], 1, accuracy: 0.01)
+        XCTAssertEqual(values[7 * 8], 0, accuracy: 0.01)
     }
 
     // MARK: One place for the choice

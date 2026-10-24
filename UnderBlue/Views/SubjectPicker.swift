@@ -26,9 +26,13 @@ enum SubjectPickerGeometry {
 /// Edge lines, fills and badges for the subject groups. Colour is not the only signal:
 /// a selected group has a thick line, a check mark and a fill; a group that is not selected has
 /// a thin line and an empty circle.
+///
+/// Tiers two and three (SubjectTiers) sit under the groups: amber for the reef in front, lavender for the
+/// reef further back. They are shown, not tapped, and have no badge.
 struct SubjectPicker: View {
     let candidates: SubjectCandidates
     let picks: Set<Int>
+    var tiers: SubjectTiers? = nil
     /// Fitted size of the photo on screen, at zoom 1.
     let size: CGSize
     let zoom: CGFloat
@@ -42,6 +46,7 @@ struct SubjectPicker: View {
                 .onTapGesture(count: 1, coordinateSpace: .local) { location in
                     if let id = SubjectPickerGeometry.group(at: location, in: size, zoom: zoom, of: candidates) { onToggle(id) }
                 }
+            if let tiers { tierLines(tiers, unit: unit) }
             ForEach(candidates.groups) { group in
                 groupView(group, selected: picks.contains(group.id), unit: unit)
             }
@@ -82,6 +87,21 @@ struct SubjectPicker: View {
     }
 
     static let selectedColor = Color(red: 0.0, green: 0.9, blue: 0.65)
+    static let tier2Color = Color(red: 1.0, green: 0.72, blue: 0.2)
+    static let tier3Color = Color(red: 0.78, green: 0.66, blue: 1.0)
+
+    @ViewBuilder private func tierLines(_ tiers: SubjectTiers, unit: CGFloat) -> some View {
+        ForEach(Array([(tiers.tier3Outline, Self.tier3Color), (tiers.tier2Outline, Self.tier2Color)].enumerated()), id: \.offset) { _, entry in
+            if let line = entry.0 {
+                Image(decorative: line, scale: 1).renderingMode(.template).resizable()
+                    .frame(width: size.width, height: size.height)
+                    .foregroundStyle(entry.1).opacity(0.9)
+                    .shadow(color: .black.opacity(0.6), radius: 1.5 * unit)
+                    .allowsHitTesting(false)
+            }
+        }
+        .accessibilityHidden(true)
+    }
 
     static func label(_ group: SubjectGroup, position: Int, selected: Bool) -> String {
         selected ? String(localized: "Subject group \(position), selected, \(group.instances.count) included")
@@ -113,5 +133,11 @@ enum SubjectPickerText {
             return selection.showsOverlay && (selection.candidates?.merged ?? false)
                 ? String(localized: "Many subjects were found. Nearby ones are grouped.") : nil
         }
+    }
+
+    /// What the line colours mean, while tier lines are on screen.
+    static func legend(_ selection: SubjectSelection) -> String? {
+        guard selection.showsOverlay, selection.tiers != nil else { return nil }
+        return String(localized: "Mint: subjects you can tap. Amber: reef in front. Lavender: reef further back.")
     }
 }

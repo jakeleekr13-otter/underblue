@@ -19,6 +19,15 @@ final class EditorModel {
     var comparing = false
     /// Which subjects the correction protects. Auto until the user opens the picker. One model per photo.
     private(set) var subjects = SubjectSelection()
+    /// The "Pick subjects manually" switch. Saved on the device, off by default. Turning it off returns the photo to Auto.
+    var subjectPickerEnabled: Bool {
+        didSet {
+            guard subjectPickerEnabled != oldValue else { return }
+            subjectStore.save(subjectPickerEnabled)
+            if !subjectPickerEnabled { subjects.useAuto() }
+        }
+    }
+    private let subjectStore: SubjectPickerStore
     var player: AVPlayer?
     var clipPlaying = false
     private var clipStart: CMTime?
@@ -64,7 +73,9 @@ final class EditorModel {
     var notice: String?
     var exportTask: Task<Void, Never>?
     init(media: ImportedMedia, diagnostics: DiagnosticRecorder, adjustmentStore: CustomAdjustmentsStore = .init(),
-         formatStore: PhotoFormatStore = .init()) {
+         formatStore: PhotoFormatStore = .init(), subjectStore: SubjectPickerStore = .init()) {
+        self.subjectStore = subjectStore
+        subjectPickerEnabled = subjectStore.load()
         self.media = media
         self.diagnostics = diagnostics
         self.adjustmentStore = adjustmentStore
@@ -334,7 +345,10 @@ final class EditorModel {
         if subjects.candidates != nil { subjects.resumeManual(); return }
         subjects.startDetecting()
         do {
-            subjects.finishDetecting(try await photos.subjectCandidates(media.url))
+            let found = try await photos.subjectCandidates(media.url)
+            subjects.finishDetecting(found)
+            // The outline of tiers two and three is a hint. Without it the picker still works.
+            subjects.setTiers(try? await photos.subjectTiers(media.url, settings: settings, candidates: found))
         } catch is CancellationError {
             subjects.useAuto()
         } catch {

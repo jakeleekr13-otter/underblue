@@ -81,7 +81,7 @@ struct EditorView: View {
                 let picking = model.subjects.showsOverlay && !model.comparing
                 ZoomablePreview(image: preview, zoom: $zoom, overlayActive: picking, onZoomIn: { model.requestDetailPreview() }) { size in
                     if picking, let candidates = model.subjects.candidates {
-                        SubjectPicker(candidates: candidates, picks: model.subjects.picks, size: size, zoom: zoom.scale) { model.toggleSubject($0) }
+                        SubjectPicker(candidates: candidates, picks: model.subjects.picks, tiers: model.subjects.tiers, size: size, zoom: zoom.scale) { model.toggleSubject($0) }
                     }
                 }
             }
@@ -134,7 +134,7 @@ struct EditorView: View {
                     .accessibilityHint("Show original media without correction")
             }.padding(.horizontal)
             presetPicker(grid: presetGrid)
-            if model.media.kind == .photo { subjectsRow }
+            if model.media.kind == .photo, model.subjectPickerEnabled { subjectsRow }
             if model.settings.preset == .custom {
                 // Custom has no intensity: it renders at the default intensity (0.8) and has its own sliders.
                 CustomAdjustmentControls(adjustments: $model.settings.adjustments).padding(.horizontal)
@@ -149,10 +149,13 @@ struct EditorView: View {
                 .buttonStyle(.borderedProminent).frame(minHeight: 44).disabled(!model.ready || model.exporting || model.analyzing)
         }.padding(.bottom, 8)
     }
-    /// Auto or Manual, then Done and Reset while picking. Always shown for a photo; Manual says so when Vision finds nothing.
+    /// Shown only when the Labs switch in Help is on (SubjectPickerStore): the Auto or Manual bar,
+    /// then Done and Reset while picking. Manual says so when Vision finds nothing.
     private var subjectsRow: some View {
-        let subjects = model.subjects
-        return VStack(alignment: .leading, spacing: 6) {
+        subjectsBar(model.subjects).padding(.horizontal)
+    }
+    private func subjectsBar(_ subjects: SubjectSelection) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("Subjects").font(.subheadline)
                 Spacer(minLength: 8)
@@ -175,8 +178,9 @@ struct EditorView: View {
                 }.buttonStyle(.bordered).frame(minHeight: 44)
             }
             Text(SubjectPickerText.summary(subjects)).font(.footnote).foregroundStyle(.secondary)
+            if let legend = SubjectPickerText.legend(subjects) { Text(legend).font(.footnote).foregroundStyle(.secondary) }
             if let notice = SubjectPickerText.notice(subjects) { Text(notice).font(.footnote).foregroundStyle(.orange) }
-        }.padding(.horizontal).animation(.default, value: subjects.status)
+        }.animation(.default, value: subjects.status)
     }
     /// One row that scrolls sideways, or a two-column grid when the pane is narrow and tall.
     @ViewBuilder private func presetPicker(grid: Bool) -> some View {

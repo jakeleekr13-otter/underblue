@@ -1,6 +1,6 @@
 # Restoration experiments — plan
 
-Status: plan, 24 Oct 2026. Nothing is built yet.
+Status: plan, 24 Oct 2026. Nothing is built yet. Order (Jake, 24 Oct 2026): start after the subject work (SubjectEmphasis.md) is done. [LUTPresets](LUTPresets.md) comes after this plan.
 
 This page plans three experiments. The ideas come from three public guides by the Five Meters photo editor (see [Sources](#sources)). We take general ideas only. We do not copy code, models or coefficients.
 

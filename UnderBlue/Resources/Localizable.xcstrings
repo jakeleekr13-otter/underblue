@@ -11,6 +11,12 @@
             "value" : "%@%%"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ %%"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -44,6 +50,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld of %lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld de %lld"
           }
         },
         "ja" : {
@@ -81,6 +93,12 @@
             "value" : "%lld of %lld saved"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld de %lld guardados"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -114,6 +132,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld of %lld saved, %lld failed"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld de %lld guardados, %lld con errores"
           }
         },
         "ja" : {
@@ -151,6 +175,12 @@
             "value" : "%lld Photos"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld fotos"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -184,6 +214,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 photo export. This uses your free photo."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 exportación de foto. Esto usa tu foto gratuita."
           }
         },
         "ja" : {
@@ -221,6 +257,12 @@
             "value" : "1 video export · first 10 seconds · up to 1080p SDR. This uses your free video."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 exportación de vídeo · primeros 10 segundos · hasta 1080p SDR. Esto usa tu vídeo gratuito."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -254,6 +296,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "4K export"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportación en 4K"
           }
         },
         "ja" : {
@@ -291,6 +339,12 @@
             "value" : "10-bit color keeps water gradients smooth. Files are about twice the size of JPEG, and some older apps can’t open them."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El color de 10 bits mantiene suaves los degradados del agua. Los archivos ocupan el doble que un JPEG, más o menos, y algunas apps antiguas no pueden abrirlos."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -321,6 +375,12 @@
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1080p"
+          }
+        },
+        "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "1080p"
@@ -361,6 +421,12 @@
             "value" : "A folder"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una carpeta"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -394,6 +460,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "About UnderBlue"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acerca de UnderBlue"
           }
         },
         "ja" : {
@@ -431,6 +503,12 @@
             "value" : "Add"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añadir"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -464,6 +542,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add Photos and Videos…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añadir fotos y vídeos…"
           }
         },
         "ja" : {
@@ -501,6 +585,12 @@
             "value" : "Add photos or videos, then pick one in the list."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añade fotos o vídeos y elige uno de la lista."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -534,6 +624,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add photos, videos or folders (⌘O)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añadir fotos, vídeos o carpetas (⌘O)"
           }
         },
         "ja" : {
@@ -571,6 +667,12 @@
             "value" : "Add photos, videos or whole folders: drag them into the window or press ⌘O. You can also use Share in Finder or Photos."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añade fotos, vídeos o carpetas enteras: arrástralos a la ventana o pulsa ⌘O. También puedes usar Compartir en el Finder o en Fotos."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -604,6 +706,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Added %lld from the share menu."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se han añadido %lld desde el menú Compartir."
           }
         },
         "ja" : {
@@ -641,6 +749,12 @@
             "value" : "Added %lld from the share menu. Couldn’t add %lld."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se han añadido %lld desde el menú Compartir. No se han podido añadir %lld."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -674,6 +788,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "All processing stays on your iPhone. No account or subscription."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todo el procesamiento se queda en tu iPhone. Sin cuenta ni suscripción."
           }
         },
         "ja" : {
@@ -711,6 +831,12 @@
             "value" : "All processing stays on your Mac. No account or subscription."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todo el procesamiento se queda en tu Mac. Sin cuenta ni suscripción."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -744,6 +870,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Allow UnderBlue to add to Photos in Settings, then try saving again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permite en Ajustes que UnderBlue añada contenido a Fotos y vuelve a intentar guardar."
           }
         },
         "ja" : {
@@ -781,6 +913,12 @@
             "value" : "Analysis and correction can take longer for longer videos."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El análisis y la corrección pueden tardar más en los vídeos largos."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -814,6 +952,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Analyzing…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analizando…"
           }
         },
         "ja" : {
@@ -851,6 +995,12 @@
             "value" : "Batch"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lote"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -884,6 +1034,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Batch correct up to %lld photos"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corrección en lote de hasta %lld fotos"
           }
         },
         "ja" : {
@@ -921,6 +1077,12 @@
             "value" : "Batch correct up to %lld photos with Pro"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corrige hasta %lld fotos en lote con Pro"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -954,6 +1116,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Batch needs UnderBlue Pro. The free trial corrects one photo and one short video."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El lote requiere UnderBlue Pro. La prueba gratuita corrige una foto y un vídeo corto."
           }
         },
         "ja" : {
@@ -991,6 +1159,12 @@
             "value" : "Batch: many photos and videos in one run"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lote: muchas fotos y vídeos de una sola vez"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1024,6 +1198,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Brightness"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brillo"
           }
         },
         "ja" : {
@@ -1061,6 +1241,12 @@
             "value" : "Bring back\nthe dive."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Devuelve el color\na tu inmersión."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1094,6 +1280,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Buy Pro · %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprar Pro · %@"
           }
         },
         "ja" : {
@@ -1131,6 +1323,12 @@
             "value" : "Cancel"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelar"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1164,6 +1362,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cancelled"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelado"
           }
         },
         "ja" : {
@@ -1201,6 +1405,12 @@
             "value" : "Checking your video…"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprobando el vídeo…"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1234,6 +1444,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elegir"
           }
         },
         "ja" : {
@@ -1271,6 +1487,12 @@
             "value" : "Choose a photo or video, or import from Files. You can also share to UnderBlue from the Photos app."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige una foto o un vídeo, o impórtalo desde Archivos. También puedes compartir con UnderBlue desde la app Fotos."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1304,6 +1526,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose Folder"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elegir carpeta"
           }
         },
         "ja" : {
@@ -1341,6 +1569,12 @@
             "value" : "Choose Original or Corrected above the preview to compare. ⌘\\ switches between them."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige Original o Corregido encima de la vista previa para comparar. ⌘\\ cambia entre los dos."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1374,6 +1608,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose the folder for corrected photos and videos."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige la carpeta para las fotos y los vídeos corregidos."
           }
         },
         "ja" : {
@@ -1411,6 +1651,12 @@
             "value" : "Choose the output folder"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige la carpeta de destino"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1444,6 +1690,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose where results go, a folder or the Photos library, in Settings (⌘,)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige en Ajustes (⌘,) dónde se guardan los resultados: en una carpeta o en la fototeca."
           }
         },
         "ja" : {
@@ -1481,6 +1733,12 @@
             "value" : "Choose…"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elegir…"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1516,6 +1774,12 @@
             "value" : "Clarity"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Claridad"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1546,6 +1810,12 @@
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color"
+          }
+        },
+        "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Color"
@@ -1586,6 +1856,12 @@
             "value" : "Compare"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comparar"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1619,6 +1895,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Contrast"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contraste"
           }
         },
         "ja" : {
@@ -1656,6 +1938,12 @@
             "value" : "Correct everything in the queue (⌘R)"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corregir todos los elementos de la lista (⌘R)"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1689,6 +1977,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Corrected"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corregido"
           }
         },
         "ja" : {
@@ -1726,6 +2020,12 @@
             "value" : "Couldn’t finish"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido terminar"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1759,6 +2059,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Couldn’t import"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido importar"
           }
         },
         "ja" : {
@@ -1796,6 +2102,12 @@
             "value" : "Couldn’t import %lld of %lld selected."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se han podido importar %lld de los %lld seleccionados."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1829,6 +2141,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Couldn’t open this photo"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido abrir esta foto"
           }
         },
         "ja" : {
@@ -1866,6 +2184,12 @@
             "value" : "Couldn’t open: %lld"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se han podido abrir: %lld"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1899,6 +2223,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Couldn’t prepare diagnostics. Please try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido preparar el diagnóstico. Inténtalo de nuevo."
           }
         },
         "ja" : {
@@ -1936,6 +2266,12 @@
             "value" : "Couldn’t save"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido guardar"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1969,6 +2305,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Couldn’t save this photo"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido guardar esta foto"
           }
         },
         "ja" : {
@@ -2006,6 +2348,12 @@
             "value" : "Custom"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personalizado"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2039,6 +2387,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Custom starts from the Natural Dive result. Adjust it with five sliders."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personalizado parte del resultado de Buceo natural. Ajústalo con cinco reguladores."
           }
         },
         "ja" : {
@@ -2076,6 +2430,12 @@
             "value" : "Deep Dive"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buceo profundo"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2109,6 +2469,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Delete local diagnostics"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar el diagnóstico local"
           }
         },
         "ja" : {
@@ -2146,6 +2512,12 @@
             "value" : "Depth-aware restoration was unavailable, so UnderBlue used its standard correction."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La restauración según la profundidad no estaba disponible, así que UnderBlue ha usado su corrección estándar."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2179,6 +2551,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Diagnostics"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnóstico"
           }
         },
         "ja" : {
@@ -2216,6 +2594,12 @@
             "value" : "Diagnostics stay on this iPhone. Nothing is sent automatically."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El diagnóstico se queda en este iPhone. No se envía nada automáticamente."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2249,6 +2633,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Diagnostics stay on this Mac. Nothing is sent automatically."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El diagnóstico se queda en este Mac. No se envía nada automáticamente."
           }
         },
         "ja" : {
@@ -2286,6 +2676,12 @@
             "value" : "Discard export"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descartar exportación"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2319,6 +2715,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Done"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
           }
         },
         "ja" : {
@@ -2356,6 +2758,12 @@
             "value" : "Done: %lld saved, %lld failed."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listo: %lld guardados, %lld con errores."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2389,6 +2797,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Done: %lld saved."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listo: %lld guardados."
           }
         },
         "ja" : {
@@ -2426,6 +2840,12 @@
             "value" : "Drop photos and videos here"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suelta aquí fotos y vídeos"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2459,6 +2879,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Edit"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar"
           }
         },
         "ja" : {
@@ -2496,6 +2922,12 @@
             "value" : "Edited"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editado"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2529,6 +2961,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Estimated time is measured with a short test export on this device."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El tiempo estimado se mide con una breve exportación de prueba en este dispositivo."
           }
         },
         "ja" : {
@@ -2566,6 +3004,12 @@
             "value" : "Export"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportar"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2599,6 +3043,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Export cancelled"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportación cancelada"
           }
         },
         "ja" : {
@@ -2636,6 +3086,12 @@
             "value" : "Export cancelled because UnderBlue went into the background. Keep the app open and try again. Your trial hasn’t been used."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se ha cancelado la exportación porque UnderBlue ha pasado a segundo plano. Mantén la app abierta y vuelve a intentarlo. No se ha usado tu prueba."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2669,6 +3125,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Export complete"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportación completada"
           }
         },
         "ja" : {
@@ -2706,6 +3168,12 @@
             "value" : "Exporting %lld%%"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportando %lld %%"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2739,6 +3207,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Exporting…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportando…"
           }
         },
         "ja" : {
@@ -2776,6 +3250,12 @@
             "value" : "Failed"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Error"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2809,6 +3289,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Failed or cancelled exports don’t use your trial."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las exportaciones fallidas o canceladas no usan tu prueba."
           }
         },
         "ja" : {
@@ -2846,6 +3332,12 @@
             "value" : "Filter intensity"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intensidad del filtro"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2879,6 +3371,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Folder"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carpeta"
           }
         },
         "ja" : {
@@ -2916,6 +3414,12 @@
             "value" : "For a crash, TestFlight and Xcode Organizer may provide a separate Apple crash report. Keep the app build and its debug symbols together."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si la app se cierra de forma inesperada, TestFlight y el Organizer de Xcode pueden ofrecer un informe de fallos de Apple aparte. Guarda juntos la compilación de la app y sus símbolos de depuración."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2949,6 +3453,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "For a video, 3s Preview plays three seconds from the current position, then returns."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En un vídeo, Ver 3 s reproduce tres segundos desde la posición actual y luego vuelve."
           }
         },
         "ja" : {
@@ -2986,6 +3496,12 @@
             "value" : "Format"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Formato"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3019,6 +3535,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Free trial"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prueba gratuita"
           }
         },
         "ja" : {
@@ -3056,6 +3578,12 @@
             "value" : "Free: 1 photo export and 1 video export (first 10 seconds, up to 1080p SDR)."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gratis: 1 exportación de foto y 1 de vídeo (primeros 10 segundos, hasta 1080p SDR)."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3089,6 +3617,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Full-length video exports"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportación de vídeos completos"
           }
         },
         "ja" : {
@@ -3126,6 +3660,12 @@
             "value" : "Get Pro"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obtener Pro"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3161,6 +3701,12 @@
             "value" : "Guide"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guía"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3191,6 +3737,12 @@
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HDR"
+          }
+        },
+        "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "HDR"
@@ -3231,6 +3783,12 @@
             "value" : "HDR keeps this photo’s bright highlights. The editor shows a tone-mapped SDR preview."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HDR conserva las altas luces de esta foto. El editor muestra una vista previa SDR con mapeo de tonos."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3264,6 +3822,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "HDR · HEVC · 10-bit. The editor shows a tone-mapped SDR preview."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HDR · HEVC · 10 bits. El editor muestra una vista previa SDR con mapeo de tonos."
           }
         },
         "ja" : {
@@ -3301,6 +3865,12 @@
             "value" : "HDR export is unavailable for this media/device. You can export SDR."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La exportación HDR no está disponible para este archivo o dispositivo. Puedes exportar en SDR."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3334,6 +3904,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "HDR export requires a supported iPhone. SDR export is available in the simulator."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La exportación HDR requiere un iPhone compatible. En el simulador puedes exportar en SDR."
           }
         },
         "ja" : {
@@ -3371,6 +3947,12 @@
             "value" : "HDR export where supported"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportación HDR si es compatible"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3404,6 +3986,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "HDR photo export is unavailable. Your photo will be saved in SDR with wide color."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La exportación de fotos HDR no está disponible. La foto se guardará en SDR con gama amplia."
           }
         },
         "ja" : {
@@ -3441,6 +4029,12 @@
             "value" : "HDR source · SDR preview"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Origen HDR · Vista previa SDR"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3474,6 +4068,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Help"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayuda"
           }
         },
         "ja" : {
@@ -3511,6 +4111,12 @@
             "value" : "Most photos at the same time: %lld"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Máximo de fotos a la vez: %lld"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3544,6 +4150,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No photos or videos found in what you added."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se han encontrado fotos ni vídeos en lo que has añadido."
           }
         },
         "ja" : {
@@ -3581,6 +4193,12 @@
             "value" : "Open-source licenses"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Licencias de código abierto"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3614,6 +4232,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Photos library"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fototeca"
           }
         },
         "ja" : {
@@ -3651,6 +4275,12 @@
             "value" : "Pick a look: Natural Dive, Tropical or Deep Dive. Intensity sets how strong it is."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige un efecto: Buceo natural, Tropical o Buceo profundo. Intensidad define su fuerza."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3684,6 +4314,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Redeem Code"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Canjear código"
           }
         },
         "ja" : {
@@ -3721,6 +4357,12 @@
             "value" : "Results go to your Photos library. Change this in Settings (⌘,)."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los resultados se guardan en tu fototeca. Cámbialo en Ajustes (⌘,)."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3754,6 +4396,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Save results to"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardar resultados en"
           }
         },
         "ja" : {
@@ -3791,6 +4439,12 @@
             "value" : "Send photos, videos and diagnostic reports by email. Don’t attach them to a public GitHub issue."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Envía fotos, vídeos e informes de diagnóstico por correo electrónico. No los adjuntes a una incidencia pública de GitHub."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3824,6 +4478,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Show or hide the look controls"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar u ocultar los controles de efecto"
           }
         },
         "ja" : {
@@ -3861,6 +4521,12 @@
             "value" : "Speed"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Velocidad"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3894,6 +4560,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stop the batch. Finished items are kept (⌘.)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detener el lote. Se conservan los elementos terminados (⌘.)"
           }
         },
         "ja" : {
@@ -3931,6 +4603,12 @@
             "value" : "Support"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Soporte"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -3964,6 +4642,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Support website"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Web de soporte"
           }
         },
         "ja" : {
@@ -4001,6 +4685,12 @@
             "value" : "Tap Compare to see the original. In the photo editor, pinch or double-tap to zoom."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toca Comparar para ver el original. En el editor de fotos, pellizca o toca dos veces para ampliar."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4036,6 +4726,12 @@
             "value" : "Tap Export, then Save to Photos."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toca Exportar y luego Guardar en Fotos."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4066,6 +4762,12 @@
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UnderBlue Pro"
+          }
+        },
+        "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "UnderBlue Pro"
@@ -4106,6 +4808,12 @@
             "value" : "UnderBlue Pro is unlocked."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UnderBlue Pro está desbloqueado."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4139,6 +4847,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Import from Files"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importar desde Archivos"
           }
         },
         "ja" : {
@@ -4176,6 +4890,12 @@
             "value" : "Importing %lld of %lld…"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importando %lld de %lld…"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4209,6 +4929,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Importing…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importando…"
           }
         },
         "ja" : {
@@ -4246,6 +4972,12 @@
             "value" : "Intensity"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intensidad"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4279,6 +5011,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Keep HDR when possible"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantener HDR si es posible"
           }
         },
         "ja" : {
@@ -4316,6 +5054,12 @@
             "value" : "Keep UnderBlue open until export finishes."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantén UnderBlue abierta hasta que termine la exportación."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4349,6 +5093,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Keep UnderBlue open until saving finishes."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantén UnderBlue abierta hasta que termine de guardar."
           }
         },
         "ja" : {
@@ -4386,6 +5136,12 @@
             "value" : "Look"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Efecto"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4419,6 +5175,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Look for all items"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Efecto para todos los elementos"
           }
         },
         "ja" : {
@@ -4456,6 +5218,12 @@
             "value" : "Memory is low. Try a smaller photo or a lower video resolution."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Queda poca memoria. Prueba con una foto más pequeña o una resolución de vídeo más baja."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4489,6 +5257,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Natural color for your underwater photos and videos."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color natural para tus fotos y vídeos submarinos."
           }
         },
         "ja" : {
@@ -4526,6 +5300,12 @@
             "value" : "Natural Dive"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buceo natural"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4559,6 +5339,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No item selected"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ningún elemento seleccionado"
           }
         },
         "ja" : {
@@ -4596,6 +5382,12 @@
             "value" : "No UnderBlue Pro purchase was found for this Apple Account."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha encontrado ninguna compra de UnderBlue Pro para esta Cuenta de Apple."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4629,6 +5421,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Not chosen yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún sin elegir"
           }
         },
         "ja" : {
@@ -4666,6 +5464,12 @@
             "value" : "OK"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aceptar"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4699,6 +5503,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "One-time purchase. Every dive."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un solo pago. Para cada inmersión."
           }
         },
         "ja" : {
@@ -4736,6 +5546,12 @@
             "value" : "Only the first %lld photos were opened."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo se han abierto las primeras %lld fotos."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4769,6 +5585,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Only the first photo was opened. Pro can batch correct up to %lld photos."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo se ha abierto la primera foto. Con Pro puedes corregir hasta %lld fotos en lote."
           }
         },
         "ja" : {
@@ -4806,6 +5628,12 @@
             "value" : "Opening…"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abriendo…"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4841,6 +5669,12 @@
             "value" : "Or press ⌘O. Folders work too."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O pulsa ⌘O. También funciona con carpetas."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4871,6 +5705,12 @@
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original"
+          }
+        },
+        "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Original"
@@ -4911,6 +5751,12 @@
             "value" : "Original resolution"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolución original"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -4944,6 +5790,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Original resolution · HDR · HEIC 10-bit with gain map"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolución original · HDR · HEIC de 10 bits con mapa de ganancia"
           }
         },
         "ja" : {
@@ -4981,6 +5833,12 @@
             "value" : "Original resolution · HDR · JPEG with gain map"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolución original · HDR · JPEG con mapa de ganancia"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5014,6 +5872,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Original resolution · SDR · HEIC 10-bit"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolución original · SDR · HEIC de 10 bits"
           }
         },
         "ja" : {
@@ -5051,6 +5915,12 @@
             "value" : "Original resolution · SDR · JPEG"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolución original · SDR · JPEG"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5084,6 +5954,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Photo preview"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vista previa de la foto"
           }
         },
         "ja" : {
@@ -5121,6 +5997,12 @@
             "value" : "Photos"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotos"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5154,6 +6036,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pinch or double-tap to zoom."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pellizca o toca dos veces para ampliar."
           }
         },
         "ja" : {
@@ -5191,6 +6079,12 @@
             "value" : "Place"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Destino"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5224,6 +6118,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "3s Preview"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ver 3 s"
           }
         },
         "ja" : {
@@ -5261,6 +6161,12 @@
             "value" : "Play three seconds from the current position, then return"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reproducir tres segundos desde la posición actual y volver"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5294,6 +6200,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prepare diagnostic report"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparar informe de diagnóstico"
           }
         },
         "ja" : {
@@ -5331,6 +6243,12 @@
             "value" : "Press Correct (⌘R). UnderBlue corrects every item in the list and saves each result. Stop (⌘.) keeps the finished ones."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pulsa Corregir (⌘R). UnderBlue corrige todos los elementos de la lista y guarda cada resultado. Detener (⌘.) conserva los que ya han terminado."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5364,6 +6282,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Preview unavailable"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vista previa no disponible"
           }
         },
         "ja" : {
@@ -5401,6 +6325,12 @@
             "value" : "Privacy policy"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Política de privacidad"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5434,6 +6364,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pro is unlocked"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pro desbloqueado"
           }
         },
         "ja" : {
@@ -5471,6 +6407,12 @@
             "value" : "Purchase is currently unavailable."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La compra no está disponible en este momento."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5504,6 +6446,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Purchase restored."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compra restaurada."
           }
         },
         "ja" : {
@@ -5541,6 +6489,12 @@
             "value" : "Ready to save"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listo para guardar"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5574,6 +6528,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remove"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quitar"
           }
         },
         "ja" : {
@@ -5611,6 +6571,12 @@
             "value" : "Remove Finished"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quitar terminados"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5644,6 +6610,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Reset"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer"
           }
         },
         "ja" : {
@@ -5681,6 +6653,12 @@
             "value" : "Reset to batch settings"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volver a los ajustes del lote"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5714,6 +6692,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Resolution"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resolución"
           }
         },
         "ja" : {
@@ -5751,6 +6735,12 @@
             "value" : "Restore Purchase"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restaurar compra"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5784,6 +6774,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Results depend on the original. Very dark or very bright scenes may not look as you expect. The same goes for photos and videos that were already edited."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El resultado depende del original. Las escenas muy oscuras o muy claras pueden no quedar como esperas. Lo mismo ocurre con las fotos y los vídeos ya editados."
           }
         },
         "ja" : {
@@ -5821,6 +6817,12 @@
             "value" : "Retry"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reintentar"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5854,6 +6856,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Retry Failed"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reintentar fallidos"
           }
         },
         "ja" : {
@@ -5891,6 +6899,12 @@
             "value" : "Retry preview"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reintentar vista previa"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5924,6 +6938,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Saturation"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saturación"
           }
         },
         "ja" : {
@@ -5962,6 +6982,12 @@
             "value" : "Save All (%1$@)"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardar todo (%1$@)"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -5995,6 +7021,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Save All (%lld)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardar todo (%lld)"
           }
         },
         "ja" : {
@@ -6032,6 +7064,12 @@
             "value" : "Save to Photos"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardar en Fotos"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6065,6 +7103,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Saved"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardado"
           }
         },
         "ja" : {
@@ -6102,6 +7146,12 @@
             "value" : "Saved to Photos"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardado en Fotos"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6137,6 +7187,12 @@
             "value" : "Saved to Photos: %lld"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardados en Fotos: %lld"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6170,6 +7226,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Saved to Photos: %lld of %lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardados en Fotos: %lld de %lld"
           }
         },
         "ja" : {
@@ -6208,6 +7270,12 @@
             "value" : "Saving %1$@ of %2$@…"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardando %1$@ de %2$@…"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6241,6 +7309,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Saving %lld of %lld…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardando %lld de %lld…"
           }
         },
         "ja" : {
@@ -6278,6 +7352,12 @@
             "value" : "Saving…"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardando…"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6308,6 +7388,12 @@
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SDR"
+          }
+        },
+        "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "SDR"
@@ -6348,6 +7434,12 @@
             "value" : "Select Photo"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seleccionar foto"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6381,6 +7473,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Select Photos"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seleccionar fotos"
           }
         },
         "ja" : {
@@ -6418,6 +7516,12 @@
             "value" : "Select Video"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seleccionar vídeo"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6451,6 +7555,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Share diagnostic report"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compartir informe de diagnóstico"
           }
         },
         "ja" : {
@@ -6488,6 +7598,12 @@
             "value" : "Show Corrected"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar corregido"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6521,6 +7637,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Show Original"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar original"
           }
         },
         "ja" : {
@@ -6558,6 +7680,12 @@
             "value" : "Show original media without correction"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar el original sin corrección"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6591,6 +7719,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Skipped %lld files that are not photos or videos."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se han omitido %lld archivos que no son fotos ni vídeos."
           }
         },
         "ja" : {
@@ -6628,6 +7762,12 @@
             "value" : "Skipped videos: %lld. Videos open one at a time."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vídeos omitidos: %lld. Los vídeos se abren de uno en uno."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6661,6 +7801,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Some items weren’t opened"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Algunos elementos no se han abierto"
           }
         },
         "ja" : {
@@ -6698,6 +7844,12 @@
             "value" : "Correct"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corregir"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6731,6 +7883,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stop"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detener"
           }
         },
         "ja" : {
@@ -6768,6 +7926,12 @@
             "value" : "Temperature"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temperatura"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6801,6 +7965,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The App Store couldn’t complete this request. Check your connection and try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El App Store no ha podido completar esta solicitud. Comprueba la conexión y vuelve a intentarlo."
           }
         },
         "ja" : {
@@ -6838,6 +8008,12 @@
             "value" : "The export couldn’t finish. Please try again."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido terminar la exportación. Inténtalo de nuevo."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6871,6 +8047,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The exported file didn’t pass our quality checks. Nothing was saved."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El archivo exportado no ha superado nuestros controles de calidad. No se ha guardado nada."
           }
         },
         "ja" : {
@@ -6908,6 +8090,12 @@
             "value" : "The free trial for this kind of file is used."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya has usado la prueba gratuita para este tipo de archivo."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -6941,6 +8129,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The media service is temporarily busy. Wait a moment and try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El servicio multimedia está ocupado temporalmente. Espera un momento y vuelve a intentarlo."
           }
         },
         "ja" : {
@@ -6978,6 +8172,12 @@
             "value" : "The purchase couldn’t finish. Please try again."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido completar la compra. Inténtalo de nuevo."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7011,6 +8211,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The purchase is currently unavailable. Please try again later."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La compra no está disponible en este momento. Inténtalo de nuevo más tarde."
           }
         },
         "ja" : {
@@ -7048,6 +8254,12 @@
             "value" : "The report includes error codes and Apple performance diagnostics, which may contain approximate times and device, OS and app details. It excludes your photos, videos, filenames and location."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El informe incluye códigos de error y diagnósticos de rendimiento de Apple, que pueden contener horas aproximadas y datos del dispositivo, del sistema y de la app. No incluye tus fotos, vídeos, nombres de archivo ni ubicación."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7081,6 +8293,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "There isn’t enough free storage. Free up some space and try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay suficiente espacio libre. Libera espacio y vuelve a intentarlo."
           }
         },
         "ja" : {
@@ -7118,6 +8336,12 @@
             "value" : "This is a limit. UnderBlue starts fewer when the Mac is low on memory, and waits when a large photo needs most of it. It applies to the next batch."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es un límite. UnderBlue procesa menos fotos a la vez cuando el Mac tiene poca memoria y espera cuando una foto grande necesita casi toda. Se aplica al siguiente lote."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7151,6 +8375,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "This item may need to download from iCloud. Check your connection and try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puede que este elemento tenga que descargarse de iCloud. Comprueba la conexión y vuelve a intentarlo."
           }
         },
         "ja" : {
@@ -7188,6 +8418,12 @@
             "value" : "This media couldn’t be opened. Try another photo or video."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido abrir este archivo. Prueba con otra foto u otro vídeo."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7221,6 +8457,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "This media format isn’t supported on this device."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este formato no es compatible con este dispositivo."
           }
         },
         "ja" : {
@@ -7258,6 +8500,12 @@
             "value" : "This video is SDR. HDR export requires HDR source footage."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este vídeo es SDR. La exportación HDR requiere un vídeo de origen HDR."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7291,6 +8539,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "This video’s HDR format cannot be safely exported as HDR."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El formato HDR de este vídeo no se puede exportar como HDR de forma segura."
           }
         },
         "ja" : {
@@ -7328,6 +8582,12 @@
             "value" : "Trial access couldn’t be checked securely. Please try again."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido comprobar de forma segura el acceso de prueba. Inténtalo de nuevo."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7363,6 +8623,12 @@
             "value" : "Trial access couldn’t be checked securely. Unlock your iPhone and try again."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido comprobar de forma segura el acceso de prueba. Desbloquea el iPhone y vuelve a intentarlo."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7393,6 +8659,12 @@
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tropical"
+          }
+        },
+        "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tropical"
@@ -7433,6 +8705,12 @@
             "value" : "UnderBlue Help"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayuda de UnderBlue"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7466,6 +8744,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "UnderBlue includes the following open-source software. Its license follows."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UnderBlue incluye el siguiente software de código abierto. Su licencia figura a continuación."
           }
         },
         "ja" : {
@@ -7503,6 +8787,12 @@
             "value" : "Unlimited photo exports"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportación ilimitada de fotos"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7536,6 +8826,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Waiting"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En espera"
           }
         },
         "ja" : {
@@ -7573,6 +8869,12 @@
             "value" : "Waiting for memory"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esperando memoria libre"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7606,6 +8908,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wide color is preserved. HDR export requires an HDR photo."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se conserva la gama amplia. La exportación HDR requiere una foto HDR."
           }
         },
         "ja" : {
@@ -7643,6 +8951,12 @@
             "value" : "Wide color is preserved. HDR photo export is unavailable."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se conserva la gama amplia. La exportación de fotos HDR no está disponible."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7676,6 +8990,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "With Pro, select up to %lld photos to correct them together. Tap a photo to give it its own look."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con Pro, selecciona hasta %lld fotos para corregirlas juntas. Toca una foto para darle su propio efecto."
           }
         },
         "ja" : {
@@ -7713,6 +9033,12 @@
             "value" : "Works in almost every app. Saved at the highest JPEG quality."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Funciona en casi todas las apps. Se guarda con la máxima calidad JPEG."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7748,6 +9074,12 @@
             "value" : "Only the first 10 seconds were exported. Pro exports the full video."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo se han exportado los primeros 10 segundos. Pro exporta el vídeo completo."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7778,6 +9110,12 @@
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UnderBlue"
+          }
+        },
+        "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "UnderBlue"
@@ -7818,6 +9156,12 @@
             "value" : "View"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vista"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7851,6 +9195,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wait for the batch to finish, or stop it, before adding files."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Espera a que termine el lote, o detenlo, antes de añadir archivos."
           }
         },
         "ja" : {
@@ -7888,6 +9238,12 @@
             "value" : "With Pro, correct as many photos and videos as you like in one batch."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con Pro, corrige en un solo lote todas las fotos y vídeos que quieras."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7921,6 +9277,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your export has been checked and is ready for Photos."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La exportación se ha comprobado y está lista para Fotos."
           }
         },
         "ja" : {
@@ -7958,6 +9320,12 @@
             "value" : "Your iPhone needs to cool down before exporting. Wait a moment and try again."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El iPhone necesita enfriarse antes de exportar. Espera un momento y vuelve a intentarlo."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -7991,6 +9359,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your media stays on your iPhone."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus fotos y vídeos se quedan en tu iPhone."
           }
         },
         "ja" : {
@@ -8028,6 +9402,12 @@
             "value" : "Your purchase couldn’t be verified. Please try Restore Purchase."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido verificar la compra. Prueba con Restaurar compra."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8061,6 +9441,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your purchase is being verified. Try Restore Purchase shortly."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se está verificando la compra. Prueba con Restaurar compra dentro de un momento."
           }
         },
         "ja" : {
@@ -8098,6 +9484,12 @@
             "value" : "Your purchase is pending approval. Pro will unlock when it’s approved."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La compra está pendiente de aprobación. Pro se desbloqueará cuando se apruebe."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8128,6 +9520,12 @@
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UnderBlue Pro…"
+          }
+        },
+        "es" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "UnderBlue Pro…"
@@ -8168,6 +9566,12 @@
             "value" : "Show in Finder"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar en el Finder"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8201,6 +9605,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open Photos"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir Fotos"
           }
         },
         "ja" : {
@@ -8238,6 +9648,12 @@
             "value" : "Best"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mejor"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8271,6 +9687,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "8K video isn’t supported yet. It exports in 4K, the best option."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El vídeo 8K aún no es compatible. Se exporta en 4K, la mejor opción."
           }
         },
         "ja" : {
@@ -8308,6 +9730,12 @@
             "value" : "Other apps running at the same time can slow the export."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otras apps abiertas al mismo tiempo pueden ralentizar la exportación."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8341,6 +9769,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Free up memory"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Libera memoria"
           }
         },
         "ja" : {
@@ -8378,6 +9812,12 @@
             "value" : "Check again"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Volver a comprobar"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -8411,6 +9851,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "There isn’t enough free memory for this video. Close other apps, then choose Check again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay suficiente memoria libre para este vídeo. Cierra otras apps y elige Volver a comprobar."
           }
         },
         "ja" : {

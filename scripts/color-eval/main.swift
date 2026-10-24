@@ -440,7 +440,7 @@ for name in selected {
     // HT_EVAL_PROBE="r,g,b;..." (sRGB 0-255, E27): prints the kernel mirror's water-like weight and colour for each.
     if let probe = ProcessInfo.processInfo.environment["HT_EVAL_PROBE"] {
         let v = ColorCorrection.make(analysis: settings.analysis, preset: settings.preset, adjustments: settings.adjustments)
-        print("\(name) probe waterChroma=\(v.waterChroma) waterRedness=\(v.waterRedness)")
+        print("\(name) probe waterChroma=\(v.waterChroma) waterRedness=\(v.waterRedness) lightShare=\(settings.analysis.lightShare) lightGradient=\(v.lightGradient)")
         for item in probe.split(separator: ";") {
             let p = item.split(separator: ",").compactMap { Float($0) }; guard p.count == 3 else { continue }
             func lin(_ x: Float) -> Float { let u = x / 255; return u <= 0.04045 ? u / 12.92 : pow((u + 0.055) / 1.055, 2.4) }
@@ -448,7 +448,8 @@ for name in selected {
             let c = input * v.castGains, top = c.max()
             let out = FinishingMath.display(FinishingMath.color(input, correction: v))
             func enc(_ x: Float) -> Int { let u = min(1, max(0, x)); return Int(255 * (u <= 0.0031308 ? 12.92 * u : 1.055 * pow(u, 1 / 2.4) - 0.055)) }
-            print("  \(item): chroma=\((top - c.min()) / max(top, 1e-4)) waterLike=\(FinishingMath.waterLike(c, correction: v)) out=(\(enc(out.x)),\(enc(out.y)),\(enc(out.z)))")
+            let lit = (v.waterLit * ColorCorrection.luma).sum(), ratio = (c * ColorCorrection.luma).sum() / max(lit, 1e-6)
+            print("  \(item): chroma=\((top - c.min()) / max(top, 1e-4)) waterLike=\(FinishingMath.waterLike(c, correction: v)) overWater=\(ratio) out=(\(enc(out.x)),\(enc(out.y)),\(enc(out.z)))")
         }
     }
     for (key, change) in ablations {
@@ -471,6 +472,19 @@ for name in selected {
     if let plan, let raw = try? restoration.restore(source, plan: plan) {
         outputs["restoration"] = engine.blend(source, raw, amount: plan.confidence)
         outputs["combined"] = (try? restoration.combined(source, plan: plan, settings: settings, filter: engine)) ?? current
+        // HT_EVAL_DEPTH_DUMP=<dir> (E28) writes the plan depth as raw Float32 <name>_depth_<w>x<h>.raw and the water share
+        // (alpha of FilterEngine.waterShare) at the same size, and prints the water depth SubjectTiers reads from them.
+        if let dir = ProcessInfo.processInfo.environment["HT_EVAL_DEPTH_DUMP"] {
+            let d = plan.depth, values = d.values
+            try? values.withUnsafeBytes { try Data($0).write(to: URL(fileURLWithPath: "\(dir)/\(name)_depth_\(d.width)x\(d.height).raw")) }
+            let small = source.transformed(by: CGAffineTransform(translationX: -source.extent.minX, y: -source.extent.minY)
+                .concatenating(CGAffineTransform(scaleX: CGFloat(d.width) / source.extent.width, y: CGFloat(d.height) / source.extent.height)))
+            if let share = engine.waterShare(small, correction: restoration.corrections(settings: settings, plan: plan).current) {
+                let a = SubjectTiers.channel(share, 3, width: d.width, height: d.height, context: engine.context)
+                try? a.withUnsafeBytes { try Data($0).write(to: URL(fileURLWithPath: "\(dir)/\(name)_share_\(d.width)x\(d.height).raw")) }
+                print("\(name) water depth \(SubjectTiers.waterDepth(waterShare: a, depth: values).map { "\($0)" } ?? "nil")")
+            }
+        }
         if videoPath { outputs["videopath"] = try? restoration.combined(source, plan: plan, values: restoration.corrections(settings: settings, plan: plan), settings: settings, filter: engine, video: true) }
         // HT_EVAL_LIFT="strength,chromaCap,highlightStart,noiseFloor,chromaExponent,contrast" renders the lift as its own
         // variant (docs/SubjectEmphasis.md, E4). Without the mask the lift output equals combined.

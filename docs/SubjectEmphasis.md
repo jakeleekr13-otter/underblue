@@ -742,7 +742,8 @@ The branch merged main at `287743d`. Every number above E15 predates that merge.
 | E23 | Why the lift looks foreign at the mask edge | Lift terms switched off, a brightening cap, four mask cues, 100% crops | Jake: no lift beats every variant with the Vision mask |
 | E24 | A precise mask from Vision iterative segmentation (iOS 27, macOS 27) | 14 photos, leak check, lift spill, 100% crops, a 4K clip, iPhone probe | Spill outside the subject falls 2 to 90 times. The iPhone matches the Mac. Jake: "surprisingly much better" |
 | E25 | One tier map for the outline and the lift | Map overlays, strength sheet on 4 photos, gate on the lift render, iPhone regression export | The lift now skips sand, glow and bubbles. Strengths wait for Jake |
-| E27 | The dark band around fish (E18 again, photos only) | Lightness by distance from the fish, every stage switched off, 100% crops, gate, m5, video path diff | Cause: the light detail. A water-only edge guard removes it. Video unchanged. iPhone check open |
+| E27 | The dark band around fish (E18 again, photos only) | Lightness by distance from the fish, every stage switched off, 100% crops, gate, m5, video path diff | Cause: the light detail. A water-only edge guard removes it. Video unchanged. Jake checked DSC03545 and IMG_7400 on the iPhone |
+| E28 | A sun photo looks very bright (P20131018_123503000) | Mac and iPhone export, main build, stages switched off, colour probe, depth of bright pixels | Not new (main is the same). Cause: the light removal. Left as is (Jake, 24 Oct 2026) |
 
 ### E15, the Vision input, 23 Oct 2026
 
@@ -1304,7 +1305,28 @@ Checks on the Mac:
 
 Not adopted: turning the light removal (`subjectTone`) off on pale water-hue pixels. With it off, the ring's chroma ratio goes 0.863 to 0.898 (source 0.948), but it does not touch the dark band. A colour rule also catches the pale wreck in DSC03545 (10% of the pixels changed), and the fish are not in the Vision mask, so the mask cannot protect or find them.
 
-Open: the iPhone. The new kernel and the blend need a check on the device, because an extra kernel input once broke iOS rendering (see the comment in `FilterEngine.colorStage`).
+iPhone 17, 24 Oct 2026: Jake looked at DSC03545 and IMG_7400 in the app and found them fine. He also said the O4 manta belly is much less green than before. The video export was not looked at on the phone.
+
+### E28, a sun photo looks very bright, 24 Oct 2026
+
+Jake on the iPhone: `eval/real/P20131018_123503000_...JPG` (a boat from below, the sun above) is much brighter.
+
+- Not new. The Mac harness on main (`a52922c`) and on this branch give the same result (mean OKLab L 0.587 and 0.586). The iPhone export (`PhotoParityTests`) matches: the analysis within 0.002, mean L 0.593, no HDR gain map.
+- Nothing gets brighter on average. The sunlit area loses its cyan: chroma 0.079 to 0.022 at the same L. The deep water gets darker: L 0.533 to 0.447. So the light looks blown and grey.
+- Cause: the light removal (`subjectTone`). It acts on every pixel whose colour is not water-like, with no mask. The sunlit colour (142,246,252) reads waterLike 0.03. With the removal off, sunlit chroma goes 0.026 to 0.046.
+- No simple fix. Colour and brightness over the water cannot tell the sunlit area from pixels that need the removal:
+
+| bright pixels | over the water | depth (water about 0.86 to 0.99) |
+|---|---|---|
+| P1 sunlit area | 4.8 to 7.9 times | 0.58 to 0.89 |
+| IMG_7262 sand | 17 to 20 times | 0.01 to 0.67 |
+| O4 manta belly | 1.3 to 3.3 times | 0.35 to 0.50 |
+| DSC03545 fish | 3.3 to 4.7 times | 0.04 to 0.73 |
+
+- Depth splits them only in part. A per-pixel rule needs a second render or a new colour kernel input (the iOS risk above).
+- Jake's decision, 24 Oct 2026: record it and keep the current behaviour.
+
+The harness gained `HT_EVAL_DEPTH_DUMP` (plan depth and water share) and the light-source values in `HT_EVAL_PROBE`.
 
 ### The control photos
 

@@ -6,10 +6,10 @@ This page lists the checks that are still open. The product owner decided to fin
 
 Details: [SubjectEmphasis E27](SubjectEmphasis.md). A new kernel `UnderBlueLightEdge` and a blend take the light detail off water beside a strong edge. It removes the dark band around fish (DSC03545). Video passes `edgeGuard: false` and is byte-identical on the Mac.
 
-Check on the iPhone:
-- DSC03545 camera JPEG at 100%: no dark band around the two fish, and no broken edge rows or darker frame.
-- IMG_7400: the light rays as before.
-- One video export: unchanged.
+Checked on the iPhone 17 (Jake, 24 Oct 2026): DSC03545 and IMG_7400 look fine.
+
+Still open:
+- One video export on the phone: unchanged. The Mac says byte-identical.
 
 ## Camera JPEG reef colour (23 Oct 2026, iPhone 1.1.4 build 10)
 

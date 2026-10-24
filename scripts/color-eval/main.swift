@@ -54,10 +54,64 @@ let outputSpace = ProcessInfo.processInfo.environment["HT_EVAL_P3"] == "1" ? Fil
 // HT_EVAL_PRECISE_MASK=1 makes both masks with SubjectMask.estimatePrecise (E24), as the single-photo
 // editor would, and falls back to estimate when it returns nil.
 let preciseMask = ProcessInfo.processInfo.environment["HT_EVAL_PRECISE_MASK"] == "1"
-func subjectMask(_ image: CIImage, cap: Float) async -> SubjectMask? {
-    if preciseMask, #available(macOS 27.0, *),
-       let m = await SubjectMask.estimatePrecise(image, cap: cap, context: engine.context) { return m }
+// The model reads notReady in every new process until it has run once, and estimatePrecise never downloads,
+// so the harness checks it here. A nil precise mask is reported, never replaced in silence: on 24 Oct 2026 a
+// silent fallback rendered three experiments with the old mask (E25).
+var preciseChecked = false
+@MainActor func subjectMask(_ image: CIImage, cap: Float) async -> SubjectMask? {
+    if preciseMask, #available(macOS 27.0, *) {
+        if !preciseChecked { preciseChecked = true; print("precise model usable: \(await SubjectMask.preciseModelUsable())") }
+        if let m = await SubjectMask.estimatePrecise(image, cap: cap, context: engine.context) { return m }
+        print("note: precise mask nil (cap \(cap)): no subject, a share out of range, or the model not ready; trying SubjectMask.estimate")
+    }
     return SubjectMask.estimate(image, cap: cap)
+}
+// HT_EVAL_TIER_MAP=1 gives the lift the soft tier map agreed with the picker session (E25): the picker's
+// outline before its 0.5 cut. Natural's correction, a 1024 grid, ramps notWater 0.4-0.6, in front of the
+// open water by 0.05-0.15, texture 0.025-0.045, and the outline's cleaning fed back, feathered by 2 cells.
+// A prototype: the app gets the same map from SubjectTiers.
+let tierMapOn = ProcessInfo.processInfo.environment["HT_EVAL_TIER_MAP"] == "1"
+func smooth(_ a: Float, _ b: Float, _ x: Float) -> Float { let t = min(1, max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t) }
+func softTiers(_ source: CIImage, plan: RestorationPlan, analysis: WaterAnalysis, subject: SubjectMask?) -> SubjectTierMap? {
+    let long = max(source.extent.width, source.extent.height)
+    let width = Int((source.extent.width / long * 1024).rounded()), height = Int((source.extent.height / long * 1024).rounded())
+    let small = source.transformed(by: CGAffineTransform(translationX: -source.extent.minX, y: -source.extent.minY)
+        .concatenating(CGAffineTransform(scaleX: CGFloat(width) / source.extent.width, y: CGFloat(height) / source.extent.height)))
+    var natural = FilterSettings(); natural.analysis = analysis
+    let current = restoration.corrections(settings: natural, plan: plan).current
+    guard let share = engine.waterShare(small, correction: current), let transmission = restoration.contrastTransmission(small, plan: plan) else { return nil }
+    let c = engine.context, n = width * height
+    let shareValues = SubjectTiers.channel(share, 3, width: width, height: height, context: c)
+    let tValues = SubjectTiers.channel(transmission, 0, width: width, height: height, context: c)
+    let map = plan.depth
+    let depthImage = CIImage(bitmapData: map.values.withUnsafeBytes { Data($0) }, bytesPerRow: map.width * MemoryLayout<Float>.size,
+                             size: CGSize(width: map.width, height: map.height), format: .Rf, colorSpace: nil)
+    let depth = SubjectTiers.channel(depthImage, 0, width: width, height: height, context: c)
+    let r = SubjectTiers.channel(small, 0, width: width, height: height, context: c), g = SubjectTiers.channel(small, 1, width: width, height: height, context: c)
+    let b = SubjectTiers.channel(small, 2, width: width, height: height, context: c)
+    let luma = (0..<n).map { i in pow(max(0, 0.2126 * r[i] + 0.7152 * g[i] + 0.0722 * b[i]), 1 / 2.2) }
+    let texture = SubjectTiers.texture(luma: luma, width: width, height: height)
+    let water = SubjectTiers.waterDepth(waterShare: shareValues, depth: depth)
+    var object = [Float](repeating: 0, count: n)
+    for i in 0..<n {
+        let notWater = smooth(0.4, 0.6, 1 - min(1, max(0, shareValues[i])))
+        let front = water.map { 1 - smooth($0 - 0.15, $0 - 0.05, depth[i]) } ?? 1
+        // No subject factor: the kernel takes the picked subjects out with (1 - w), so an excluded subject is
+        // treated like the scene around it (Jake, 24 Oct 2026). The app's SubjectTiers.make does the same.
+        object[i] = notWater * front * smooth(0.025, 0.045, texture[i])
+    }
+    let kept = SubjectTiers.cleaned(object.map { $0 >= 0.5 }, width: width, height: height,
+                                    minimum: max(1, Int(Float(n) * SubjectTiers.minimumPieceShare)), hole: max(1, Int(Float(n) * SubjectTiers.minimumHoleShare)))
+    // Feather the cleaned outline: a 5 x 5 box, so the cleaning makes no step in the lift.
+    var feather = [Float](repeating: 0, count: n)
+    for y in 0..<height { for x in 0..<width {
+        var sum: Float = 0, count: Float = 0
+        for dy in -2...2 { for dx in -2...2 { let yy = y + dy, xx = x + dx; if yy >= 0, yy < height, xx >= 0, xx < width { sum += kept[yy * width + xx] ? 1 : 0; count += 1 } } }
+        feather[y * width + x] = sum / count
+    } }
+    let t = tValues.map { min(1, max(0, $0)) }
+    return SubjectTierMap(width: width, height: height, tier2: (0..<n).map { object[$0] * feather[$0] * t[$0] },
+                          tier3: (0..<n).map { object[$0] * feather[$0] * (1 - t[$0]) })
 }
 func render(_ image: CIImage, _ w: Int, _ h: Int) -> [UInt8] {
     var px = [UInt8](repeating: 0, count: w * h * 4)
@@ -380,11 +434,19 @@ for name in selected {
         if let liftMask, let spec = ProcessInfo.processInfo.environment["HT_EVAL_LIFT"] {
             let v = spec.split(separator: ",").compactMap { Float($0) }
             precondition(v.count == 15, "HT_EVAL_LIFT: strength,chromaCap,highlightStart,noiseFloor,chromaExponent,contrast,detail,clarity,highlights,maskLow,maskHigh,tier2,tier3,highlights2,highlights3")
-            let lift = SubjectLift(mask: liftMask, strength: v[0], chromaCap: v[1], tier2: v[11],
+            var lift = SubjectLift(mask: liftMask, strength: v[0], chromaCap: v[1], tier2: v[11],
                                    tier3: v[12], highlights2: v[13], highlights3: v[14],
                                    maskLow: v[9], maskHigh: v[10], clarity: v[7], highlights: v[8],
                                    detail: v[6], contrast: v[5], chromaExponent: v[4],
                                    highlightStart: v[2], noiseFloor: v[3])
+            if tierMapOn { lift.tiers = softTiers(source, plan: plan, analysis: analysis, subject: liftMask) }
+            // HT_EVAL_TIER_DUMP=<dir> writes the map as <name>_tiers.png: red tier two, green tier three.
+            if let dir = ProcessInfo.processInfo.environment["HT_EVAL_TIER_DUMP"], let map = lift.tiers,
+               let cg = engine.context.createCGImage(map.image(matching: CGRect(x: 0, y: 0, width: map.width, height: map.height)),
+                                                     from: CGRect(x: 0, y: 0, width: map.width, height: map.height)),
+               let dest = CGImageDestinationCreateWithURL(URL(fileURLWithPath: "\(dir)/\(name)_tiers.png") as CFURL, "public.png" as CFString, 1, nil) {
+                CGImageDestinationAddImage(dest, cg, nil); CGImageDestinationFinalize(dest)
+            }
             outputs["lift"] = (try? restoration.combined(source, plan: plan, settings: settings, filter: engine,
                                                          subjectLift: lift)) ?? outputs["combined"]
         } else {

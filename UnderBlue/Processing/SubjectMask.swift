@@ -57,6 +57,34 @@ struct SubjectLift: Sendable, Equatable {
     var highlightStart: Float = 0.85
     /// Below this L the lift fades out, because a dark pixel is mostly noise.
     var noiseFloor: Float = 0.05
+    /// Tiers two and three as the picker outlines them. Nil: the kernel splits them from the water share
+    /// and the contrast transmission itself, with no depth or texture test.
+    var tiers: SubjectTierMap?
+}
+
+/// Soft weights for tiers two and three on a grid, row 0 on top: the picker's outline before its 0.5 cut
+/// (SubjectTiers). It holds no subject: the lift takes the picked subjects out, so an excluded subject is
+/// treated like the scene around it. Built once per photo, with Natural's correction, so a preset change
+/// does not move the regions (E25).
+struct SubjectTierMap: Sendable, Equatable {
+    let width: Int
+    let height: Int
+    let tier2: [Float]
+    let tier3: [Float]
+
+    /// The map as an image over `extent`: red tier two, green tier three.
+    func image(matching extent: CGRect) -> CIImage {
+        var rgba = [Float](repeating: 0, count: width * height * 4)
+        for i in 0..<(width * height) { rgba[i * 4] = tier2[i]; rgba[i * 4 + 1] = tier3[i]; rgba[i * 4 + 3] = 1 }
+        let data = rgba.withUnsafeBytes { Data($0) }
+        let map = CIImage(bitmapData: data, bytesPerRow: width * 4 * MemoryLayout<Float>.size,
+                          size: CGSize(width: width, height: height), format: .RGBAf, colorSpace: nil)
+        // Row 0 is the top row, as in SubjectMask.image(matching:).
+        let scaled = map.transformed(by: CGAffineTransform(scaleX: extent.width / CGFloat(width),
+                                                           y: extent.height / CGFloat(height)))
+        return scaled.transformed(by: CGAffineTransform(translationX: extent.minX - scaled.extent.minX,
+                                                        y: extent.minY - scaled.extent.minY))
+    }
 }
 
 /// The photo's main subjects (Vision foreground instances, all of them) as a soft mask:
@@ -120,6 +148,33 @@ struct SubjectMask: Sendable, Equatable {
         return mask
     }
 
+    /// Whether the segmentation model is on the device: notReady, downloading, ready or an error. Apple
+    /// downloads it once into the system's shared assets, not into the app (54 MB on a Mac, E24).
+    @available(iOS 27.0, macOS 27.0, *)
+    static func preciseModelStatus() async -> DownloadableAssetsRequestStatus {
+        await GenerateIterativeSegmentationRequest(seedPoint: NormalizedPoint(x: 0.5, y: 0.5)).assetStatus
+    }
+
+    /// Whether the model is usable now, found by one segmentation on a small grey image. Call it before
+    /// `downloadPreciseModel`: `assetStatus` reads notReady in every new process, but a model already on the
+    /// device runs without the download call (Mac: 3.3 s on the first call of a process, then 167 ms), so this
+    /// needs no network. On the iPhone in airplane mode the download call never finished (24 Oct 2026, E25).
+    @available(iOS 27.0, macOS 27.0, *)
+    static func preciseModelUsable() async -> Bool {
+        let probe = CIImage(color: CIColor(red: 0.2, green: 0.4, blue: 0.6)).cropped(to: CGRect(x: 0, y: 0, width: 64, height: 64))
+        let request = GenerateIterativeSegmentationRequest(seedBox: NormalizedRect(x: 0.25, y: 0.25, width: 0.5, height: 0.5))
+        request.qualityLevel = .accurate
+        guard (try? await request.perform(on: probe)) != nil else { return false }
+        if case .ready = await request.assetStatus { return true }
+        return false
+    }
+
+    /// Downloads the segmentation model, reporting to `progress`. Throws on no network or a failed download.
+    @available(iOS 27.0, macOS 27.0, *)
+    static func downloadPreciseModel(progress: consuming Subprogress) async throws {
+        try await GenerateIterativeSegmentationRequest(seedPoint: NormalizedPoint(x: 0.5, y: 0.5)).downloadAssets(progress: progress)
+    }
+
     /// The iterative segmentation seeded with one box (Vision's normalized space, origin at the bottom left),
     /// on the `preciseSide` grid, with no share test. The picker calls it once per group box.
     @available(iOS 27.0, macOS 27.0, *)
@@ -127,10 +182,11 @@ struct SubjectMask: Sendable, Equatable {
         guard let input = visionInput(image) else { return nil }
         let request = GenerateIterativeSegmentationRequest(seedBox: box)
         request.qualityLevel = .accurate
-        if case .ready = await request.assetStatus {} else {
-            guard (try? await request.downloadAssets()) != nil else { return nil }
-        }
-        guard let observation = try? await request.perform(on: input) else { return nil }
+        // Never download here: a preview would wait on the network, and fail without one. The UI starts the
+        // download (downloadPreciseModel) when the user turns Labs on; until it is ready this returns nil
+        // and the photo gets no lift, never the old 512 mask (E23).
+        guard case .ready = await request.assetStatus,
+              let observation = try? await request.perform(on: input) else { return nil }
         let extent = input.extent
         let scale = min(1, preciseSide / max(extent.width, extent.height))
         let width = max(2, Int((extent.width * scale).rounded(.down))), height = max(2, Int((extent.height * scale).rounded(.down)))

@@ -741,6 +741,7 @@ The branch merged main at `287743d`. Every number above E15 predates that merge.
 | E22 | Read the water share from alpha in the lift | notWater on open water, gate on the lift render, 8 photos on Mac and iPhone | Fixed. Changes are small. Jake judges by eye |
 | E23 | Why the lift looks foreign at the mask edge | Lift terms switched off, a brightening cap, four mask cues, 100% crops | Jake: no lift beats every variant with the Vision mask |
 | E24 | A precise mask from Vision iterative segmentation (iOS 27, macOS 27) | 14 photos, leak check, lift spill, 100% crops, a 4K clip, iPhone probe | Spill outside the subject falls 2 to 90 times. The iPhone matches the Mac. Jake: "surprisingly much better" |
+| E25 | One tier map for the outline and the lift | Map overlays, strength sheet on 4 photos, gate on the lift render, iPhone regression export | The lift now skips sand, glow and bubbles. Strengths wait for Jake |
 
 ### E15, the Vision input, 23 Oct 2026
 
@@ -1175,6 +1176,94 @@ iPhone 17, Release build, a probe test calling `SubjectMask.estimate` and `estim
 - Video, 10 consecutive 4K frames of the shark clip: precise 116 to 128 ms a frame (324 ms the first), +87 MB peak a call. Vision 14 to 18 ms. Leak loop: 531 MB, then 525 MB.
 
 The E21 ARW numbers predate the picker session's RAW change.
+
+### E25, one tier map for the outline and the lift, 24 Oct 2026
+
+Jake asked the lift session and the picker session to agree on tiers 1 to 3 and their strengths. Agreed:
+
+- Tier 1 is the precise mask (E24): the picked groups, or all of them in Auto.
+- Tiers 2 and 3 come from one soft map per photo. The picker's outline is that map cut at 0.5. The lift reads the same map. Before this, the outline had depth and texture tests and the lift had none. So the lift brightened sand, the sunlit surface and bubbles that the outline left out.
+- The map: notWater (1 - water share, alpha) ramp 0.4 to 0.6, times "in front" (full at the open water's depth - 0.15, none at - 0.05), times texture (ramp 0.025 to 0.045), times (1 - every Vision group). Tier 2 = that x t, tier 3 = that x (1 - t). The outline's cleaning (small pieces out, holes filled) multiplies it, feathered by a 5 x 5 box. The ramps are soft, so the lift makes no step at an edge (E23).
+- It is built once per photo with Natural's correction, so a preset change does not move it. The picker session caches it in PhotoProcessor.
+- Below iOS 27 and macOS 27, or with Labs off, there is no lift. The veil mask stays as main has it.
+
+Code (lift session): `SubjectTierMap` (red tier 2, green tier 3) and `SubjectLift.tiers`. `UnderBlueSubjectLift` uses the map when `tier.w` is 1. Without a map it behaves as before. The harness builds the same map with `HT_EVAL_TIER_MAP=1` (a copy of the formula, using `SubjectTiers.channel`, `texture`, `waterDepth` and `cleaned`). `HT_EVAL_TIER_DUMP=<dir>` writes it.
+
+Map checks by eye: m5, the coral block is tier 1; small coral and rubble are tier 2; most of the sand is out; a shadow band at the block's foot is in. DSC03545, the wreck and the front white fish are in; the bubbles are out. r07 (barracuda) has no tier 2 or 3.
+
+Strength sheet: precise mask, the map, the photo's own size. Median L change x100 in the tier 2 area (map red 0.5 or more), against no lift:
+
+| photo | tier 2 / tier 3 = 0 / 0 | 0.1 / 0.1 | 0.2 / 0.1 (now) | 0.3 / 0.1 | 0.2 / 0 | 0.2 / 0.2 |
+|---|---|---|---|---|---|---|
+| DSC03545 | +0.0 | +0.3 | +0.6 | +0.8 | +0.6 | +0.6 |
+| DSC03696 | +0.0 | -0.3 | -0.4 | -0.6 | -0.4 | -0.5 |
+| DSC03687 | +0.0 | -0.3 | -0.4 | -0.6 | -0.4 | -0.5 |
+| m5 | +0.0 | +0.3 | +0.7 | +1.0 | +0.7 | +0.7 |
+
+- Open water (map below 0.02, outside tier 1) does not move in any variant: median 0.00.
+- Tiers 2 and 3 work mostly through contrast, clarity and sharpening, not brightness. By eye, a higher tier 2 makes the reef and wreck texture a little crisper.
+- AquaColorFix gate on the lift render (precise mask, 960 px): 13.70 without the map, 13.68 with it. p4 12.45 to 12.41.
+
+The picker session's check of the app path (Mac, Debug, Labs on with Auto against Labs off), mean |difference| on 13 x 13 patches, 8-bit. It used the old tier 1 mask, before it switched tier 1 to the precise mask:
+
+| photo | should not change | should change |
+|---|---|---|
+| m5 | sand 0.02, water 0.01 | coral (tier 1) 22.9, rubble 6.3 |
+| DSC03696 | surface glow 0.03, water 0.04 | reef 5.6 and 4.3 |
+| DSC03545 | bubbles 0.05, water 0.01 | wreck 5.8, front fish 1.1 |
+
+A second m5 sand patch near the rubble edge moved 1.45. Nobody has looked at it by eye.
+
+iPhone regression: HEAD (`5c58979`) plus only the lift session's changes, no map. `PhotoParityTests` exports of 8 photos are pixel-identical to the E22 exports (largest difference 0). So the kernel change and E24 do not change the default output.
+
+The Labs path on the iPhone 17, Release build. The shared tree at that time held both sessions' uncommitted work: tier 1 from the precise mask per group, and the tier map. A temporary test called PhotoProcessor on 6 photos:
+
+| photo | preview, Labs off | candidates (Vision + precise) | tier map | first preview, Labs on | again |
+|---|---|---|---|---|---|
+| DSC03545 ARW | 503 ms | 311 ms | 807 ms | 607 ms | 556 ms |
+| DSC03545 JPEG | 66 ms | 215 ms | 99 ms | 92 ms | 61 ms |
+| DSC03696 | 75 ms | 219 ms | 127 ms | 81 ms | 74 ms |
+| r15 | 59 ms | 144 ms | 86 ms (no map) | 75 ms | 38 ms |
+| r07 | 54 ms | 148 ms | 115 ms (no map) | 82 ms | 44 ms |
+| m5 | 73 ms | 142 ms | 102 ms | 95 ms | 66 ms |
+
+- So the first Labs-on preview costs about 0.3 to 0.45 s more than Labs off for a JPEG, and about 1.7 s for the ARW. The phone already had the segmentation model from earlier runs, so the first download is not in these numbers.
+- The picker session measured 6 to 24 s on the Mac in a Debug build. Most of that is Debug, not the work.
+- The test process footprint reached 1200 MB after the 20 MP photos. It holds a new PhotoProcessor and its caches per photo. The app's own peak was not measured.
+- The r15 export by eye (hose and hand, 100%): no light blue patches, and the water between the fingers is not lifted, as on the Mac. One thin bright line stays at one finger gap.
+
+r07: Vision groups the middle of the barracuda school, with the water between the fish. The precise mask cuts each fish out, but some come out at half weight. With either mask, some fish in the school get the lift and their neighbours do not. Jake decides whether that is acceptable.
+
+The harness has no RAW preview path, so an ARW gets no Vision mask there. The sheet uses camera JPEGs.
+
+#### A silent fallback, and r07 with the precise mask, 24 Oct 2026
+
+After `SubjectMask.precise` stopped downloading, it returns nil while the model reads `notReady`. That is every new process until the model has run once. The harness had no loader, so `HT_EVAL_PRECISE_MASK=1` fell back to the old Vision mask without a word. Three experiments ran on the old mask: an r07 render, an edge-feather test and a mask-ramp test. Their conclusions are withdrawn. The harness now calls `preciseModelUsable()` once, and prints a warning when a precise mask is nil. Check: r07 uses a 2048 x 1535 grid at share 0.0730 (precise), not 1024 x 767 at 0.1048 (old).
+
+With the precise mask, r07's lifted barracuda looks natural at 100%: a little more definition, and no white band. The 99th percentile L rise in the crop is 6.7, against 12.0 with the old mask. The white band along the fish's back came from the old mask.
+
+How sure the precise mask is, by its values (share of mask pixels above 0.02):
+
+| photo | partial, 0.1 to 0.9 | 0.95 or more |
+|---|---|---|
+| r07 (soft, moving barracuda) | 75.7% | 1.0% |
+| DSC03546 (wreck) | 54.5% | 4.1% |
+| DSC03545 (divers) | 24.6% | 58.7% |
+| r15 (diver) | 15.3% | 66.6% |
+
+Not acted on: on r07 the lift with this soft mask already looks natural.
+
+#### The model download, 24 Oct 2026
+
+Jake: the first launch, before the model is on the device, may need its own UX.
+
+- The model sits in the system's shared assets, not in the app: `ViSam_v2_5_image_encoder` 49 MB and `ViSam_v2_5_mask_decoder` 5.3 MB on the Mac. Apple's catalog lists several variants (download sizes from 4 MB to 113 MB). Which one an iPhone gets is not known.
+- Only `GenerateIterativeSegmentationRequest` uses it. No other Vision request downloads it, and an app cannot load the files itself.
+- `assetStatus` reads `notReady` in every new process, even with the files on disk. `downloadAssets()` then returns in 5 to 9 ms and the status turns `ready` (Mac, two runs). So the status cannot tell "never downloaded" from "downloaded". The first real download took 3.9 s on the Mac.
+- So `SubjectMask.precise` no longer downloads. It returns nil until the model is ready, and the photo then gets no lift. It never falls back to the old 512 mask. `SubjectMask.downloadPreciseModel(progress:)` and `preciseModelStatus()` are for the UI, which starts the download when Labs is turned on.
+- Not tested: a first download on the iPhone, and no network.
+- Jake's decision, 24 Oct 2026: a photo cannot be saved until the model is confirmed ready. Proposed scope, not yet confirmed by Jake: only with Labs on, since Labs off needs no model. Proposed way out with no network: the blocked state shows the download progress and offers to save without subject emphasis or to turn Labs off.
+- Jake's decision, 24 Oct 2026: if Labs is turned on with no network and no model on the device, the app says a network is needed and keeps the subject features blocked. The base correction still works. When a network comes back, it downloads the model and turns them on.
 
 ### The control photos
 

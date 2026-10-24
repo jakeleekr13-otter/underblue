@@ -69,6 +69,8 @@ final class FilterEngine: Sendable {
         let share = waterShare ?? CIImage(color: .white).cropped(to: image.extent)
         // No signal image means every pixel is all signal: tier two alone, sharpening at full weight.
         let signalImage = signal ?? CIImage(color: .white).cropped(to: image.extent)
+        // The tier map, when the photo has one (E25). Without it the kernel splits tiers itself, as before.
+        let tierImage = lift.tiers?.image(matching: image.extent) ?? CIImage(color: .black).cropped(to: image.extent)
         let short = min(image.extent.width, image.extent.height)
         func blur(_ input: CIImage, _ radius: Float) -> CIImage {
             let f = CIFilter.gaussianBlur()
@@ -82,7 +84,7 @@ final class FilterEngine: Sendable {
         let blurred = blur(image, Float(lift.detailRadius) * Float(short))
         let wide = blur(image, Float(lift.clarityRadius) * Float(short))
         let out = subjectLiftKernel.apply(extent: image.extent, arguments: [
-            image, mask, blurred, wide, share, signalImage,
+            image, mask, blurred, wide, share, signalImage, tierImage,
             CIVector(x: CGFloat(lift.strength), y: CGFloat(lift.chromaCap),
                      z: CGFloat(lift.highlightStart), w: CGFloat(lift.noiseFloor)),
             CIVector(x: CGFloat(lift.chromaExponent), y: CGFloat(lift.contrast),
@@ -92,7 +94,7 @@ final class FilterEngine: Sendable {
             CIVector(x: CGFloat(lift.highlights), y: CGFloat(lift.highlightKnee),
                      z: CGFloat(lift.maskLow), w: CGFloat(lift.maskHigh)),
             CIVector(x: CGFloat(lift.tier3), y: CGFloat(lift.highlights2),
-                     z: CGFloat(lift.highlights3), w: 0)])
+                     z: CGFloat(lift.highlights3), w: lift.tiers == nil ? 0 : 1)])
         return (out ?? image).cropped(to: image.extent)
     }
 

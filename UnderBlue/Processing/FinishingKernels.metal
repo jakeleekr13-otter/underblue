@@ -354,7 +354,7 @@ static float violetHue(float3 o) { return fmod(atan2(o.z, o.y) * 57.29578f + 360
 // and before the violet calm: a step inside the finishing kernel runs on both paths, and the blend
 // then dilutes it. The highlight shoulder has already run per path, so the lift rolls itself off.
 // mask.r is the subject weight. params: x = L gain, y = chroma cap, z = highlight start, w = noise floor.
-[[stitchable]] float4 UnderBlueSubjectLift(coreimage::sample_t c, coreimage::sample_t mask, coreimage::sample_t blurred, coreimage::sample_t wide, coreimage::sample_t water, coreimage::sample_t signal, float4 params, float4 shape, float4 det, float4 hi, float4 tier) {
+[[stitchable]] float4 UnderBlueSubjectLift(coreimage::sample_t c, coreimage::sample_t mask, coreimage::sample_t blurred, coreimage::sample_t wide, coreimage::sample_t water, coreimage::sample_t signal, coreimage::sample_t tiers, float4 params, float4 shape, float4 det, float4 hi, float4 tier) {
     float w = clamp(mask.r, 0.0f, 1.0f);
     // Vision builds the mask at 1024 on the long side. Stretched to full size its edge spreads over
     // several pixels, and the lift used to follow that ramp into the water: the water within 4 px of
@@ -369,15 +369,25 @@ static float violetHue(float3 o) { return fmod(atan2(o.z, o.y) * 57.29578f + 360
     // object's contrast survives that water (UnderBlueContrastTransmission): 1 for a reef in front, less
     // for one further back. It follows the plan's own water, so clear water keeps a far reef near and
     // murky water sends it back. It replaced a fixed cut at depth 0.4 (E17).
-    // tier: x = tier three, y and z are the highlight pulls for tiers two and three.
+    // tier: x = tier three, y and z are the highlight pulls for tiers two and three, w = 1 when `tiers` holds
+    // the tier map (SubjectTierMap: red tier two, green tier three, already outside every Vision group).
     const float f = clamp(signal.r, 0.0f, 1.0f);
     float w2 = 0.0f, w3 = 0.0f;
     if (shape.w > 0.0f || tier.x > 0.0f) {
-        // The share is in alpha. Red holds gamma luminance times the share (UnderBlueCalmShare), so
-        // reading red put tiers two and three on open water at 0.33 to 0.59 of their weight (E22).
-        const float notWater = (1.0f - clamp(water.a, 0.0f, 1.0f)) * (1.0f - w);
-        w2 = shape.w * notWater * f;
-        w3 = tier.x * notWater * (1.0f - f);
+        if (tier.w > 0.5f) {
+            // The map is the picker's outline before its 0.5 cut, so the lift changes what the user sees
+            // outlined, and nothing the outline leaves out: sand, the sunlit surface, bubbles (E25).
+            // It holds no subject, so (1 - w) takes the picked subjects out. A subject the user excluded
+            // is then treated like the scene around it, not left as a hole (Jake, 24 Oct 2026).
+            w2 = shape.w * clamp(tiers.r, 0.0f, 1.0f) * (1.0f - w);
+            w3 = tier.x * clamp(tiers.g, 0.0f, 1.0f) * (1.0f - w);
+        } else {
+            // The share is in alpha. Red holds gamma luminance times the share (UnderBlueCalmShare), so
+            // reading red put tiers two and three on open water at 0.33 to 0.59 of their weight (E22).
+            const float notWater = (1.0f - clamp(water.a, 0.0f, 1.0f)) * (1.0f - w);
+            w2 = shape.w * notWater * f;
+            w3 = tier.x * notWater * (1.0f - f);
+        }
         w = w + w2 + w3;
     }
     if (!(w > 0.0f)) { return c; }

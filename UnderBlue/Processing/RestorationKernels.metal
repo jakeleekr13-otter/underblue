@@ -116,3 +116,14 @@ using namespace metal;
 [[stitchable]] float4 UnderBlueLiftToWide(coreimage::sample_t near, coreimage::sample_t wide) {
     return float4(max(near.rgb, wide.rgb), near.a);
 }
+
+// How much of an object's contrast survives the water in front of it: the plan's direct
+// transmission at the pixel's depth, by luminance. Seen against water, apparent contrast falls as
+// exp(-beta z) (Duntley's law), whatever the object's own brightness. 1 is no water in front. The
+// subject lift splits its tiers by it and scales its sharpening by it (docs/SubjectEmphasis.md, E17).
+[[stitchable]] float4 UnderBlueContrastTransmission(coreimage::sample_t depthSample, float4 betaDirect) {
+    const float z = clamp(depthSample.r, 0.0f, 1.0f);
+    const float3 t = exp(-max(betaDirect.rgb, float3(0.0f)) * z);
+    const float f = clamp(dot(t, float3(0.2126f, 0.7152f, 0.0722f)), 0.0f, 1.0f);
+    return float4(f, f, f, 1.0f);
+}

@@ -1,6 +1,8 @@
 # Subject picker — plan
 
-Status: plan agreed 22 Oct 2026. Nothing built yet.
+**DONE (Jake, 24 Oct 2026).** The picker shipped as a Labs feature: single photo, iOS 27 and macOS 27. Earlier status, kept for the record: **ON HOLD (Jake, 22 Oct 2026).** The picker is paused. First find a way to make subjects bright, vivid and natural. That plan is [SubjectEmphasis.md](SubjectEmphasis.md). The mask alone only reduces the halo beside a subject. It does not change the subject.
+
+Status (22 Oct 2026): code written on branch `subject-picker`, not committed. Not checked on a real photo or a device yet. See "Progress" below.
 
 ## Goal
 
@@ -110,6 +112,139 @@ Each stage ends with one artifact that can fail.
 | S5 | Look at O4, m5, O1 with groups selected and not selected. Same photo and same picks on Mac and iPhone. | At most 6 captures. A line in `docs/Verification.md`. Report if the two masks differ. |
 
 If S1b shows no gain, schools stay Auto and only tap picking ships. A brush becomes a later stage.
+
+## Progress (22 Oct 2026)
+
+| Stage | State | Evidence |
+|---|---|---|
+| S1 Vision measurement | Not done | Needs O1, O4, m5 on iPhone and Mac. The group gap 0.04 is a guess. |
+| S1b School experiment | Not done | Water likeness was not built. See "Changes from the plan". |
+| S2 Candidates, choice, grouping | Done | `SubjectCandidates.swift`, `SubjectSelection.swift`. 14 tests pass (`SubjectCandidatesTests`). |
+| S3 `preview`/`export` take `SubjectChoice` | Done | `PhotoProcessor.applying` is the one place. Test: default keeps the plan, picked replaces the mask. No byte-compare of a real export yet. |
+| S4a Shared `SubjectPicker` view | Done | Coordinate tests pass at zoom 1 and 4, three aspects. Both targets build. Not seen on screen. |
+| S4b iPhone | Code done | Subjects row in `EditorView`. No screenshot. Small-iPhone Export check not done. |
+| S4c Mac | Code done | `MacModel.subjectStates`, `BatchEngine.Item.subjects`. Test passes: only the picked item changes. No app screenshot. |
+| S4d Strings | Not done | New strings are not in the catalog yet. List below. |
+| S5 Look on O4, m5, O1 | Not done | |
+
+### Cases the user asked for
+
+| Case | Handling | Checked |
+|---|---|---|
+| Vision finds no subject | Manual shows "No subjects found. UnderBlue uses Auto." and the photo stays in Auto. | Unit test (state). Not on a real photo. |
+| School of fish | Close instances merge into one group (gap 4% of the long side, chains merge). | Unit test with a 10-fish chain. Not on a real school. |
+| Too many subjects found | At most 6 groups. The smallest merges into its nearest. A note says nearby ones are grouped. | Unit test with 10 instances. |
+| Too much selected | The picks may cover at most 50% of the frame. A tap past that is refused with a message. A single group over 50% shows "too large". | Unit test. |
+
+### Switch (Jake, 24 Oct 2026)
+
+- "Pick subjects manually" is a switch. It is off by default.
+- The value is saved on the device (`SubjectPickerStore`, UserDefaults key `subjectPicker.enabled`).
+- Only when it is on does the Auto or Manual bar show.
+- Off returns the photo to Auto. On the Mac, every queue item returns to Auto.
+- iPhone: the switch sits in the controls, where the Subjects row was. Mac: at the top of the preview pane.
+- Checked: both targets build. 15 tests pass, one new (off by default, saved). Not seen on screen.
+
+### Tier outlines (24 Oct 2026, not seen on a device)
+
+- Tier one: the Vision groups, mint, as before. Tiers two and three: amber and lavender lines. They are shown, not tapped.
+- `SubjectTiers` cuts the lift's own inputs: not water = 1 - water share (alpha) at least 0.5, outside the Vision groups. Then t at least 0.5 is tier two, below is tier three. 0.5 is where the lift's two weights are equal.
+- Pieces under 0.2% of the frame are removed, and holes that small are filled.
+- The regions follow the settings at the moment Manual is chosen. They do not update on a preset change.
+- Tests: 18 pass, 3 new (split, clean-up, row order).
+- Mac probe on DSC03696, DSC03545 and m5 (Natural Dive):
+
+| Photo | Tier two share | Tier three share | What the amber line covers |
+|---|---|---|---|
+| DSC03696 | 0.48 | 0 | The reef. Also the sunlit surface at the top. |
+| DSC03545 | 0.27 | 0 | The wreck. Also two bubble patches at the top. |
+| m5 | 0.30 | 0 | The sand around the coral block. |
+
+- Tier three is empty on all three. On clear water t stays above 0.5, so the lavender line does not appear.
+- Open: the lift reads the red channel of the share image, not the alpha. Red is luminance times the share. So the lift reaches open water, and the outline does not match it yet. The subject-lift session measured this on 24 Oct and takes the fix to Jake.
+
+### Depth rule and Labs switch (Jake, 24 Oct 2026)
+
+- The switch moved into Help, in a "Labs" section with a flask icon. It is still off by default and saved on the device. Help is shared by the iPhone and the Mac.
+- Tier regions now also need depth: nearer than the open water's median depth by 0.1. Open water is share at least 0.9. With less than 1% open water, the depth test is off.
+- Why: light in the water fails the colour test for water but sits at the water's depth. Measured: open water 0.91 to 1.0, surface glow 0.88 to 0.90, bubbles 0.95 to 0.97, white fish 0.73 to 0.79.
+- Mac probe after the rule: the DSC03696 surface and the DSC03545 bubbles are gone from tier two. m5 is unchanged: the sand sits in front (0.09 to 0.41).
+- The DSC03696 surface margin is thin: 0.88 against a cut near 0.85.
+- The white fish in DSC03545 are still not outlined. They pass the colour and depth tests but are below the 0.2% piece size.
+- Tests: 19 pass, 1 new (light at the water's depth).
+- The lift does not use the depth rule. That is the subject-lift session's decision.
+
+### Small pieces and DSC03545 RAW (24 Oct 2026)
+
+- Jake: the front white fish in DSC03545 should be a tier. The fish behind it may be left out.
+- Mac probe, JPG and RAW: the front fish passes the colour and depth tests (not water 1.0, depth 0.69 to 0.73, water 0.97). Its piece is 0.093% of the frame. The back fish is 0.03%.
+- So the piece minimum went from 0.2% to 0.05%. Now the front fish is amber on the JPG. The back fish is not.
+- Vision differs between the two files. JPG: one instance, the divers. RAW: two instances, the two white fish. The divers are missing on the RAW.
+- On the RAW the divers are in no tier either: the outline shows nothing around them. Not measured why.
+
+### Sand, and RAW against JPG (Jake, 24 Oct 2026)
+
+- Jake: sand is no tier. Texture test added: mean gradient of gamma luma over 1% of the short side at least 0.035. Measured: m5 sand 0.009 and 0.027, front white fish 0.045, reef, coral and wreck 0.052 to 0.10.
+- Holes inside a region up to 1% of the frame are filled. The texture test had left many small rings inside the DSC03696 reef.
+- Jake: RAW and JPG must give the same subjects. The RAW colour stays neutral: our correction runs on Apple's RAW rendering. A colour match of the RAW to the camera JPEG was tried and rejected.
+- For a RAW, Vision reads the camera's embedded preview (`PhotoProcessor.visionImage`). Only the subject search uses it.
+- Mac results:
+
+| Photo | Vision share, JPG / ARW | Tier two share, JPG / ARW |
+|---|---|---|
+| DSC03545 | 0.0255 / 0.0252 (was 0.0017, the fish only) | 0.228 / 0.219 |
+| DSC03696 | 0.1073 / 0.1074 | 0.405 / 0.405 |
+
+- Not checked on the iPhone.
+
+### Needs 27, single photo only (Jake, 24 Oct 2026)
+
+- Manual picking makes sense only with the precise mask. So the picker needs iOS 27 or macOS 27.
+- Below 27 the Labs section and its text still show. The switch stays off and locked, with "Needs iOS 27 or later." (Mac: macOS 27). A saved "on" is ignored there (`SubjectPickerStore.isSupported`).
+- The Labs text now says it works only for a single photo. iPhone: not in batch, not for videos. Mac: the photo selected in the preview, one at a time, not for videos.
+- On 27 the groups still come from the instance mask. The precise mask (`SubjectMask.precise(box:)`, subject-lift session) is not wired into the picker. Jake has not decided yet.
+- The 26 screens were not seen: this Mac and the simulators run 27.
+
+### Precise groups, one tier map, model download (24 Oct 2026)
+
+- Agreed with the subject-lift session and decided by Jake. Record of the lift side: docs/SubjectEmphasis.md, E25.
+- Groups: on 27 each coarse group's box seeds `SubjectMask.precise`. A group whose segmentation fails is left out. The coarse mask is never used (its lift was rejected in E23).
+- One tier map (`SubjectTiers`) for the lift and the outline. It is notWater x in front x texture, split by t, then cleaned and feathered. It has no group term. The kernel multiplies it by (1 - picked mask), so an excluded subject is treated like the scene around it (Jake: it must still look natural). The drawing takes the picked groups out (`drawing(excluding:)`). The map is cached per photo, with Natural's correction.
+- `SubjectChoice.off` is the default: no lift, and the veil keeps the auto mask. Auto with Labs on means all groups. Every Vision-mask use follows the picks, including the white reference in `FilterEngine.analyze`.
+- `PreciseModelLoader`: it tries the on-device model first, with no network. It then downloads with a 30 s stall limit. An `NWPathMonitor` retries when a network returns. Jake confirmed on the iPhone that it works offline after the download.
+- Save gate (Labs on only): "Subject model not ready", with "Export without subject emphasis". The Mac batch does the same.
+- Compare (Mac: Original) closes the picker, as Done does. So both sides compare without the lines.
+- iPhone 17 Release (subject-lift session): the first Labs-on preview adds about 0.3-0.45 s for a JPEG, and 1.7 s for an ARW.
+- Open: fish that Vision does not return (the bannerfish around the O3 sunfish) get tier 2 but no badge. They cannot be tapped.
+
+### Tier pieces can be picked; done (Jake, 24 Oct 2026)
+
+- Tiers 2 and 3 can be turned off piece by piece, as the first plan said. A piece is a connected part of the cleaned tier region outside every Vision group, merged by the group rules (gap 4%, at most 6). Slivers left by the groups drop below the piece minimum.
+- Each piece has a badge (amber or lavender with a check). A tap turns it off: a thin white line and an empty circle. An off piece loses its tier weight inside, feathered outside, and keeps the base correction. Reset turns every piece back on.
+- Taps: a group's mask first, then a piece's pixels. Off every mask, the nearest mask pixel within half the tap size decides. Boxes never decide: the O3 sunfish's box covered the bannerfish above it.
+- O3, measured on the Mac at 1600 px: turning a bannerfish piece on against off gives mean OKLab difference x100 of 0.84 to 1.28, and p90 of 1.9 to 2.8. Lightness and chroma barely move. Only the contrast spread rises, by 3.9 to 4.8%, from tier 2 at 0.2. Jake: keep it as it is.
+- An excluded group is treated as scene, so tier lines can show on it without a badge. Jake kept this as it is.
+- Jake declared the subject picker finished on 24 Oct 2026.
+
+### Changes from the plan
+
+- Outline is the group's bounding box, not its exact area. The fill shows the real mask.
+- Water likeness was not built. The mask is the union of the picked Vision masks, so water between fish stays out only as far as Vision leaves it out. S1b decides if more is needed.
+- Vision for the groups runs when the user first taps Manual, not on load. The row is always shown for a photo.
+- First time in Manual, the picks equal what Auto would use. Reset returns to that.
+- Pick cap 50% is new (Auto allows 25%). Provisional.
+
+### Strings to add (S4d)
+
+Subjects, Auto, Manual, Edit, Done, Reset, Auto subjects, Pick subjects, "Looking for subjects…", "No subjects found. UnderBlue uses Auto.", "Auto protects the main subjects it finds.", "No subject selected. Tap a subject to protect it.", "%lld of %lld selected. Tap a subject to change it.", "Too much of the photo is selected. Deselect a subject first.", "This area is too large to be a subject.", "Many subjects were found. Nearby ones are grouped.", "Subject group %lld, selected, %lld included", "Subject group %lld, not selected, %lld included". Some may already exist (Done, Reset). Check the catalog first.
+
+### Next session
+
+1. Add the strings (insert keys, check 0 deleted lines).
+2. Run `SubjectCandidates.estimate` on O1, O4, m5 on Mac, then on the iPhone. Record instance and group counts. Set the gap (S1).
+3. Look at the picker on the Mac app and on the iPhone. Check a small iPhone with Custom preset shows Export.
+4. Check a no-subject photo (O1, O5) and a school.
+5. S5, then `docs/Verification.md`.
 
 ## Rules for this work
 

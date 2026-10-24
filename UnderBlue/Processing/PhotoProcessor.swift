@@ -1,5 +1,6 @@
 import CoreImage
 import ImageIO
+import Vision
 import UniformTypeIdentifiers
 import os
 
@@ -16,6 +17,9 @@ enum PhotoPipelineVariant: String, CaseIterable, Sendable {
     #endif
 }
 
+/// The precise model is not on the device yet (PreciseModelLoader). The picker waits, and there is no lift.
+enum SubjectModelError: Error, Equatable { case notReady }
+
 actor PhotoProcessor {
     let engine = FilterEngine()
     private let diagnostics: DiagnosticRecorder?
@@ -26,6 +30,11 @@ actor PhotoProcessor {
     private struct Prepared { let analysis: WaterAnalysis; let plan: RestorationPlan? }
     /// Keyed by photo so a batch can switch between photos without repeating depth analysis.
     private var prepared: [URL: Prepared] = [:]
+    /// The pickable subject groups per photo. Made on the first request, because Vision runs again for them.
+    /// A photo with no subject is stored as nil, so it is not tried twice.
+    private var candidates: [URL: SubjectCandidates?] = [:]
+    /// Tier maps per photo, nil when a photo has none. Made once: they do not follow the preset.
+    private var tierMaps: [URL: SubjectTiers?] = [:]
     private var recordedRenderFallback = false
     private var recordedKernelFallback = false
     #if DEBUG
@@ -51,17 +60,131 @@ actor PhotoProcessor {
         }
         return image
     }
+
+    /// The image Vision reads. For a RAW it is the camera's embedded preview, upright. Only the subject
+    /// search uses it. The colour correction still runs on the neutral RAW rendering. The masks are in
+    /// 0 to 1 coordinates, so the smaller size does not matter. On the RAW rendering Vision found the
+    /// two white fish on DSC03545 and lost the divers, at every size tried. On the preview it found
+    /// the divers, as on the camera's JPEG: share 0.0252 against 0.0255. The size was not the cause:
+    /// the JPEG at 1616 px gave 0.0248 (24 Oct 2026).
+    private func visionImage(_ url: URL, source: CIImage) throws -> CIImage {
+        guard UTType(filenameExtension: url.pathExtension)?.conforms(to: .rawImage) == true,
+              let filter = CIRAWFilter(imageURL: url), let preview = filter.previewImage,
+              preview.extent.width > 0, preview.extent.height > 0 else { return source }
+        let upright = preview.oriented(filter.orientation)
+        // A preview with another shape is a crop or a thumbnail strip. Its masks would not line up.
+        let a = upright.extent.width / upright.extent.height, b = source.extent.width / source.extent.height
+        guard abs(a - b) / b < 0.02 else { return source }
+        return engine.sdr(upright)
+    }
+
     func analyze(_ url: URL) async throws -> WaterAnalysis {
         let source = engine.sdr(try open(url))
         return try await prepare(url: url, source: source).analysis
     }
-    func preview(_ url: URL, settings: FilterSettings, original: Bool, maxPixel: CGFloat = 1600) async throws -> CGImage {
+    /// The groups the user can pick from, or nil when Vision finds no usable subject.
+    func subjectCandidates(_ url: URL) async throws -> SubjectCandidates? {
+        if let known = candidates[url] { return known }
+        try Task.checkCancellation()
+        // On 27 the groups need the precise model. Until it is on the device the picker waits and there is
+        // no lift. Nothing is cached, so the next call after the download builds the groups.
+        if #available(iOS 27, macOS 27, *) {
+            guard case .ready = await SubjectMask.preciseModelStatus() else { throw SubjectModelError.notReady }
+        }
+        let seen = try visionImage(url, source: engine.sdr(try open(url)))
+        var found = SubjectCandidates.estimate(seen)
+        if #available(iOS 27, macOS 27, *), let coarse = found { found = await precise(coarse, image: seen) }
+        candidates[url] = .some(found)
+        return found
+    }
+
+    /// Each group's mask from the precise segmentation, seeded by the group's box. Manual picking only
+    /// makes sense with the precise mask (Jake, 24 Oct 2026). A group whose segmentation fails is left out.
+    /// The coarse mask is never used instead: its lift is the one Jake rejected (E23). Nil when every
+    /// group fails. A neighbour inside a group's box was not pulled in on r07 and aquafix_20
+    /// (subject-lift session, 24 Oct 2026).
+    @available(iOS 27, macOS 27, *)
+    private func precise(_ coarse: SubjectCandidates, image: CIImage) async -> SubjectCandidates? {
+        var kept: [SubjectGroup] = [], masks: [SubjectMask] = []
+        for group in coarse.groups {
+            let b = group.bounds
+            // Vision's normalized space has its origin at the bottom left.
+            let box = NormalizedRect(x: b.minX, y: 1 - b.maxY, width: b.width, height: b.height)
+            guard let mask = await SubjectMask.precise(image, box: box, context: engine.context) else { continue }
+            kept.append(group); masks.append(mask)
+        }
+        guard !kept.isEmpty else { return nil }
+        return SubjectCandidates(width: coarse.width, height: coarse.height, groups: kept, merged: coarse.merged)
+            .replacingMasks(masks)
+    }
+    /// Tiers two and three on the candidates' grid: the soft map the lift reads and the picker's outline.
+    /// Nil without a plan (no depth fit), or when no region is left. Made once per photo with Natural's
+    /// correction, so a preset change does not move the regions. Preview and export make the same map.
+    func subjectTiers(_ url: URL) async throws -> SubjectTiers? {
+        if let known = tierMaps[url] { return known }
         try Task.checkCancellation()
         let source = engine.sdr(try open(url))
-        let plan = original ? nil : try await prepare(url: url, source: source).plan
+        let prepared = try await prepare(url: url, source: source)
+        guard let plan = prepared.plan else { tierMaps[url] = .some(nil); return nil }
+        let settings = FilterSettings(preset: .natural, intensity: FilterSettings.defaultIntensity,
+                                      analysis: prepared.analysis, adjustments: .zero)
+        // A fixed grid: the precise groups are on a 2048 grid, and the CPU work grows with the area.
+        let long = max(source.extent.width, source.extent.height)
+        let width = Int((source.extent.width / long * CGFloat(SubjectCandidates.drawingSide)).rounded())
+        let height = Int((source.extent.height / long * CGFloat(SubjectCandidates.drawingSide)).rounded())
+        guard width > 1, height > 1 else { return nil }
+        let small = source.transformed(by: CGAffineTransform(scaleX: CGFloat(width) / source.extent.width,
+                                                             y: CGFloat(height) / source.extent.height))
+        let current = restorationEngine.corrections(settings: settings, plan: plan).current
+        guard let share = engine.waterShare(small, correction: current),
+              let transmission = restorationEngine.contrastTransmission(small, plan: plan) else { return nil }
+        // The share is in alpha. Red holds luminance times the share (UnderBlueCalmShare).
+        let shareValues = SubjectTiers.channel(share, 3, width: width, height: height, context: engine.context)
+        let tValues = SubjectTiers.channel(transmission, 0, width: width, height: height, context: engine.context)
+        let map = plan.depth
+        let depthData = map.values.withUnsafeBytes { Data($0) }
+        let depthImage = CIImage(bitmapData: depthData, bytesPerRow: map.width * MemoryLayout<Float>.size,
+                                 size: CGSize(width: map.width, height: map.height), format: .Rf, colorSpace: nil)
+        let depthValues = SubjectTiers.channel(depthImage, 0, width: width, height: height, context: engine.context)
+        let c = engine.context
+        let red = SubjectTiers.channel(small, 0, width: width, height: height, context: c)
+        let green = SubjectTiers.channel(small, 1, width: width, height: height, context: c)
+        let blue = SubjectTiers.channel(small, 2, width: width, height: height, context: c)
+        let luma = (0..<(width * height)).map { i in pow(max(0, 0.2126 * red[i] + 0.7152 * green[i] + 0.0722 * blue[i]), 1 / 2.2) }
+        let made = SubjectTiers.make(waterShare: shareValues, transmission: tValues, depth: depthValues,
+                                     texture: SubjectTiers.texture(luma: luma, width: width, height: height),
+                                     width: width, height: height)
+        let tiers = made?.isEmpty == false ? made : nil
+        tierMaps[url] = .some(tiers)
+        return tiers
+    }
+
+    /// The plan for a subject choice, with the tier map on the lift when the lift is on.
+    private func plan(for url: URL, source: CIImage, subjects: SubjectChoice) async throws -> RestorationPlan? {
+        let base = try await prepare(url: url, source: source).plan
+        let auto = subjects == .auto ? try await autoLiftMask(url) : nil
+        var plan = Self.applying(subjects, to: base, autoLift: auto)
+        if plan?.subjectLift != nil, let tiers = try await subjectTiers(url) {
+            var off: Set<Int> = []
+            if case .picked(_, let tiersOff) = subjects { off = tiersOff }
+            // The same pieces as the picker: outside every group. Preview and export build them alike.
+            var pieces: SubjectTiers.Pieces?
+            if !off.isEmpty, let found = try? await subjectCandidates(url) {
+                pieces = tiers.pieces(excluding: found.mask(picking: Set(found.groups.map(\.id))))
+            }
+            plan?.subjectLift?.tiers = tiers.map(excluding: off, pieces: pieces)
+        }
+        return plan
+    }
+    func preview(_ url: URL, settings: FilterSettings, original: Bool, maxPixel: CGFloat = 1600,
+                 subjects: SubjectChoice = .off) async throws -> CGImage {
+        try Task.checkCancellation()
+        let source = engine.sdr(try open(url))
+        let plan = original ? nil : try await plan(for: url, source: source, subjects: subjects)
         let ratio = min(1, maxPixel / max(source.extent.width, source.extent.height))
         let small = source.transformed(by: CGAffineTransform(scaleX: ratio, y: ratio))
-        let result = original ? small : processed(small, settings: settings, plan: plan)
+        let chosen = Self.settings(settings, for: subjects) { engine.analyze(source, subjects: $0) }
+        let result = original ? small : processed(small, settings: chosen, plan: plan)
         guard let rendered = engine.context.createCGImage(result, from: result.extent, format: .RGBA8, colorSpace: FilterEngine.photoSpace) else { throw UnderBlueError.unreadable }
         return rendered
     }
@@ -73,12 +196,13 @@ actor PhotoProcessor {
     /// In both formats, quality 0.95 to 0.99 barely changed the error (measured 28 Sep 2026).
     /// A JPEG source is already compressed, so each save must add as little loss as possible.
     func export(_ url: URL, settings: FilterSettings, keepHDR: Bool = false,
-                format: ExportOptions.PhotoFormat = .jpeg) async throws -> URL {
+                format: ExportOptions.PhotoFormat = .jpeg, subjects: SubjectChoice = .off) async throws -> URL {
         try Task.checkCancellation()
         let original = try open(url)
         let source = engine.sdr(original)
-        let plan = try await prepare(url: url, source: source).plan
-        let image = processed(source, settings: settings, plan: plan)
+        let plan = try await plan(for: url, source: source, subjects: subjects)
+        let chosen = Self.settings(settings, for: subjects) { engine.analyze(source, subjects: $0) }
+        let image = processed(source, settings: chosen, plan: plan)
         // The SDR image in the file is the normal export. The HDR version (PhotoHDR) becomes its gain map.
         var hdr: CIImage?
         if keepHDR, original.contentHeadroom > 1 {
@@ -152,11 +276,56 @@ actor PhotoProcessor {
     #endif
 
     /// Drops a photo's cached analysis once it leaves the session.
-    func forget(_ url: URL) { prepared[url] = nil }
+    func forget(_ url: URL) { prepared[url] = nil; candidates[url] = nil; tierMaps[url] = nil }
+
+    /// The white reference trusts what sits on a subject (FilterEngine.analyze). With picked subjects it
+    /// reads the picks, so a group the user cleared is not a subject there either (Jake, 24 Oct 2026).
+    /// `analyze` measures the photo with a mask. It samples 48 px, so it is cheap. Auto keeps the
+    /// caller's analysis, which `prepare` made with the automatic mask.
+    static func settings(_ settings: FilterSettings, for choice: SubjectChoice,
+                         analyze: (SubjectMask?) -> WaterAnalysis) -> FilterSettings {
+        guard case .picked(let mask, _) = choice else { return settings }
+        var chosen = settings
+        chosen.analysis = analyze(mask)
+        return chosen
+    }
+
+    /// The one place a subject choice meets the plan, so preview and export get the same mask.
+    /// A photo with no mask is not routed differently (liftDark is for video only).
+    /// The lift is a Labs feature for 27 (Jake, 24 Oct 2026). Off: no lift, and the veil keeps the automatic
+    /// mask, as main ships. Auto: the lift on `autoLift`, all the groups. Picked: the picks for the veil and the lift.
+    static func applying(_ choice: SubjectChoice, to plan: RestorationPlan?, autoLift: SubjectMask? = nil) -> RestorationPlan? {
+        guard var plan else { return nil }
+        switch choice {
+        case .off: plan.subjectLift = nil
+        case .auto: plan.subjectLift = autoLift.map { SubjectLift(mask: $0) }
+        case .picked(let mask, _):
+            plan.subjectMask = mask
+            plan.subjectLift = mask.map { SubjectLift(mask: $0) }
+        }
+        return plan
+    }
+
+    /// Auto's lift mask: every group, precise on 27, so Auto looks like Manual with all groups picked.
+    /// It takes the lift's cap: the veil's 0.25 rejects a reef that is the photo's subject (E2).
+    private func autoLiftMask(_ url: URL) async throws -> SubjectMask? {
+        #if DEBUG
+        // UB_NO_LIFT runs the photo path with no lift, as the control for a device check.
+        if ProcessInfo.processInfo.environment["UB_NO_LIFT"] != nil { return nil }
+        #endif
+        let found: SubjectCandidates?
+        do { found = try await subjectCandidates(url) } catch SubjectModelError.notReady { return nil }
+        guard let found, let all = found.mask(picking: Set(found.groups.map(\.id))) else { return nil }
+        let share = all.values.reduce(0, +) / Float(all.values.count)
+        return share >= SubjectMask.minimumShare && share <= SubjectMask.liftMaximumShare ? all : nil
+    }
 
     private func prepare(url: URL, source: CIImage) async throws -> Prepared {
         if let cached = prepared[url] { return cached }
-        let analysis = engine.analyze(source)
+        // The mask comes first: the white reference trusts what sits on a subject (FilterEngine.analyze).
+        let seen = try visionImage(url, source: source)
+        let subjects = SubjectMask.estimate(seen)
+        let analysis = engine.analyze(source, subjects: subjects)
         #if DEBUG
         logger.debug("current values(natural): \(ColorCorrection.make(analysis: analysis, preset: .natural).logDescription, privacy: .public)")
         #endif
@@ -177,7 +346,7 @@ actor PhotoProcessor {
             let depth = try await depthEstimator.estimate(image: source, sourceURL: url)
             try Task.checkCancellation()
             var plan = try waterEstimator.estimate(image: source, depth: depth, legacy: analysis, context: engine.context)
-            plan.subjectMask = SubjectMask.estimate(source)
+            plan.subjectMask = subjects
             restorationPlan = plan
             #if DEBUG
             logger.debug("Binf=(\(plan.backscatterInfinity.x),\(plan.backscatterInfinity.y),\(plan.backscatterInfinity.z)) betaD=(\(plan.betaDirect.x),\(plan.betaDirect.y),\(plan.betaDirect.z)) betaB=(\(plan.betaBackscatter.x),\(plan.betaBackscatter.y),\(plan.betaBackscatter.z)) confidence=\(plan.confidence) floorPixels=\(plan.transmissionFloorPixelPercentage)% maxGainPixels=\(plan.maximumGainPixelPercentage)%")
@@ -218,7 +387,8 @@ actor PhotoProcessor {
             }
             // The one colour entry point shared with video preview and export. Low-confidence fits
             // approach the exact existing UnderBlue output.
-            return try restorationEngine.combined(source, plan: plan, settings: settings, filter: engine)
+            return try restorationEngine.combined(source, plan: plan, settings: settings, filter: engine,
+                                                  subjectLift: plan.subjectLift)
         } catch {
             if !recordedRenderFallback, let diagnostics {
                 recordedRenderFallback = true

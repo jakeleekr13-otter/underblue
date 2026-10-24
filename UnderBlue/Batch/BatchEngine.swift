@@ -23,6 +23,8 @@ final class BatchEngine {
         /// The name the sink stored the result under.
         var savedName: String?
         var error: String?
+        /// The subjects this photo protects. Off (no lift) unless the Labs switch is on. A video ignores it.
+        var subjects = SubjectChoice.off
     }
 
     /// Jobs allowed at once in each stage. `inFlight` caps the items that were admitted but are not delivered yet,
@@ -61,6 +63,14 @@ final class BatchEngine {
 
     func add(_ media: [ImportedMedia]) {
         items += media.map { Item(url: $0.url, kind: $0.kind, originalName: $0.originalName) }
+    }
+
+    /// Sets the subject choice of one queued photo. A run reads it when the photo exports, so it is refused while running.
+    @discardableResult
+    func setSubjects(_ id: Item.ID, _ choice: SubjectChoice) -> Bool {
+        guard !running, items.contains(where: { $0.id == id }) else { return false }
+        update(id) { $0.subjects = choice }
+        return true
     }
 
     /// Removes an item that is not running. Returns false while a run is active.
@@ -189,7 +199,7 @@ final class BatchEngine {
         catch { await workers.analysis.release(analysisSlot); await processor.forget(item.url); throw error }
         await workers.analysis.release(analysisSlot)
         update(item.id) { $0.state = .waiting }
-        let chosen = settings, format = workers.format, url = item.url, id = item.id
+        let chosen = settings, format = workers.format, url = item.url, id = item.id, subjects = item.subjects
         let cost = workers.memory.cost(megapixels: Self.megapixels(ofPhoto: url))
         do {
             let output = try await workers.photo.run { slot in
@@ -199,7 +209,7 @@ final class BatchEngine {
                     await self.update(id) { $0.state = .exporting }
                     try StorageCheck.require(bytes: 100_000_000)
                     // Batch has no SDR/HDR choice: HDR photos stay HDR, SDR photos stay SDR.
-                    let file = try await workers.processors[slot].export(url, settings: chosen, keepHDR: !workers.trial && workers.preferHDR, format: format)
+                    let file = try await workers.processors[slot].export(url, settings: chosen, keepHDR: !workers.trial && workers.preferHDR, format: format, subjects: subjects)
                     await workers.memory.release(reservation)
                     return file
                 } catch { await workers.memory.release(reservation); throw error }

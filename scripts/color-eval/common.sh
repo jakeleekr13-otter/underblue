@@ -2,7 +2,7 @@
 # HT_EVAL_DATA     data root (market pairs, real photos, AquaColorFix triplets). Default: DeveloperMedia/ (git-ignored, outside every Xcode group).
 # HT_EVAL_SOURCES  folder with the colour sources (FilterEngine, MetalKernels, the .metal files, FinishingMath, ColorCorrection,
 #                  ColorMath, WaterAnalysis, FilterSettings, DivePreset), RestorationPlan, RestorationEngine,
-#                  WaterModelEstimator, DepthEstimator and SubjectMask.
+#                  WaterModelEstimator, DepthEstimator, SubjectMask, SubjectTiers and SubjectCandidates.
 # HT_EVAL_MARKET   market pairs (raw/, ref/). Default: $HT_EVAL_DATA/eval/market.
 # HT_EVAL_OUT      cache and results root. Default: $TMPDIR/underblue-color-eval. Never inside the repo.
 HERE=${0:A:h}
@@ -29,7 +29,8 @@ build_eval() {
     swiftc -O -swift-version 6 -o $out/eval ${2:-$HERE/main.swift} $src/FilterEngine.swift $src/MetalKernels.swift \
         $src/FinishingMath.swift $src/ColorCorrection.swift $src/ColorMath.swift $src/WaterAnalysis.swift \
         $src/FilterSettings.swift $src/DivePreset.swift $src/RestorationPlan.swift \
-        $src/RestorationEngine.swift $src/WaterModelEstimator.swift $src/DepthEstimator.swift $src/SubjectMask.swift $HERE/PlanUniform.swift \
+        $src/RestorationEngine.swift $src/WaterModelEstimator.swift $src/DepthEstimator.swift $src/SubjectMask.swift \
+        $src/SubjectTiers.swift $src/SubjectCandidates.swift $HERE/PlanUniform.swift \
         > $out/build.log 2>&1 || { echo "harness build failed, see $out/build.log"; return 1; }
     ln -sfn $MODEL $out/DepthAnythingV2SmallF16P6.mlmodelc
 }

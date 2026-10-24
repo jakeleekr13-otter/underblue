@@ -88,6 +88,9 @@ struct RestorationPlan: Sendable, Equatable {
     /// The photo's subjects (SubjectMask), left out of the local veil's broad light. Photos only:
     /// video plans have none, so a mask that changes from frame to frame cannot flicker.
     var subjectMask: SubjectMask?
+    /// The subject lift, when the photo path built one. Video plans leave it nil, so video is
+    /// unchanged until its own check runs (docs/SubjectEmphasis.md).
+    var subjectLift: SubjectLift?
 
     init(depth: NormalizedDepthMap, depthSource: DepthSource, depthStatistics: DepthStatistics,
          backscatterInfinity: SIMD3<Float>, betaDirect: SIMD3<Float>, betaBackscatter: SIMD3<Float>,

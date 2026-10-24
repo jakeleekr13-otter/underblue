@@ -2,6 +2,15 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## Light detail edge guard (24 Oct 2026, photos only)
+
+Details: [SubjectEmphasis E27](SubjectEmphasis.md). A new kernel `UnderBlueLightEdge` and a blend take the light detail off water beside a strong edge. It removes the dark band around fish (DSC03545). Video passes `edgeGuard: false` and is byte-identical on the Mac.
+
+Checked on the iPhone 17 (Jake, 24 Oct 2026): DSC03545 and IMG_7400 look fine.
+
+Still open:
+- One video export on the phone: unchanged. The Mac says byte-identical.
+
 ## Camera JPEG reef colour (23 Oct 2026, iPhone 1.1.4 build 10)
 
 Commits `f96dc65`, `cca30aa`, `9e5a23b`. Details: [JpegInput](JpegInput.md).
@@ -66,6 +75,9 @@ Still open:
   result from the camera JPEG, and 95 against 84 per cent for the ARW. So it is in both results and
   in neither source, and the ARW is the stronger one. It is not a camera JPEG problem. The cause was
   not looked for. It may be the same local veil as the video halo above, but on the photo path.
+  **Cause found 23 Oct 2026, not fixed.** The source has a pale glow around each fish. The subject
+  light removal (`subjectTone`) greys it, per pixel. It is not the local veil, the mask or the
+  detail layer. See `SubjectEmphasis.md`, E18.
 - Not checked: 4K and HDR clips, the whole whale shark clip by eye (only the first 12 s), the Mac app's own export output (the test sandbox hides it), the iPhone export of the red-ring fix on the whale shark clip beyond the first 12 s.
 
 ## Dark corner in video: shadow floor (22 Oct 2026)

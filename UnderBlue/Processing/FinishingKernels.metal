@@ -226,6 +226,15 @@ using namespace metal;
     return all(isfinite(out)) ? float4(out, source.a) : source;
 }
 
+// The size of the light detail's difference (gamma luminance), the input of its edge guard in
+// FilterEngine.finishing. Same pixel and blur as UnderBlueLightDetail.
+[[stitchable]] float4 UnderBlueLightEdge(coreimage::sample_t source, coreimage::sample_t sharp) {
+    const float3 luma = float3(0.2126f, 0.7152f, 0.0722f);
+    const float l = dot(source.rgb, luma), lb = dot(2.0f * source.rgb - sharp.rgb, luma);
+    const float d = l > 1e-5f && lb > 0.0f ? fabs(pow(l, 1.0f / 2.2f) - pow(lb, 1.0f / 2.2f)) : 0.0f;
+    return float4(isfinite(d) ? d : 0.0f, 0.0f, 0.0f, 1.0f);
+}
+
 // Water calm (FilterEngine.waterCalmWeight and finishing). FinishingMath.calmShare, calmFlatness and
 // waterCalm are the CPU mirrors. Water noise and the sharpening on it rise with the correction; open
 // water has no detail to keep, so it is smoothed before the colour stage and gets no sharpening.
@@ -349,3 +358,115 @@ static float violetHue(float3 o) { return fmod(atan2(o.z, o.y) * 57.29578f + 360
     const float3 out = violetLinear(float3(o.x, float2(cos(hb), sin(hb)) * C * keep));
     return all(isfinite(out)) ? float4(out, c.a) : c;
 }
+
+// Subject lift (docs/SubjectEmphasis.md). It runs once, on the blended output, after the depth blend
+// and before the violet calm: a step inside the finishing kernel runs on both paths, and the blend
+// then dilutes it. The highlight shoulder has already run per path, so the lift rolls itself off.
+// mask.r is the subject weight. params: x = L gain, y = chroma cap, z = highlight start, w = noise floor.
+[[stitchable]] float4 UnderBlueSubjectLift(coreimage::sample_t c, coreimage::sample_t mask, coreimage::sample_t blurred, coreimage::sample_t wide, coreimage::sample_t water, coreimage::sample_t signal, coreimage::sample_t tiers, float4 params, float4 shape, float4 det, float4 hi, float4 tier) {
+    float w = clamp(mask.r, 0.0f, 1.0f);
+    // Vision builds the mask at 1024 on the long side. Stretched to full size its edge spreads over
+    // several pixels, and the lift used to follow that ramp into the water: the water within 4 px of
+    // the outline changed by 0.0155 (Jake saw a halo there, 22 Oct 2026). The remap moves the ramp
+    // inside the subject, so the weight is zero in the water. hi.z and hi.w are its ends.
+    if (hi.w > hi.z) { w = smoothstep(hi.z, hi.w, w); }
+    // Tier two. Vision returns object-like things and stops: on five of Jake's photos it gave the
+    // diver or the anemone and left the reef or the wreck out (23 Oct 2026). Those are subjects too.
+    // The water share already says which pixels are not open water, so its complement carries them,
+    // at shape.w of the strength. It is a layer, not an instance, so no picker can offer it.
+    // Tier three splits tier two by the water in front, not by a depth cut. `signal` is how much of an
+    // object's contrast survives that water (UnderBlueContrastTransmission): 1 for a reef in front, less
+    // for one further back. It follows the plan's own water, so clear water keeps a far reef near and
+    // murky water sends it back. It replaced a fixed cut at depth 0.4 (E17).
+    // tier: x = tier three, y and z are the highlight pulls for tiers two and three, w = 1 when `tiers` holds
+    // the tier map (SubjectTierMap: red tier two, green tier three, already outside every Vision group).
+    const float f = clamp(signal.r, 0.0f, 1.0f);
+    float w2 = 0.0f, w3 = 0.0f;
+    if (shape.w > 0.0f || tier.x > 0.0f) {
+        if (tier.w > 0.5f) {
+            // The map is the picker's outline before its 0.5 cut, so the lift changes what the user sees
+            // outlined, and nothing the outline leaves out: sand, the sunlit surface, bubbles (E25).
+            // It holds no subject, so (1 - w) takes the picked subjects out. A subject the user excluded
+            // is then treated like the scene around it, not left as a hole (Jake, 24 Oct 2026).
+            w2 = shape.w * clamp(tiers.r, 0.0f, 1.0f) * (1.0f - w);
+            w3 = tier.x * clamp(tiers.g, 0.0f, 1.0f) * (1.0f - w);
+        } else {
+            // The share is in alpha. Red holds gamma luminance times the share (UnderBlueCalmShare), so
+            // reading red put tiers two and three on open water at 0.33 to 0.59 of their weight (E22).
+            const float notWater = (1.0f - clamp(water.a, 0.0f, 1.0f)) * (1.0f - w);
+            w2 = shape.w * notWater * f;
+            w3 = tier.x * notWater * (1.0f - f);
+        }
+        w = w + w2 + w3;
+    }
+    if (!(w > 0.0f)) { return c; }
+    const float3 o = violetOKLab(c.rgb);
+    const float L = o.x;
+    if (!(L > 0.0f)) { return c; }
+    // The two guards run before any weight is derived from w. A very dark pixel carries little
+    // signal, so lifting it lifts its noise. The highlight shoulder is behind us, so the lift lets
+    // go before white. Both scale every tier by the same factor, which keeps their proportions.
+    // They used to run after wNear and wTex were taken, so the brightness and the sharpening missed
+    // them entirely. DSC03687 clipped 0.0557 against 0.0012 today (23 Oct 2026).
+    // A guard on the brightest channel was tried here and dropped (23 Oct 2026). It moved DSC03687
+    // only from 0.0422 to 0.0338, and it made DSC03656 worse, 0.0714 to 0.0905: cutting the weight
+    // also cuts the highlight pull, which was recovering that photo's blown sun.
+    const float guard = smoothstep(0.0f, max(params.w, 1e-4f), L) * (1.0f - smoothstep(params.z, 1.0f, L));
+    w *= guard; w2 *= guard; w3 *= guard;
+    if (!(w > 0.0f)) { return c; }
+    // Each tier carries its own highlight pull, weighted by how much of this pixel it owns. A reef
+    // clips where a Vision subject does not, so one pull for all three was too weak (23 Oct 2026).
+    const float wv = max(0.0f, w - w2 - w3);
+    const float pull = (hi.x * wv + tier.y * w2 + tier.z * w3) / max(w, 1e-4f);
+    // The tiers do not do the same job. A reference edit brightens the subject and gives the
+    // background contrast alone, so the deep blue stays (Jake, 23 Oct 2026). So the brightness and
+    // the chroma follow the near weight, while contrast, clarity and sharpening use all three.
+    const float wNear = wv + w2;
+    // Sharpening follows the same transmission t. The restoration divides by t, so the noise of a far
+    // pixel is 1/t times a near one's. Sharpening by t keeps the noise it adds the same at every depth,
+    // and a far subject seen through more water gets less (Jake, 23 Oct 2026). It used to fall by a
+    // fixed 0.8 x depth (E17).
+    const float wTex = w * f;
+    // Gamma, not a gain. A gain multiplies L, so a bright pixel passes white by construction
+    // (E4, 22 Oct 2026: gain 1.2 clipped 19% of the O4 subject). Gamma cannot pass white, and it
+    // lifts the dark part of the subject most, which is the part that needed it.
+    float Lnew = pow(L, 1.0f - clamp(params.x, 0.0f, 0.9f) * wNear);
+    // Contrast inside the subject, around shape.z. It moves luminance only, so it cannot raise the
+    // water cast the way a chroma rule does (E5, 22 Oct 2026). The curve is per pixel, so it draws
+    // no halo: the dark outline comes from blur-based methods, not from this.
+    Lnew = clamp(Lnew + shape.y * w * (Lnew - shape.z), 0.0f, 1.0f);
+    // Sharpening inside the subject. The global detail layer gave up texture on 20 Oct 2026 to stop
+    // halos everywhere (ColorAlgorithm.md). Inside the mask the band can be wider, because the mask
+    // already says where a subject is. det: x = strength, y = band low, z = band high.
+    // Clarity first: a wider blur, so it shapes the big forms before the fine texture goes on top.
+    // `clarity` and `definition` were both cut to 0.6 everywhere on 28 Sep 2026 (ColorAlgorithm.md).
+    if (det.w > 0.0f) {
+        const float wp = L - violetOKLab(wide.rgb).x;
+        Lnew = clamp(Lnew + det.w * wTex * wp, 0.0f, 1.0f);
+    }
+    if (det.x > 0.0f) {
+        const float hp = L - violetOKLab(blurred.rgb).x;
+        // A strong edge gets nothing, so an outline grows no halo.
+        const float edge = 1.0f - smoothstep(det.y, max(det.z, det.y + 1e-4f), fabs(hp));
+        Lnew = clamp(Lnew + det.x * wTex * edge * hp, 0.0f, 1.0f);
+    }
+    // Highlight pull, last, so it tames what the steps above produced. Above the knee the range is
+    // compressed toward the knee. Our highlights sit 5 to 10 L* over the market look.
+    if (pull > 0.0f && Lnew > hi.y) {
+        Lnew = hi.y + (Lnew - hi.y) * (1.0f - clamp(pull, 0.0f, 1.0f) * w);
+    }
+    // A brighter pixel reads as less saturated, so chroma follows a power of the ratio, capped.
+    // shape.x is that power. The cube root alone gave about 3%, against the 56% to 70% the earlier
+    // steps take off the subject (E4, 22 Oct 2026), so the power is a knob, not a constant.
+    const float scale = min(pow(max(Lnew / L, 1e-4f), max(shape.x, 0.0f)), max(params.y, 1.0f));
+    float3 out = violetLinear(float3(Lnew, o.yz * scale));
+    // Gamma keeps L under white, but the chroma scale can still push one channel over it.
+    // The pull-back lands the brightest channel exactly on white and keeps the hue.
+    const float inTop = max(c.r, max(c.g, c.b));
+    const float outTop = max(out.r, max(out.g, out.b));
+    if (outTop > 1.0f) {
+        out = mix(c.rgb, out, clamp((1.0f - inTop) / max(outTop - inTop, 1e-4f), 0.0f, 1.0f));
+    }
+    return all(isfinite(out)) ? float4(out, c.a) : c;
+}
+

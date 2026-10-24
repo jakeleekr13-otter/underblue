@@ -33,6 +33,8 @@ struct EditorView: View {
             .task { await model.load() }
             .task(id: model.settings) { if !model.loading { await model.refreshPreview() } }
             .task(id: model.comparing) { if !model.loading { await model.refreshPreview() } }
+            .task(id: model.subjects.key) { if !model.loading { await model.refreshPreview() } }
+            .task(id: PreciseModelLoader.shared.isReady) { if PreciseModelLoader.shared.isReady { await model.preciseModelReady() } }
             .onDisappear { model.close() }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in model.memoryWarning() }
             .onReceive(NotificationCenter.default.publisher(for: .AVPlayerItemFailedToPlayToEndTime)) { model.playbackFailed($0) }
@@ -45,6 +47,11 @@ struct EditorView: View {
             .overlay { if model.exporting { exportProgress } }
             .alert("Couldn’t finish", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) { Button("OK") { model.error = nil } } message: { Text(model.error ?? "") }
             .alert("UnderBlue", isPresented: Binding(get: { model.notice != nil }, set: { if !$0 { model.notice = nil } })) { Button("OK") { model.notice = nil } } message: { Text(model.notice ?? "") }
+            .alert("Subject model not ready", isPresented: $model.modelNotReadyForSave) {
+                Button("Export without subject emphasis") { Task { await model.saveAnywayWithoutEmphasis(purchases: purchases, trial: trial) } }
+                if PreciseModelLoader.shared.state == .failed { Button("Try again") { PreciseModelLoader.shared.start() } }
+                Button("Wait", role: .cancel) { }
+            } message: { Text(SubjectPickerText.modelWait(PreciseModelLoader.shared.state)) }
     }
     /// Landscape always gets the side panel. A regular-width screen close to square (an unfolded foldable)
     /// gets it too, because a bottom panel would leave the preview a short, wide strip.
@@ -76,7 +83,15 @@ struct EditorView: View {
             }
             else if let preview = model.comparing ? model.originalPreview : model.preview {
                 // Compare swaps the image but keeps the zoom, so the same detail can be checked both ways.
-                ZoomablePreview(image: preview, zoom: $zoom) { model.requestDetailPreview() }
+                // The picker shows over the corrected image only. Compare hides it.
+                let picking = model.subjects.showsOverlay && !model.comparing
+                ZoomablePreview(image: preview, zoom: $zoom, overlayActive: picking, onZoomIn: { model.requestDetailPreview() }) { size in
+                    if picking, let candidates = model.subjects.candidates {
+                        SubjectPicker(candidates: candidates, picks: model.subjects.picks, tiers: model.subjects.tiers, tierPieces: model.subjects.tierPieces,
+                                          tierDrawing: model.subjects.tierDrawing, tiersOff: model.subjects.tiersOff,
+                                          size: size, zoom: zoom.scale, onToggleTier: { model.toggleTier($0) }) { model.toggleSubject($0) }
+                    }
+                }
             }
             if model.loading {
                 if model.analyzing { VStack(spacing: 12) { longVideoNotice; ProgressView("Analyzing…") } }
@@ -119,7 +134,11 @@ struct EditorView: View {
                     }.buttonStyle(.bordered).frame(minHeight: 44).disabled(!model.ready || model.analyzing)
                         .accessibilityHint("Play three seconds from the current position, then return")
                 }
-                Button { model.comparing.toggle() } label: {
+                Button {
+                    // Compare closes the picker, as Done does, so both sides compare without the lines.
+                    if !model.comparing { model.finishSubjectPicking() }
+                    model.comparing.toggle()
+                } label: {
                     Label("Compare", systemImage: model.comparing ? "eye.fill" : "eye").lineLimit(1).fixedSize()
                 }
                     .buttonStyle(.bordered).frame(minHeight: 44)
@@ -127,6 +146,7 @@ struct EditorView: View {
                     .accessibilityHint("Show original media without correction")
             }.padding(.horizontal)
             presetPicker(grid: presetGrid)
+            if model.media.kind == .photo, model.subjectPickerEnabled { subjectsRow }
             if model.settings.preset == .custom {
                 // Custom has no intensity: it renders at the default intensity (0.8) and has its own sliders.
                 CustomAdjustmentControls(adjustments: $model.settings.adjustments).padding(.horizontal)
@@ -140,6 +160,39 @@ struct EditorView: View {
             Button("Export") { Task { await model.requestExport(purchases: purchases, trial: trial) } }
                 .buttonStyle(.borderedProminent).frame(minHeight: 44).disabled(!model.ready || model.exporting || model.analyzing)
         }.padding(.bottom, 8)
+    }
+    /// Shown only when the Labs switch in Help is on (SubjectPickerStore): the Auto or Manual bar,
+    /// then Done and Reset while picking. Manual says so when Vision finds nothing.
+    private var subjectsRow: some View {
+        subjectsBar(model.subjects).padding(.horizontal)
+    }
+    private func subjectsBar(_ subjects: SubjectSelection) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Subjects").font(.subheadline)
+                Spacer(minLength: 8)
+                Picker("Subjects", selection: Binding(
+                    get: { subjects.isManual },
+                    set: { manual in if manual { Task { await model.chooseManualSubjects() } } else { model.chooseAutoSubjects() } })) {
+                    Text("Auto").tag(false)
+                    Text("Manual").tag(true)
+                }.pickerStyle(.segmented).labelsHidden().frame(maxWidth: 180).disabled(subjects.isDetecting)
+                    .accessibilityLabel("Subjects")
+            }
+            if subjects.isManual {
+                HStack {
+                    if subjects.showsOverlay {
+                        Button("Done") { model.finishSubjectPicking() }
+                    } else {
+                        Button { model.editSubjects() } label: { Label("Edit", systemImage: "pencil") }
+                    }
+                    Button("Reset") { model.resetSubjects() }
+                }.buttonStyle(.bordered).frame(minHeight: 44)
+            }
+            Text(SubjectPickerText.summary(subjects)).font(.footnote).foregroundStyle(.secondary)
+            if let legend = SubjectPickerText.legend(subjects) { Text(legend).font(.footnote).foregroundStyle(.secondary) }
+            if let notice = SubjectPickerText.notice(subjects) { Text(notice).font(.footnote).foregroundStyle(.orange) }
+        }.animation(.default, value: subjects.status)
     }
     /// One row that scrolls sideways, or a two-column grid when the pane is narrow and tall.
     @ViewBuilder private func presetPicker(grid: Bool) -> some View {

@@ -11,10 +11,11 @@ final class ComplianceTests: XCTestCase {
         XCTAssertTrue(text.contains("TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION"))
     }
 
-    /// The Mac app had no icon at all: the icon set held only an iPhone image.
-    func testMacAppHasItsOwnIcon() throws {
-        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleIconName") as? String, "AppIconMac")
-        XCTAssertNotNil(Bundle.main.url(forResource: "AppIconMac", withExtension: "icns"), "no .icns in the app")
+    /// The Mac app once had no icon at all: the icon set held only an iPhone image.
+    /// Since 24 Oct 2026 it uses the shared Icon Composer file, UnderBlue/Resources/AppIcon.icon.
+    func testMacAppHasAnIcon() throws {
+        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "CFBundleIconName") as? String, "AppIcon")
+        XCTAssertNotNil(Bundle.main.url(forResource: "AppIcon", withExtension: "icns"), "no .icns in the app")
     }
 
     func testTheModelIsBundledSoTheLicenseApplies() {

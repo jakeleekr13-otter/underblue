@@ -7,8 +7,7 @@ Source: Apple, "Creating your app icon using Icon Composer" (Xcode documentation
 ## Current state (23 Oct 2026)
 
 - iPhone: `UnderBlue/Resources/AppIcon.icon` since step 3. Build setting `ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon`. The old PNG set and `scripts/make_icon.py` are removed.
-- Mac: `AppIconMac.appiconset`, a draft from `scripts/make_mac_icon.py`. Build setting `AppIconMac`. That script read the old iPhone PNG, so it cannot run now. Step 4 removes it.
-- The `UnderBlueMac` target also syncs the `UnderBlue/` folder, so `AppIcon.icon` is already in the Mac target. Step 4 only needs the Mac icon name changed to `AppIcon`.
+- Mac: the same `UnderBlue/Resources/AppIcon.icon` since step 4 (24 Oct 2026). The `UnderBlueMac` target syncs the `UnderBlue/` folder, so only the build setting changed to `AppIcon`. The draft `AppIconMac.appiconset` and `scripts/make_mac_icon.py` are removed.
 - iOS minimum: 26.0. Xcode makes fallback images for releases before 27 from the `.icon` file.
 
 ## Plan, one step per session
@@ -18,7 +17,7 @@ Source: Apple, "Creating your app icon using Icon Composer" (Xcode documentation
 | 1 | Build `AppStoreAssets/IconComposer/AppIcon.icon` from the SVG layers. Match the current icon. | Done 23 Oct 2026. `icon.json` was written by hand (Liquid Glass defaults). `ictool` renders iOS Default, Dark, ClearLight, TintedDark and macOS Default with all three waves. |
 | 2 | Tune Liquid Glass: specular, shadow, translucency. Set Dark and Mono variants. | Every preview is readable at the smallest size. |
 | 3 | iPhone target: move the file to `UnderBlue/Resources/`, remove `AppIcon.appiconset`. | 23 Oct 2026: iOS and Mac Debug builds pass. The iOS `Assets.car` holds the `AppIcon` stack with the Waves group and three vector layers. Installed on iPhone 17. Jake accepted the Home Screen look. Ships in 1.1.4 (10). |
-| 4 | Mac target: use the same file. Remove the `make_mac_icon.py` draft. | The Mac app builds. The icon shows in the Dock. |
+| 4 | Mac target: use the same file. Remove the `make_mac_icon.py` draft. | 24 Oct 2026: the Mac Debug build passes. `CFBundleIconName = AppIcon`; the bundle has `AppIcon.icns` and the Waves stack in `Assets.car`. ComplianceTests pass. The Dock look is not checked. |
 | 5 | Upload a build. Check the icon in App Store Connect and TestFlight. | The icon on the store page matches the device. |
 
 

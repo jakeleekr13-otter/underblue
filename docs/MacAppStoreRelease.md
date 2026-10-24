@@ -61,7 +61,7 @@ Xcode configuration to set in stage 1 and check at archive time:
 - [ ] Review the UI as the reviewer will: first launch, trial, paywall, restore purchase, redeem code.
 
 App icon and Help:
-- [x] A Mac icon set exists (`UnderBlueMac/Assets.xcassets/AppIconMac.appiconset`). It is a **draft** from `scripts/make_mac_icon.py`. Confirm the final design.
+- [x] The Mac app uses the iPhone icon, `UnderBlue/Resources/AppIcon.icon` (Icon Composer), since 24 Oct 2026. The draft icon set is removed. See `IconComposer.md`.
 - [x] Help window and About panel. Help shows the Apache-2.0 license of the depth model, as the iPhone app does. `ComplianceTests` checks it.
 - [x] About shows `© 2026 Enheart` (`NSHumanReadableCopyright`). In App Store Connect the Copyright field takes `2026 Enheart`, without the © sign and without a URL.
 
@@ -149,12 +149,12 @@ Source: the guidelines page, read on 20 Oct 2026 up to character 100000 of 11442
 | 5.1.1(i) privacy link in app | Pass. About and Help link to the policy. Also needed in the App Store Connect field. |
 | 5.1.1(ii) purpose strings | Pass. Photos is add-only and the text matches. |
 | 2.1(b) IAP visible | Open. The review notes must name the menu item (see Part C). |
-| 2.1(a) no placeholders | Open. The app icon is a draft. |
+| 2.1(a) no placeholders | Pass for the icon: the final Icon Composer icon since 24 Oct 2026. |
 
 ## Open items for Jake
 
 1. Approve the English metadata draft (part 2 of 3 next, then part 3).
-2. Final Mac icon: keep the draft or use the iPhone icon.
+2. Final Mac icon: done. It uses the iPhone icon (24 Oct 2026).
 3. Confirm the Mac build 1.0 (1) is final. Then the screenshots count as final.
 4. Run the signed-build checks: folder write after a relaunch, Finder share menu, Pro after a relaunch, Restore Purchase.
 5. Free Offer codes for friends? (iOS method: IAP → Offer Codes, only after the app is approved.)

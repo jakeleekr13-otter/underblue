@@ -10172,47 +10172,6 @@
         }
       }
     },
-    "Experimental. When you edit one photo, choose Auto or Manual for the subjects the correction protects." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Experimental. When you edit one photo, choose Auto or Manual for the subjects the correction protects."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Experimental. Al editar una foto, elige en automático o manual los sujetos que protege la corrección."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "試験的な機能です。写真を1枚編集するとき、補正で守る被写体を自動または手動で選べます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "실험 기능입니다. 사진 한 장을 편집할 때 보정이 보호할 피사체를 자동 또는 수동으로 고릅니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "实验性功能。编辑单张照片时，可自动或手动选择校正时要保护的主体。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "實驗性功能。編輯單張照片時，可自動或手動選擇校正時要保護的主體。"
-          }
-        }
-      }
-    },
     "Looking for subjects…" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -10660,6 +10619,211 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "主體組 %lld，未選擇，包含 %lld 個"
+          }
+        }
+      }
+    },
+    "Needs iOS 27 or later." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needs iOS 27 or later."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requiere iOS 27 o posterior."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iOS 27以降が必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iOS 27 이상이 필요합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要 iOS 27 或更高版本。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要 iOS 27 或以上版本。"
+          }
+        }
+      }
+    },
+    "Needs macOS 27 or later." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needs macOS 27 or later."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requiere macOS 27 o posterior."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS 27以降が必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "macOS 27 이상이 필요합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要 macOS 27 或更高版本。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要 macOS 27 或以上版本。"
+          }
+        }
+      }
+    },
+    "Experimental. Choose Auto or Manual for the subjects the correction protects." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Experimental. Choose Auto or Manual for the subjects the correction protects."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Experimental. Elige en automático o manual los sujetos que protege la corrección."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "試験的な機能です。補正で守る被写体を自動または手動で選べます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "실험 기능입니다. 보정이 보호할 피사체를 자동 또는 수동으로 고릅니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "实验性功能。可自动或手动选择校正时要保护的主体。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "實驗性功能。可自動或手動選擇校正時要保護的主體。"
+          }
+        }
+      }
+    },
+    "Only when you edit a single photo. Not in batch editing, and not for videos." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only when you edit a single photo. Not in batch editing, and not for videos."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo al editar una sola foto. No en la edición por lotes ni en vídeos."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "写真を1枚だけ編集するときのみ使えます。一括編集と動画では使えません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사진 한 장을 편집할 때만 쓸 수 있습니다. 일괄 편집과 동영상에서는 쓸 수 없습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅在编辑单张照片时可用。批量编辑和视频不可用。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "僅在編輯單張照片時可用。批次編輯和影片不可用。"
+          }
+        }
+      }
+    },
+    "Only for the photo selected in the preview, one at a time. Not for videos." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only for the photo selected in the preview, one at a time. Not for videos."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo para la foto seleccionada en la vista previa, de una en una. No en vídeos."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プレビューで選んだ写真に1枚ずつ使えます。動画では使えません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "미리보기에서 선택한 사진에 한 장씩만 쓸 수 있습니다. 동영상에서는 쓸 수 없습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅适用于预览中选中的照片，一次一张。视频不可用。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "僅適用於預覽中選取的照片，一次一張。影片不可用。"
           }
         }
       }

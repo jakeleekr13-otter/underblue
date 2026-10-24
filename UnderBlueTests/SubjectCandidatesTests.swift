@@ -185,6 +185,15 @@ final class SubjectCandidatesTests: XCTestCase {
         XCTAssertFalse(SubjectPickerStore(defaults: defaults).load())
     }
 
+    func testPickerSwitchIsLockedOffBelow27() {
+        let suite = "SubjectPickerStoreTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        SubjectPickerStore(defaults: defaults, supported: true).save(true)
+        XCTAssertTrue(SubjectPickerStore(defaults: defaults, supported: true).load())
+        XCTAssertFalse(SubjectPickerStore(defaults: defaults, supported: false).load(), "a saved on is ignored below 27")
+    }
+
     // MARK: Tiers two and three
 
     func testTiersSplitNotWaterByTransmissionAndLeaveSubjectsAndWaterOut() throws {

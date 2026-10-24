@@ -197,6 +197,14 @@ If S1b shows no gain, schools stay Auto and only tap picking ships. A brush beco
 
 - Not checked on the iPhone.
 
+### Needs 27, single photo only (Jake, 24 Oct 2026)
+
+- Manual picking makes sense only with the precise mask. So the picker needs iOS 27 or macOS 27.
+- Below 27 the Labs section and its text still show. The switch stays off and locked, with "Needs iOS 27 or later." (Mac: macOS 27). A saved "on" is ignored there (`SubjectPickerStore.isSupported`).
+- The Labs text now says it works only for a single photo. iPhone: not in batch, not for videos. Mac: the photo selected in the preview, one at a time, not for videos.
+- On 27 the groups still come from the instance mask. The precise mask (`SubjectMask.precise(box:)`, subject-lift session) is not wired into the picker. Jake has not decided yet.
+- The 26 screens were not seen: this Mac and the simulators run 27.
+
 ### Changes from the plan
 
 - Outline is the group's bounding box, not its exact area. The fill shows the real mask.

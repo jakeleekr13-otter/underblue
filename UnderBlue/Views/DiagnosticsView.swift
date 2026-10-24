@@ -51,9 +51,26 @@ struct DiagnosticsView: View {
                 }
             }
             Section {
-                Toggle(isOn: $subjectPicker) { Label("Pick subjects manually", systemImage: "flask") }
+                // Below 27 the switch stays off and locked (SubjectPickerStore.isSupported).
+                Toggle(isOn: Binding(get: { subjectPicker && SubjectPickerStore.isSupported }, set: { subjectPicker = $0 })) {
+                    Label("Pick subjects manually", systemImage: "flask")
+                }.disabled(!SubjectPickerStore.isSupported)
             } header: { Label("Labs", systemImage: "flask") } footer: {
-                Text("Experimental. When you edit one photo, choose Auto or Manual for the subjects the correction protects.")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Experimental. Choose Auto or Manual for the subjects the correction protects.")
+                    #if os(iOS)
+                    Text("Only when you edit a single photo. Not in batch editing, and not for videos.")
+                    #else
+                    Text("Only for the photo selected in the preview, one at a time. Not for videos.")
+                    #endif
+                    if !SubjectPickerStore.isSupported {
+                        #if os(iOS)
+                        Text("Needs iOS 27 or later.")
+                        #else
+                        Text("Needs macOS 27 or later.")
+                        #endif
+                    }
+                }
             }
             Section {
                 Link(destination: URL(string: "mailto:\(Self.supportEmail)?subject=UnderBlue%20Support")!) {

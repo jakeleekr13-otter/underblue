@@ -30,7 +30,7 @@ struct PreviewPane: View {
             }
         }
         .onChange(of: model.selection) { _, _ in zoom = PreviewZoom() }
-        .onChange(of: subjectPickerSwitch, initial: true) { _, on in model.subjectPickerEnabled = on }
+        .onChange(of: subjectPickerSwitch, initial: true) { _, on in model.subjectPickerEnabled = on && SubjectPickerStore.isSupported }
     }
 
     @ViewBuilder private var content: some View {

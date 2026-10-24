@@ -2,11 +2,23 @@ import Foundation
 
 /// Whether the manual subject picker is offered. One value for the whole device, off by default.
 /// Off: the Auto/Manual bar is hidden and every photo uses Auto.
+///
+/// The picker needs iOS 27 or macOS 27 (Jake, 24 Oct 2026). The subject search on 26 was not good enough
+/// for manual picking. 27 adds the precise mask (SubjectMask.estimatePrecise). Below 27 the switch shows
+/// in Help but stays off and locked, and a saved "on" from another device is ignored.
 struct SubjectPickerStore {
     static let key = "subjectPicker.enabled"
+    static var isSupported: Bool {
+        if #available(iOS 27, macOS 27, *) { return true }
+        return false
+    }
     private let defaults: UserDefaults
-    init(defaults: UserDefaults = .standard) { self.defaults = defaults }
-    func load() -> Bool { defaults.bool(forKey: Self.key) }
+    private let supported: Bool
+    init(defaults: UserDefaults = .standard, supported: Bool = SubjectPickerStore.isSupported) {
+        self.defaults = defaults
+        self.supported = supported
+    }
+    func load() -> Bool { supported && defaults.bool(forKey: Self.key) }
     func save(_ enabled: Bool) { defaults.set(enabled, forKey: Self.key) }
 }
 

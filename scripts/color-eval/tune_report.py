@@ -57,15 +57,22 @@ if os.path.exists(f"{O}/real.csv"):
         print(f"| {k} | {f(o,hk):.0f} -> {f(c,hk):.0f} ({f(u,hk):.0f}) | {f(o,'farChroma'):.1f} -> {f(c,'farChroma'):.1f} | {f(o,'nearRG'):.2f} -> {f(c,'nearRG'):.2f} | {f(o,'meanL'):.1f} -> {f(c,'meanL'):.1f} | {f(o,'localContrast'):.2f} -> {f(c,'localContrast'):.2f} |")
     sheet(f"{O}/real", sorted(rr), [("before", "original"), ("ours", "combined"), ("ours (video path)", "uniform")], f"{O}/real_sheet.jpg", W=300)
 # Neutral surfaces: regions that should be colourless after correction (per-channel median in a fixed box).
-def ok_chroma(rgb):
+def ok_lab(rgb):
     a = np.asarray(rgb, dtype=np.float64) / 255
     lin = np.where(a <= 0.04045, a / 12.92, ((a + 0.055) / 1.055) ** 2.4)
     l = np.cbrt(lin @ np.array([0.4122214708, 0.5363325363, 0.0514459929]))
     mm = np.cbrt(lin @ np.array([0.2119034982, 0.6806995451, 0.1073969566]))
     ss = np.cbrt(lin @ np.array([0.0883024619, 0.2817188376, 0.6299787005]))
+    L = 0.2104542553 * l + 0.7936177850 * mm - 0.0040720468 * ss
     A = 1.9779984951 * l - 2.4285922050 * mm + 0.4505937099 * ss
     B = 0.0259040371 * l + 0.7827717662 * mm - 0.8086757660 * ss
+    return float(L), float(A), float(B)
+def ok_chroma(rgb):
+    _, A, B = ok_lab(rgb)
     return float(np.hypot(A, B))
+def box_median(p, box):
+    im = Image.open(p).convert("RGB"); w, h = im.size; x0, y0, x1, y1 = box
+    return np.median(np.asarray(im.crop((int(x0 * w), int(y0 * h), int(x1 * w), int(y1 * h)))).reshape(-1, 3), axis=0)
 NEUTRAL = [("m5", "sand", (0.70, 0.88, 0.85, 0.98)), ("m5", "chart grey row (approx.)", (0.618, 0.839, 0.663, 0.849)),
            ("m6", "manta belly", (0.44, 0.38, 0.56, 0.50))]
 if all(os.path.exists(f"{O}/market/{k}__original.jpg") for k, _, _ in NEUTRAL):
@@ -78,6 +85,23 @@ if all(os.path.exists(f"{O}/market/{k}__original.jpg") for k, _, _ in NEUTRAL):
             box = np.asarray(im.crop((int(x0 * w), int(y0 * h), int(x1 * w), int(y1 * h)))).reshape(-1, 3)
             vals.append(ok_chroma(np.median(box, axis=0)))
         print(f"| {k} {name} | " + " | ".join(f"{x:.3f}" for x in vals) + " |")
+# Black gear (Stage C, docs/RestorationExperiments.md): wetsuits and BCDs must stay dark and colourless, not turn brown.
+# Pass rule: OKLab L < 0.35 and hue outside 40-90 (orange-brown) when chroma >= 0.02. Chroma may rise by 0.01 at most
+# over the baseline table in the doc, so compare it there.
+BLACK = [("real", "r15", "wetsuit chest, teal water", (0.52, 0.88, 0.64, 0.98)),
+         ("real", "r12", "BCD chest, deep blue cast", (0.42, 0.43, 0.48, 0.50)),
+         ("gear", "g1", "wetsuit torso (DSC03696)", (0.61, 0.385, 0.645, 0.41)),
+         ("gear", "g1", "BCD bladder (DSC03696)", (0.685, 0.345, 0.705, 0.40))]
+def black_cell(rgb):
+    L, A, B = ok_lab(rgb); C = math.hypot(A, B); hue = math.degrees(math.atan2(B, A)) % 360
+    flags = (" BROWN" if C >= 0.02 and 40 <= hue <= 90 else "") + (" LIGHT" if L >= 0.35 else "")
+    return f"{L:.2f} / {C:.3f} / {hue:.0f}{flags}"
+if all(os.path.exists(f"{O}/{d}/{k}__original.jpg") for d, k, _, _ in BLACK):
+    print("\n== BLACK GEAR (box median, OKLab L / chroma / hue; flags: BROWN = hue 40-90 at chroma >= 0.02, LIGHT = L >= 0.35;"
+          " chroma: compare with the baseline in docs/RestorationExperiments.md)")
+    print("| surface | original | ours | ours (video path) |")
+    for d, k, name, box in BLACK:
+        print(f"| {k} {name} | " + " | ".join(black_cell(box_median(f"{O}/{d}/{k}__{v}.jpg", box)) for v in ["original", "combined", "uniform"]) + " |")
 mx, mean = lab_chroma(f"{O}/market/n_grey__combined.jpg"); ux, umean = lab_chroma(f"{O}/market/n_grey__uniform.jpg")
 print(f"\n== NEUTRAL grey ramp: max Lab chroma ours {mx:.2f} (mean {mean:.2f}), video path {ux:.2f} (mean {umean:.2f}). Must stay below about 3.")
 sheet(f"{O}/market", ["m1.png", "m2.png", "m3.png", "m4.png", "m5.png", "m6.png", "n_grey.png"], cols, f"{O}/market_sheet.jpg")

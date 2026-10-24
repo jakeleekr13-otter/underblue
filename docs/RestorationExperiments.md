@@ -1,18 +1,21 @@
 # Restoration experiments — plan
 
-Status: plan, 24 Oct 2026. Nothing is built yet. Order (Jake, 24 Oct 2026): start after the subject work (SubjectEmphasis.md) is done. [LUTPresets](LUTPresets.md) comes after this plan.
+Status: running since 24 Oct 2026 on branch `restoration-experiments`, on the Mac harness first (Jake, 24 Oct 2026). C1 and A1 are done; see their Result parts. [LUTPresets](LUTPresets.md) comes after this plan.
 
-This page plans three experiments. The ideas come from three public guides by the Five Meters photo editor (see [Sources](#sources)). We take general ideas only. We do not copy code, models or coefficients.
+This page plans four experiments. The ideas for A, B and C come from three public guides by the Five Meters photo editor (see [Sources](#sources)). We take general ideas only. We do not copy code, models or coefficients.
 
 ## Goal
+
+Overall goal (Jake, 24 Oct 2026): more natural and more vivid photo and video results. Quality is never traded for speed, and speed should still go up.
 
 | ID | Question | Why it matters |
 |---|---|---|
 | C | Do we measure the failures a diver sees first? | Without it, A and B cannot be judged. |
 | A | Can a cross-channel red estimate give better subject colour than `redRebuild`? | Some subjects stay olive or grey (m6 reef). |
 | B | Can one water matte from transmission replace several colour-based water tests? | Halos and rings form where these tests disagree. |
+| D | How well do we deal with floating particles (marine snow, backscatter)? Does our correction make them more visible? | Jake asked for this check (24 Oct 2026). A vivid look also lifts specks. |
 
-Order: C, then A1, then B, then A2. Each stage has a go/no-go rule.
+Order: C, then D1, then A1, then B, then A2, then D2. Each stage has a go/no-go rule. A1 ran before D1 because D was added later.
 
 ## Decisions that limit this plan
 
@@ -42,7 +45,7 @@ Each stage below says which kind of step it is.
 | Haze | Dehaze reads a spatial transmission estimate. | The local veil (`broadSample`, `veilLevel`) and the depth map. |
 | Water | Hue, saturation and luminance change only inside a feathered water matte. | Per-pixel colour tests: `waterLike`, `neutralWeight`, `calmWeight`, `waterShare`. |
 | Stop signs | Sand or bubbles turn pink. Black gear turns brown. Kelp loses its green. Water turns grey. Silhouettes get hard halos. | Scorecard: pink and violet shares, water hue bands, neutral boxes. |
-| Backscatter | A capture problem. No slider fixes it. | The particle filter stays a prototype. This plan does not change that. |
+| Backscatter | A capture problem. No slider fixes it. | The video particle filter prototype (`Prototypes/VideoCleanup`). Stage D measures it. Photos have no particle step. |
 
 The guides give no measurements. Each claim above is the vendor's own statement.
 
@@ -50,10 +53,10 @@ The guides give no measurements. Each claim above is the vendor's own statement.
 
 The harness checks neutral surfaces with fixed boxes (`NEUTRAL` in `scripts/color-eval/tune_report.py`). C adds two more box checks in the same way.
 
-| Check | Pass rule (first draft) | Images |
+| Check | Pass rule | Images |
 |---|---|---|
-| Black gear stays black | Box median: OKLab L below 0.35 and chroma below 0.04. Hue is not orange-brown (OKLab hue 40 to 90) when chroma is 0.02 or more. | Not chosen. Candidates: the wreck and diver frames in `DeveloperMedia/subjectpicker/`, r15. |
-| Plants keep their colour | Box median chroma stays at 0.6 × source chroma or more. Hue stays inside 90 to 160 (yellow-green to green). | Not chosen. No image with weed or seagrass is known yet. |
+| Black gear stays black | Box median in OKLab. L stays below 0.35. Hue is never orange-brown (40 to 90) when chroma is 0.02 or more. Chroma rises by 0.01 at most over the baseline below. | r15 wetsuit chest (teal water), r12 BCD chest (deep blue cast), DSC03696 wetsuit torso and BCD (clear blue water). |
+| Plants keep their colour | Box median chroma stays at 0.6 × source chroma or more. Hue stays inside 90 to 160 (yellow-green to green). | None. See C0. |
 
 Steps:
 
@@ -64,6 +67,25 @@ Steps:
 Go rule: both checks print a value for every chosen image.
 
 Cost on iPhone: none. Harness only.
+
+### C0 and C1 result (24 Oct 2026)
+
+- Black gear: three photos, four boxes. DSC03696 is rendered as `g1` in a small extra set in `tune_eval.sh`.
+- Plants: no image found. All photos in `DeveloperMedia/` and the challenge video stills were checked by eye. m1 is the only green scene, but it is 318 × 227 px. Its yellow-green mass cannot be told apart from coral. **Open: Jake to add a photo with weed or seagrass.** Until then the plants guard does not exist, so C's go rule is not met.
+- The boxes were drawn on the rendered outputs and checked by eye.
+
+Baseline, `main` at 085a6f3 (OKLab L / chroma / hue of the box median):
+
+| Box | Original | Ours | Ours (video path) |
+|---|---|---|---|
+| r15 wetsuit chest | 0.20 / 0.021 / 185 | 0.12 / 0.012 / 210 | 0.11 / 0.011 / 196 |
+| r12 BCD chest | 0.28 / 0.190 / 267 | 0.30 / 0.134 / 262 | 0.34 / 0.142 / 261 |
+| DSC03696 wetsuit torso | 0.21 / 0.048 / 254 | 0.13 / 0.029 / 256 | 0.13 / 0.029 / 256 |
+| DSC03696 BCD | 0.23 / 0.064 / 258 | 0.16 / 0.044 / 260 | 0.16 / 0.044 / 260 |
+
+- No box turns brown. The residual cast is blue (hue 256 to 262) in three boxes.
+- The first-draft rule (chroma below 0.04) failed on two boxes at baseline. These are r12 (0.134, a near-monochrome blue photo) and the DSC03696 BCD (0.044).
+- So the rule now guards against change from this baseline. The report flags only `BROWN` and `LIGHT`. Compare chroma with this table.
 
 ## Stage A — cross-channel red estimate
 
@@ -87,6 +109,37 @@ Question: can a linear 3×3 map with an offset, from source to a reference, get 
 3. Fit source → our own output too. A small error means our pipeline is close to global already.
 
 Go rule: the 3×3 fit beats `HEAD` by 3 CIE76 or more on at least two images. It must also move the m6 reef toward brown. Otherwise stop A here and record the result.
+
+#### A1 result (24 Oct 2026, `main` at 085a6f3): go
+
+Script: `scripts/color-eval/a1_ceiling.py`. The fit runs in linear RGB on a random 70% of the pixels (100,000 at most). The table scores the other 30% in CIE76. The "ours" column matches the harness dE (m5 12.3, m6 27.2, p1-p5 within 0.1).
+
+| Pair | Ours | Fit to reference | Gain | Fit to our output | Ours, a\*b\* only | Fit, a\*b\* only |
+|---|---|---|---|---|---|---|
+| m5 (Sea-thru) | 12.3 | 10.3 | +2.0 | 5.8 | 9.7 | 6.8 |
+| m6 (Sea-thru) | 27.2 | 6.4 | +20.9 | 4.5 | 25.5 | 5.7 |
+| p1 (AquaColorFix) | 9.0 | 1.8 | +7.3 | 3.2 | 6.8 | 1.4 |
+| p2 | 17.5 | 1.1 | +16.4 | 4.1 | 17.2 | 1.0 |
+| p3 | 6.8 | 2.3 | +4.5 | 3.8 | 5.9 | 1.4 |
+| p4 | 12.1 | 2.9 | +9.2 | 4.5 | 11.1 | 2.1 |
+| p5 | 10.7 | 2.5 | +8.2 | 3.1 | 8.6 | 2.2 |
+
+m6 reef box (0.30, 0.80, 0.70, 0.95), OKLab L / chroma / hue: source 0.50 / 0.085 / 159, ours 0.47 / 0.060 / 128, fit 0.34 / 0.070 / 76, Sea-thru 0.34 / 0.034 / 64. The box was checked by eye on all four images.
+
+Verdict: the go rule is met. The fit gains 3 or more on 6 of 7 pairs, and it moves the m6 reef into the brown band. `nearRG` of the fits is unmeasured: that metric needs the depth map, and the script has none.
+
+Read it with care:
+
+- The fit sees the reference. It shows what one global map can reach. It is not a rule we can compute.
+- p1-p5 compare with AquaColorFix, which is not the target since 1 Oct 2026. These rows only confirm that AquaColorFix is close to one global linear map (a\*b\* error 1.0 to 2.2).
+- On m6 the gap is colour, not brightness (a\*b\* 25.5 of 27.2). On m5 the fit gains only 2.0.
+- Our own output is 3.1 to 5.8 from a global map of its source. So most of what we do is global too.
+
+Leads for A2 step 1 (from the printed coefficients; not findings yet):
+
+- Every fit to a reference takes red from green (R←G 0.30 to 2.20). Six of seven also take some red away by blue (R←B −0.08 to −0.54).
+- The fits to our output differ most in blue. Ours: B←R 0.15 to 2.42, B←B 0.35 to 0.85. References: B←R −0.16 to 0.54, B←B 0.38 to 1.14. B←R is higher in ours on all 7 pairs; B←B is lower on 6 of 7. So our blue follows the red input more and the blue input less.
+- R, G and B are strongly correlated in these photos, so one coefficient alone is unstable. Step 1 should apply the matrices to fixed colours (water, subject), not read single terms.
 
 ### A2 — our own estimate rule (only if A1 passes)
 
@@ -155,9 +208,46 @@ Go rule: no new halo or ring. The neutral surfaces and the AquaColorFix gate sta
 
 Cost on iPhone: one map at depth-map resolution and one small blur. The depth map and the Vision mask already exist, so there is no new model call. Video keeps its colour tests unless B finds a cheap per-frame substitute; that cost is unmeasured.
 
+## Stage D — floating particles
+
+Kind: measurement. No new removal step is planned yet. Jake asked for this check on 24 Oct 2026.
+
+### What we know
+
+- Photos have no particle step. Video has a prototype, `Prototypes/VideoCleanup/ParticleFilter.swift`. It is not wired in.
+- Prototype results (Mac M3, 1080p60 clips, measured before colour correction, see its README):
+  - It removes 43-71% of the drifting specks on 3 of 4 segments, and 21% on the sparse one.
+  - It keeps 99-100% of small subjects and changes under 0.1% of pixels.
+  - Speed: 126-204 fps at 1080p, 63-67 fps at 4K. iPhone: unmeasured.
+- The speck metric is `Prototypes/VideoCleanup/particle-bench/metric.swift`. A speck is an isolated bright group of 1-12 px. Its peak is 4-30 levels above the local mean, and above 5 × the local noise. "Drifting" means it is gone in a neighbour frame after camera motion is removed.
+- `ColorAlgorithm.md` puts particles before colour, because colour gains and clarity lift specks. That reason is stated, not measured.
+- Clip c2 (`2019-05-05 18.37.02.MOV`) is missing, so segment S4 cannot run.
+
+### D1 — does our correction make specks more visible?
+
+Photos and single video frames, harness only.
+
+1. Build a small photo tool on the single-frame part of `metric.swift` (`maps()`). No port, so the definition stays the same.
+2. For original, ours and the video path, count isolated bright groups of 1-40 px at any peak. Print the median peak in levels too. A brighter speck can pass 30 levels and move from "speck" to "bright spot". A count by class alone would hide that.
+3. Render at 1920 px (`HT_EVAL_MAXDIM`). The metric was set on 1080p frames; at 640 px a speck merges into its background.
+4. Images: count all photos first, then keep the best, middle and worst. Video: stills from c3 S1 (snow) and c1 S3 (fish).
+
+Go rule: every chosen image prints a value. After the baseline, set a guard for A2 and B: how much the count and the median peak may rise.
+
+### D2 — the video prototype in the full chain
+
+1. Run particles, then our colour, on S1 and S3. Compare with colour only.
+2. Measure drifting specks, small subjects kept, and pixels changed, all after colour. Check the crops by eye: fish must survive.
+
+Go rule: removal after colour is not lower than before colour (43-71%), and small subjects kept stay at 99% or more.
+
+Cost on iPhone: unmeasured. Measure it only after the algorithm is done.
+
+Photos: a single photo has no neighbour frame, so the drifting test cannot work there. Decide on photo removal after D1 shows how visible the specks are.
+
 ## Not in this plan
 
-- Backscatter removal. It is a capture problem.
+- A particle remover for photos. D measures first.
 - Keeping green water green. Rejected above.
 - A learned restoration model. It breaks the own-logic rule.
 - Changes to the subject lift. It has its own track in [SubjectEmphasis](SubjectEmphasis.md).

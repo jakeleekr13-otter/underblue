@@ -36,6 +36,12 @@
             "value" : "Save your finished photos and videos to your library."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guarda tus fotos y vídeos terminados en la fototeca."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",

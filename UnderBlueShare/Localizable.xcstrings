@@ -10,6 +10,12 @@
             "value" : "Added to UnderBlue"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añadido a UnderBlue"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -45,6 +51,12 @@
             "value" : "Adding to UnderBlue…"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añadiendo a UnderBlue…"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -78,6 +90,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cancel"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelar"
           }
         },
         "ja" : {
@@ -116,6 +134,12 @@
             "value" : "Couldn’t add %1$@ of %2$@."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se han podido añadir %1$@ de %2$@."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -149,6 +173,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Couldn’t add %lld of %lld."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se han podido añadir %lld de %lld."
           }
         },
         "ja" : {
@@ -186,6 +216,12 @@
             "value" : "Couldn’t add to UnderBlue"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido añadir a UnderBlue"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -219,6 +255,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Done"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
           }
         },
         "ja" : {
@@ -256,6 +298,12 @@
             "value" : "Open UnderBlue"
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir UnderBlue"
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -291,6 +339,12 @@
             "value" : "Open UnderBlue and import from Photos or Files instead."
           }
         },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre UnderBlue e importa desde Fotos o Archivos."
+          }
+        },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
@@ -324,6 +378,12 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open UnderBlue to edit."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre UnderBlue para editar."
           }
         },
         "ja" : {

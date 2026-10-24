@@ -90,5 +90,28 @@
     "s5.sub": "全部在裝置上處理。無需帳號，也不會上傳到雲端。",
     "s5.badge1": "本機處理<small>保護隱私</small>",
     "s5.badge2": "無需帳號<small>開啟即可編輯</small>"
+  },
+  "es-ES": {
+    "s1.title": "Recupera<br>el <em>color real.</em>",
+    "s1.sub": "Color natural para fotos y vídeos submarinos.",
+    "chip.photos": "Fotos",
+    "chip.videos": "Vídeos",
+    "chip.ondevice": "En el dispositivo",
+    "tag.before": "Antes",
+    "tag.after": "Después",
+    "s2.eyebrow": "Fotos",
+    "s2.title": "Vuelve el color<br><em>del arrecife.</em>",
+    "s2.sub": "La restauración según la profundidad recupera el color perdido.",
+    "s3.eyebrow": "Vídeos",
+    "s3.title": "Y el vídeo,<br><em>también.</em>",
+    "s3.sub": "Color estable en todo el clip.",
+    "s4.eyebrow": "Efectos",
+    "s4.title": "Elige un efecto.<br><em>Y su intensidad.</em>",
+    "s4.sub": "Buceo natural, Tropical o Buceo profundo. Compara con el original cuando quieras.",
+    "s5.eyebrow": "Privado",
+    "s5.title": "Se queda en<br><em>tu iPhone.</em>",
+    "s5.sub": "Todo se procesa en el dispositivo. Sin cuenta. Sin subidas a la nube.",
+    "s5.badge1": "En el dispositivo<small>Procesado privado</small>",
+    "s5.badge2": "Sin cuenta<small>Abre y edita</small>"
   }
 }

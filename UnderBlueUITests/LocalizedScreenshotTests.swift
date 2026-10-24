@@ -1,7 +1,7 @@
 import XCTest
 
 /// Captures the App Store source screens on a device in one language, for scripts/app_store_screenshots.
-/// Set SCREENSHOT_LANGUAGE (ko, ja, zh-Hans, zh-Hant) with TEST_RUNNER_SCREENSHOT_LANGUAGE on xcodebuild.
+/// Set SCREENSHOT_LANGUAGE (ko, ja, zh-Hans, zh-Hant, es-ES) with TEST_RUNNER_SCREENSHOT_LANGUAGE on xcodebuild.
 /// It never opens the photo picker, so no photo library appears. For the photo and video screens, the Mac first
 /// copies the file into the app's Documents (devicectl), and `--ui-test-open` opens it (Debug builds only).
 /// It uses the app's current state (Pro, trial), so the screens match a normal launch.
@@ -21,6 +21,8 @@ final class LocalizedScreenshotTests: XCTestCase {
         "ja": Labels(locale: "ja_JP", compare: "比較", naturalDive: "ナチュラルダイブ", original: "オリジナル", export: "書き出す", selectVideo: "ビデオを選択"),
         "zh-Hans": Labels(locale: "zh_CN", compare: "对比", naturalDive: "自然潜水", original: "原始", export: "导出", selectVideo: "选择视频"),
         "zh-Hant": Labels(locale: "zh_TW", compare: "比較", naturalDive: "自然潛水", original: "原始", export: "匯出", selectVideo: "選擇影片"),
+        // The app catalog is "es"; an es-ES device resolves to it.
+        "es-ES": Labels(locale: "es_ES", compare: "Comparar", naturalDive: "Buceo natural", original: "Original", export: "Exportar", selectVideo: "Seleccionar vídeo"),
     ]
 
     override func setUp() { continueAfterFailure = false }

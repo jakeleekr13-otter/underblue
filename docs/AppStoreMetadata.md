@@ -14,6 +14,8 @@
 
 **Traditional Chinese subtitle:** 還原水下照片與影片的色彩
 
+**Spanish (Spain) subtitle:** Recupera el color bajo el agua
+
 **English promotional text:** Bring natural colour and clarity back to underwater photos and videos with private, depth-aware processing on your iPhone.
 
 **Korean promotional text:** iPhone에서만 처리되는 깊이 인식 보정으로 수중 사진과 영상의 자연스러운 색과 선명함을 되찾으세요.
@@ -23,6 +25,8 @@
 **Simplified Chinese promotional text:** 在 iPhone 本机完成、保护隐私的深度感知还原，为水下照片和视频找回自然的色彩与清晰度。
 
 **Traditional Chinese promotional text:** 在 iPhone 本機完成、保護隱私的深度感知還原，為水下照片與影片找回自然的色彩與清晰度。
+
+**Spanish (Spain) promotional text:** Devuelve el color natural y la nitidez a tus fotos y vídeos submarinos. Todo se procesa en tu iPhone, de forma privada y teniendo en cuenta la profundidad.
 
 ## English description
 
@@ -139,6 +143,29 @@ UnderBlue 為水下照片與影片還原自然的色彩與清晰度。
 
 UnderBlue 專為記錄休閒潛水回憶而設計，不是科學測色工具，也不是專業調色工具。
 
+## Spanish (Spain) description
+
+UnderBlue devuelve un color realista y la nitidez a tus fotos y vídeos submarinos.
+
+Elige una foto o un vídeo, escoge un efecto y compáralo con el original. Ajusta la intensidad del efecto o usa Personalizado para ajustar a tu gusto el brillo, el contraste, la saturación, la claridad y la temperatura. Por dentro, UnderBlue usa una restauración submarina que tiene en cuenta la profundidad. Así reduce la pérdida de color y el velo de las partículas en suspensión, con un resultado natural y estable de un fotograma a otro.
+
+Funciones:
+
+• Efectos Buceo natural, Tropical y Buceo profundo
+• Efecto Personalizado con cinco controles deslizantes
+• Restauración de fotos y vídeos según la profundidad
+• Corrección de vídeo estable, sin parpadeos de color
+• Exportación de vídeo en resolución original y en 4K con UnderBlue Pro
+• Salida de vídeo SDR y, si es compatible, HDR HLG/PQ
+• Exportación de fotos HDR con mapa de ganancia, con UnderBlue Pro
+• Importación desde Fotos, Archivos (incluidos archivos RAW de cámara) o el botón Compartir
+• Conservación de la frecuencia de fotogramas, la sincronización, la orientación y el audio originales
+• Procesado totalmente en el dispositivo, sin cuenta ni subida a la nube
+
+Prueba gratis la exportación de una foto y de los primeros 10 segundos de un vídeo. UnderBlue Pro es una compra única que desbloquea fotos ilimitadas (hasta 10 a la vez), vídeos completos, 4K y la exportación HDR cuando sea compatible.
+
+UnderBlue está pensada para los recuerdos del buceo recreativo. No es una herramienta científica de medición del color ni de corrección de color profesional.
+
 ## Keywords
 
 **English:** underwater,diving,scuba,snorkel,photo,video,color,colour,restore,enhance,reef,ocean,coral,marine
@@ -151,6 +178,8 @@ UnderBlue 專為記錄休閒潛水回憶而設計，不是科學測色工具，�
 
 **Traditional Chinese:** 潛水攝影,水下攝影,水中攝影,水下影片,水肺潛水,色彩校正,珊瑚礁,浮潛攝影 (100 bytes)
 
+**Spanish (Spain):** buceo,submarinismo,snorkel,fotosub,submarino,fotos,vídeo,arrecife,coral,corregir,filtro,restaurar (98 bytes)
+
 ## What's New (1.1.4)
 
 **English:** Faster, more reliable video export with fewer rings around fish, and more natural reef colours in JPEG photos.
@@ -162,6 +191,8 @@ UnderBlue 專為記錄休閒潛水回憶而設計，不是科學測色工具，�
 **Simplified Chinese:** 视频导出更快、更稳定，鱼身周围的白边也减少了。JPEG 照片中的珊瑚礁色彩也更加自然。
 
 **Traditional Chinese:** 影片匯出更快、更穩定，魚身周圍的白邊也減少了。JPEG 照片中的珊瑚礁色彩也更加自然。
+
+**Spanish (Spain):** Exportación de vídeo más rápida y fiable, con menos halos alrededor de los peces, y colores de arrecife más naturales en las fotos JPEG.
 
 ## Screenshot set
 
@@ -192,6 +223,8 @@ An App Preview video isn't required for the first release. If produced later, sh
 **Simplified Chinese:** 无限导出照片、完整视频、4K 和 HDR
 
 **Traditional Chinese:** 無限匯出照片、完整影片、4K 與 HDR
+
+**Spanish (Spain):** Fotos ilimitadas, vídeos completos, 4K y HDR
 
 The IAP review screenshot is ready at `AppStoreAssets/IAP/UnderBluePro-Review-1206x2622.png`.
 It is a real iPhone purchase screen showing the one-time purchase wording, feature list, production

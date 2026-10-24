@@ -11,13 +11,14 @@ All App Store images live here. Store text for every language is in `docs/AppSto
 | `ja/final` | 5 iPhone screenshots | 1320 × 2868 JPEG | Japanese | Japanese | Not uploaded. |
 | `zh-Hans/final` | 5 iPhone screenshots | 1320 × 2868 JPEG | Simplified Chinese | Simplified Chinese | Not uploaded. |
 | `zh-Hant/final` | 5 iPhone screenshots | 1320 × 2868 JPEG | Traditional Chinese | Traditional Chinese | Not uploaded. |
+| `es-ES/final` | 5 iPhone screenshots | 1320 × 2868 JPEG | Spanish (Spain) | Spanish (app catalog `es`) | Not uploaded. Needs a build with Spanish (branch `spanish`, ae26f3c). |
 | `header/universal-5244x2950.png` | Product page header and search results, one file for both | 5244 × 2950 PNG | None, so every language uses it | — | Jake uploaded the first version on 23 Oct. Mirrored on 24 Oct, so upload it again. |
 | `mac-en-US/final` | 5 Mac screenshots | 2560 × 1600 JPEG | English | English | Not recorded. |
 | `iphone-duo-en-US` | iPhone Duo screens | — | — | — | Not needed yet; kept in case App Store Connect asks for Duo sizes. See `docs/AppStoreRelease.md`. |
 
 All files are RGB without alpha. Upload screenshots in file order, 01 to 05, to the iPhone 6.9" slot of the matching language.
 
-Nobody on the team reads Japanese or Chinese. An independent reviewer checked that copy against the English and the app's own UI terms.
+Nobody on the team reads Japanese, Chinese or Spanish. An independent reviewer checked that copy against the English and the app's own UI terms.
 
 ## iPhone captions
 
@@ -31,7 +32,7 @@ Nobody on the team reads Japanese or Chinese. An independent reviewer checked th
 
 Other languages: `scripts/app_store_screenshots/captions.json`.
 
-Store copy uses the app's own UI words. The app translates "Look" as 効果 (ja) and 效果 (zh). The Korean UI says 효과, but the Korean captions and description still say 룩.
+Store copy uses the app's own UI words. The app translates "Look" as 効果 (ja), 效果 (zh) and Efecto (es). The Korean UI says 효과, but the Korean captions and description still say 룩.
 
 ## Regenerate
 
@@ -40,7 +41,7 @@ From the repo root:
 ```sh
 npm i --no-save playwright
 node scripts/app_store_screenshots/render.js            # en-US
-node scripts/app_store_screenshots/render.js ko         # or ja, zh-Hans, zh-Hant (needs <locale>/source)
+node scripts/app_store_screenshots/render.js ko         # or ja, zh-Hans, zh-Hant, es-ES (needs <locale>/source)
 node scripts/app_store_screenshots/creative_render.js   # header
 node scripts/app_store_screenshots/mac_render.js        # Mac
 ```
@@ -56,7 +57,7 @@ Each language has its own `<locale>/source`: home, photo and video screens captu
 Capture them again after any UI change:
 
 ```sh
-zsh scripts/app_store_screenshots/capture_device.sh <device id> ko ja zh-Hans zh-Hant
+zsh scripts/app_store_screenshots/capture_device.sh <device id> ko ja zh-Hans zh-Hant es-ES
 ```
 
 - `UnderBlueUITests/LocalizedScreenshotTests` drives the app. It never opens the photo picker, so no photo library appears. The script copies the photo and video into the app's Documents, and the Debug-only `--ui-test-open` argument opens them.

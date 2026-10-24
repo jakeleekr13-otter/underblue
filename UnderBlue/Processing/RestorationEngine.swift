@@ -284,9 +284,11 @@ final class RestorationEngine: Sendable {
             ? filter.waterShare(image, correction: values.current) : nil
         // The tiers and the sharpening follow how much of an object's contrast survives the water.
         let liftSignal = subjectLift == nil ? nil : contrastTransmission(image, plan: plan)
-        let current = filter.apply(image, correction: values.current, intensity: amount, calmWeight: calm, violetCalm: false, openWaterRed: video)
+        let current = filter.apply(image, correction: values.current, intensity: amount, calmWeight: calm, violetCalm: false, openWaterRed: video,
+                                   edgeGuard: !video)
         let physicallyRestored = try restore(image, plan: plan, liftDark: video)
-        let finished = filter.finishing(physicallyRestored, correction: values.restored, reference: image, calmWeight: calm, openWaterRed: video)
+        let finished = filter.finishing(physicallyRestored, correction: values.restored, reference: image, calmWeight: calm, openWaterRed: video,
+                                       edgeGuard: !video)
         let depthAware = filter.blend(image, finished, amount: amount)
         // Low-confidence fits approach the exact current UnderBlue output. So do the nearest pixels
         // (depth 0 to nearDepth): the restoration leaves them almost as they are, but the restored

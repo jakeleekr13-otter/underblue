@@ -742,6 +742,7 @@ The branch merged main at `287743d`. Every number above E15 predates that merge.
 | E23 | Why the lift looks foreign at the mask edge | Lift terms switched off, a brightening cap, four mask cues, 100% crops | Jake: no lift beats every variant with the Vision mask |
 | E24 | A precise mask from Vision iterative segmentation (iOS 27, macOS 27) | 14 photos, leak check, lift spill, 100% crops, a 4K clip, iPhone probe | Spill outside the subject falls 2 to 90 times. The iPhone matches the Mac. Jake: "surprisingly much better" |
 | E25 | One tier map for the outline and the lift | Map overlays, strength sheet on 4 photos, gate on the lift render, iPhone regression export | The lift now skips sand, glow and bubbles. Strengths wait for Jake |
+| E27 | The dark band around fish (E18 again, photos only) | Lightness by distance from the fish, every stage switched off, 100% crops, gate, m5, video path diff | Cause: the light detail. A water-only edge guard removes it. Video unchanged. iPhone check open |
 
 ### E15, the Vision input, 23 Oct 2026
 
@@ -1264,6 +1265,46 @@ Jake: the first launch, before the model is on the device, may need its own UX.
 - Not tested: a first download on the iPhone, and no network.
 - Jake's decision, 24 Oct 2026: a photo cannot be saved until the model is confirmed ready. Proposed scope, not yet confirmed by Jake: only with Labs on, since Labs off needs no model. Proposed way out with no network: the blocked state shows the download progress and offers to save without subject emphasis or to turn Labs off.
 - Jake's decision, 24 Oct 2026: if Labs is turned on with no network and no model on the device, the app says a network is needed and keeps the subject features blocked. The base correction still works. When a network comes back, it downloads the model and turns them on.
+
+### E27, the dark band around fish, 24 Oct 2026
+
+Jake: the video halo is already much better, so this is for photos only. Video output must not change.
+
+E18 measured chroma only. A 100% crop of the DSC03545 front fish shows what the eye sees: a darker blue band, 8 to 40 px wide, around the fish. The source has none. Lightness by distance from the fish (OKLab L x100, minus the water 130 to 200 px out; camera JPEG at full size, fish mask made by hand):
+
+| render | 4-8 px | 8-14 | 14-20 | 20-30 | 30-40 | 40-60 |
+|---|---|---|---|---|---|---|
+| source | +4.02 | +1.65 | +1.06 | +0.62 | +0.29 | +0.43 |
+| before (HEAD `c616ee5`) | +2.87 | -1.13 | -1.99 | -1.76 | -0.59 | +0.16 |
+| light detail off | +3.79 | +0.93 | +0.51 | +0.06 | -0.17 | +0.24 |
+| edge guard 0.04 to 0.08, water only (adopted) | +3.97 | +0.94 | +0.29 | -0.27 | -0.36 | +0.17 |
+
+How the cause was found:
+- Clarity, definition, fine detail, shadows, tone, vibrance, saturation, the white reference and the water calm, each switched off by its values: the band stays. All of them together, with the calm off too: it stays.
+- The colour kernel's CPU mirror maps the band's source colours to the same lightness as the far water. So the kernel is not the cause.
+- Light detail off (a build with `lightDetailAmount` 0): the band is gone.
+
+Why: the light detail is an unsharp mask, 0.018 of the short side (66 px on this photo), gain 1.3, where the broad light is bright. Next to a bright fish the blur takes in the fish. So the water reads darker than its broad light, and the detail makes it darker still. The kernel already skips a strong edge, but not the water around it.
+
+The fix (`FilterEngine.finishing`, photos only): a new kernel `UnderBlueLightEdge` gives the size of the light detail's difference. It is blurred over half the radius. From 0.04 to 0.08 the pixel goes back to its value before the light detail, but only in water (1 - calm.b, the source's own subject test). The light detail kernel itself has no new input.
+
+| guard | DSC03545 band, worst | IMG_7400 light detail kept in the light |
+|---|---|---|
+| 0.02 to 0.04, all pixels | -0.19 | 31% |
+| 0.04 to 0.08, all pixels | -0.35 | 58% |
+| 0.06 to 0.12, all pixels | -1.09 | 84% |
+
+On all pixels, the guard also took the detail off dark rock beside bright sand (IMG_7262): the rock went pale and soft. Limited to water, IMG_7262 changes by at most 4 levels of 255, and the IMG_7400 light rays look as before. At 100% the bright rims around the dark fish in the IMG_7400 light stay as before.
+
+Checks on the Mac:
+- AquaColorFix gate 13.42 to 13.41. Detail per pair within 0.01.
+- m5: full dE 13.22 to 13.21. One panel patch is worse by more than 1 dE: r2c2, the blue chip, 17.57 to 19.40. It is water-coloured between strong edges, so it keeps less of the light detail's darkening.
+- O4: 0.29% of pixels change by more than 10 levels, in the manta's fold shadows. Hard to see at 100%.
+- Video path (`combined` with `video: true`) on IMG_7262, O4, m5 and IMG_7400: byte-identical to HEAD. Video passes `edgeGuard: false`, also in its no-plan fallbacks.
+
+Not adopted: turning the light removal (`subjectTone`) off on pale water-hue pixels. With it off, the ring's chroma ratio goes 0.863 to 0.898 (source 0.948), but it does not touch the dark band. A colour rule also catches the pale wreck in DSC03545 (10% of the pixels changed), and the fish are not in the Vision mask, so the mask cannot protect or find them.
+
+Open: the iPhone. The new kernel and the blend need a check on the device, because an extra kernel input once broke iOS rendering (see the comment in `FilterEngine.colorStage`).
 
 ### The control photos
 

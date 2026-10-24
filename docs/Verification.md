@@ -2,6 +2,15 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## Light detail edge guard (24 Oct 2026, photos only)
+
+Details: [SubjectEmphasis E27](SubjectEmphasis.md). A new kernel `UnderBlueLightEdge` and a blend take the light detail off water beside a strong edge. It removes the dark band around fish (DSC03545). Video passes `edgeGuard: false` and is byte-identical on the Mac.
+
+Check on the iPhone:
+- DSC03545 camera JPEG at 100%: no dark band around the two fish, and no broken edge rows or darker frame.
+- IMG_7400: the light rays as before.
+- One video export: unchanged.
+
 ## Camera JPEG reef colour (23 Oct 2026, iPhone 1.1.4 build 10)
 
 Commits `f96dc65`, `cca30aa`, `9e5a23b`. Details: [JpegInput](JpegInput.md).

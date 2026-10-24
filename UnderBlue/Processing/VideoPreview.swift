@@ -87,7 +87,7 @@ struct VideoPreview {
         let filtered = try await AVVideoComposition(applyingFiltersTo: asset) { [engine, restorationEngine, diagnosticGate, diagnostics] request in
             let (current, original) = settings.snapshot()
             guard !original else { return AVCIImageFilteringResult(resultImage: request.sourceImage, ciContext: engine.context) }
-            let fallback = engine.apply(request.sourceImage, settings: current)
+            let fallback = engine.apply(request.sourceImage, settings: current, edgeGuard: false)
             guard let moment = analysis?.moment(at: request.compositionTime.seconds) else {
                 return AVCIImageFilteringResult(resultImage: fallback, ciContext: engine.context)
             }
@@ -128,7 +128,7 @@ struct VideoPreview {
         let source = CIImage(cgImage: analysis.representativeFrame)
         let ratio = min(1, 1200 / max(source.extent.width, source.extent.height))
         let small = source.transformed(by: CGAffineTransform(scaleX: ratio, y: ratio))
-        let current = engine.apply(small, settings: settings)
+        let current = engine.apply(small, settings: settings, edgeGuard: false)
         var images: [VideoDebugVariant: CIImage] = [.original: small, .current: current]
         if let moment = analysis.moment(at: analysis.representativeTime), let plan = try? moment.plan(),
            let restored = try? restorationEngine.restore(small, plan: plan) {

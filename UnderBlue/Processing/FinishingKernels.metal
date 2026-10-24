@@ -226,6 +226,15 @@ using namespace metal;
     return all(isfinite(out)) ? float4(out, source.a) : source;
 }
 
+// The size of the light detail's difference (gamma luminance), the input of its edge guard in
+// FilterEngine.finishing. Same pixel and blur as UnderBlueLightDetail.
+[[stitchable]] float4 UnderBlueLightEdge(coreimage::sample_t source, coreimage::sample_t sharp) {
+    const float3 luma = float3(0.2126f, 0.7152f, 0.0722f);
+    const float l = dot(source.rgb, luma), lb = dot(2.0f * source.rgb - sharp.rgb, luma);
+    const float d = l > 1e-5f && lb > 0.0f ? fabs(pow(l, 1.0f / 2.2f) - pow(lb, 1.0f / 2.2f)) : 0.0f;
+    return float4(isfinite(d) ? d : 0.0f, 0.0f, 0.0f, 1.0f);
+}
+
 // Water calm (FilterEngine.waterCalmWeight and finishing). FinishingMath.calmShare, calmFlatness and
 // waterCalm are the CPU mirrors. Water noise and the sharpening on it rise with the correction; open
 // water has no detail to keep, so it is smoothed before the colour stage and gets no sharpening.

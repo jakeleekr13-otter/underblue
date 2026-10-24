@@ -12,6 +12,7 @@ final class FilterEngine: Sendable {
     private let lumaKernel: CIColorKernel?
     private let offsetKernel: CIColorKernel?
     private let lightDetailKernel: CIColorKernel?
+    private let lightEdgeKernel: CIColorKernel?
     private let subjectLiftKernel: CIColorKernel?
     private let calmKernels: [String: CIColorKernel]
     /// False when the finishing kernel failed to load. Output then uses the weaker colour-matrix
@@ -38,6 +39,7 @@ final class FilterEngine: Sendable {
         lumaKernel = MetalKernels.color("UnderBlueLumaTransfer")
         offsetKernel = MetalKernels.color("UnderBlueBlackOffset")
         lightDetailKernel = MetalKernels.color("UnderBlueLightDetail")
+        lightEdgeKernel = MetalKernels.color("UnderBlueLightEdge")
         subjectLiftKernel = MetalKernels.color("UnderBlueSubjectLift")
         var calm: [String: CIColorKernel] = [:]
         for name in ["UnderBlueCalmShare", "UnderBlueCalmSpread", "UnderBlueCalmWeight", "UnderBlueCalmPremultiply",
@@ -98,19 +100,20 @@ final class FilterEngine: Sendable {
         return (out ?? image).cropped(to: image.extent)
     }
 
-    func apply(_ image: CIImage, settings: FilterSettings) -> CIImage {
+    func apply(_ image: CIImage, settings: FilterSettings, edgeGuard: Bool = true) -> CIImage {
         guard settings.preset != .original else { return image }
         return apply(image, correction: .make(analysis: settings.analysis, preset: settings.preset, adjustments: settings.adjustments),
-                     intensity: settings.appliedIntensity)
+                     intensity: settings.appliedIntensity, edgeGuard: edgeGuard)
     }
     /// `violetCalm` false leaves the violet calm to the caller: RestorationEngine.combined runs it once
     /// on the blended output.
     func apply(_ image: CIImage, correction: ColorCorrection, intensity: Float, calmWeight: CIImage? = nil,
-               violetCalm calmsViolet: Bool = true, openWaterRed: Bool = false) -> CIImage {
+               violetCalm calmsViolet: Bool = true, openWaterRed: Bool = false, edgeGuard: Bool = true) -> CIImage {
         let amount = min(1, max(0, intensity.isFinite ? intensity : 0))
         guard amount > 0 else { return image }
         let calm = calmWeight ?? waterCalmWeight(image, correction: correction)
-        let shown = blend(image, finishing(image, correction: correction, calmWeight: calm, openWaterRed: openWaterRed), amount: amount)
+        let shown = blend(image, finishing(image, correction: correction, calmWeight: calm, openWaterRed: openWaterRed,
+                                              edgeGuard: edgeGuard), amount: amount)
         return calmsViolet ? violetCalm(shown, source: image, calmWeight: calm) : shown
     }
     /// Violet the correction made loses its chroma; a pixel that was violet in the source keeps it
@@ -135,10 +138,11 @@ final class FilterEngine: Sendable {
     /// `image`. The restored path passes the unrestored source, so restoration cannot raise the ceiling.
     /// `calmWeight` is waterCalmWeight of the source; it defaults to the weight of `image` itself.
     /// `openWaterRed` (video) keeps the red rebuild out of flat open water; see below.
+    /// `edgeGuard` keeps the light detail away from strong edges (photos; video passes false). See below.
     /// Blur radius (share of the short side) of the open-water weight that mixes out the rebuilt red.
     static let openWaterBlur: Float = 0.03
     func finishing(_ image: CIImage, correction v: ColorCorrection, reference: CIImage? = nil, calmWeight: CIImage? = nil,
-                   openWaterRed: Bool = false) -> CIImage {
+                   openWaterRed: Bool = false, edgeGuard: Bool = true) -> CIImage {
         guard v != .identity else { return image }
         let side = Float(min(image.extent.width, image.extent.height))
         let short = side.isFinite && side > 0 ? side : 480
@@ -209,6 +213,7 @@ final class FilterEngine: Sendable {
         // frame edges up to 60 levels brighter, the centre unchanged (2 Oct 2026). The cause was
         // not found. The pixel values entering the kernel already had the bright edges.
         if let lightDetailKernel {
+            let beforeLight = corrected
             let mask = CIFilter.unsharpMask()
             mask.inputImage = corrected
             mask.radius = max(2, FinishingMath.lightDetailRadius * short)
@@ -219,6 +224,40 @@ final class FilterEngine: Sendable {
                          z: CGFloat(FinishingMath.lightDetailHigh), w: 0),
                 CIVector(x: CGFloat(FinishingMath.lightDetailEdgeLow), y: CGFloat(FinishingMath.lightDetailEdgeHigh), z: 0, w: 0)
             ]) ?? corrected
+            // The kernel skips a strong edge itself, but not the water around it. Beside a bright fish the blur
+            // takes in the fish, so the water reads darker than its broad light and the detail made it darker
+            // still: a dark band 8 to 40 px wide (DSC03545, -0.02 OKLab L against the far water; the source
+            // has none). So where the edge size, spread over half the radius, is large, the pixel keeps its
+            // value from before the light detail. Light rays have small differences and keep it (E27, 24 Oct 2026).
+            if edgeGuard, let lightEdgeKernel, let edge = lightEdgeKernel.apply(extent: image.extent, arguments: [beforeLight, sharp]) {
+                let spread = CIFilter.gaussianBlur()
+                spread.inputImage = edge.clampedToExtent()
+                spread.radius = max(1, FinishingMath.lightDetailRadius * FinishingMath.lightEdgeSpread * short)
+                let ramp = CIFilter.colorMatrix()
+                ramp.inputImage = (spread.outputImage ?? edge).cropped(to: image.extent)
+                let scale = 1 / CGFloat(FinishingMath.lightEdgeHigh - FinishingMath.lightEdgeLow)
+                ramp.rVector = CIVector(x: scale, y: 0, z: 0, w: 0)
+                ramp.biasVector = CIVector(x: -CGFloat(FinishingMath.lightEdgeLow) * scale, y: 0, z: 0, w: 0)
+                let clamp = CIFilter.colorClamp()
+                clamp.inputImage = ramp.outputImage
+                // Water only (1 - calm.b, the source's own subject test): on IMG_7262 the guard also took the
+                // detail off dark rock beside bright sand, and the rock went pale and soft.
+                var guardMask = clamp.outputImage
+                if let calm {
+                    let water = CIFilter.colorMatrix()
+                    water.inputImage = calm
+                    water.rVector = CIVector(x: 0, y: 0, z: -1, w: 0)
+                    water.biasVector = CIVector(x: 1, y: 0, z: 0, w: 0)
+                    let both = CIFilter.multiplyCompositing()
+                    both.inputImage = guardMask; both.backgroundImage = water.outputImage
+                    let unit = CIFilter.colorClamp()
+                    unit.inputImage = both.outputImage
+                    guardMask = unit.outputImage
+                }
+                let mix = CIFilter.blendWithRedMask()
+                mix.inputImage = beforeLight; mix.backgroundImage = corrected; mix.maskImage = guardMask
+                corrected = (mix.outputImage ?? corrected).cropped(to: image.extent)
+            }
         }
         // Fine detail: the pixel against its own small blur, on subjects only (UnderBlueDetail). The blur
         // reads a clamped image, so the border gets no dark rim. It also takes the source's own subject

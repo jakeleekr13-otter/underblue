@@ -286,7 +286,18 @@ func fullReference(_ a: [UInt8], _ b: [UInt8], _ w: Int, _ h: Int, into m: inout
     m.ssim = total / max(1, n)
 }
 
-let variants = ["original", "grayworld", "current", "restoration", "combined", "lift", "uniform", "reference", "signal"]
+// HT_EVAL_ABLATE=1 (E27) adds `abl_<stage>` outputs: the current path with one finishing stage off.
+// HT_EVAL_VIDEO_PATH=1 adds `videopath`: combined() as video calls it (video: true), to check a photo-only change leaves it.
+let videoPath = ProcessInfo.processInfo.environment["HT_EVAL_VIDEO_PATH"] == "1"
+let ablations: [(String, (inout ColorCorrection) -> Void)] = ProcessInfo.processInfo.environment["HT_EVAL_ABLATE"] == "1" ? [
+    ("none", { _ in }), ("clarity", { $0.clarity = 0 }), ("definition", { $0.definition = 0 }), ("detail", { $0.detail = 0 }),
+    ("shadows", { $0.shadowLift = 0; $0.highlightAmount = 1 }), ("vibrance", { $0.vibrance = 0 }), ("saturation", { $0.saturation = 1 }),
+    ("tone", { $0.contrast = 1; $0.brightness = 0; $0.toneCurve = 0; $0.midLift = 0 }), ("subject", { $0.subjectTone = SIMD3(repeating: 1) }),
+    ("neutral", { $0.neutralGains = SIMD3(repeating: 1) }), ("reference", { $0.referenceStrength = 0 }),
+    ("local", { $0.clarity = 0; $0.definition = 0; $0.detail = 0; $0.shadowLift = 0; $0.highlightAmount = 1 }),
+    ("all", { $0.clarity = 0; $0.definition = 0; $0.detail = 0; $0.shadowLift = 0; $0.highlightAmount = 1; $0.contrast = 1; $0.brightness = 0
+              $0.toneCurve = 0; $0.midLift = 0; $0.vibrance = 0; $0.saturation = 1; $0.warmth = 0 })] : []
+let variants = ["original", "grayworld", "current", "restoration", "combined", "lift", "uniform", "reference", "signal"] + ablations.map { "abl_\($0.0)" } + (ablations.isEmpty ? [] : ["abl_calm", "abl_bare", "abl_combsubject", "abl_combrestored"]) + (videoPath ? ["videopath"] : [])
 var csv = "image,variant,psnr,ssim,deltaE,farHue,farChroma,nearA,nearRG,contrastL,meanL,localContrast,farLocalContrast,farHueOK,farChromaOK,fallback,confidence,depthConf,waterConf,betaDR,betaDG,betaDB,binfR,binfG,binfB,floorPct,gainPct,recR,subjectShare,subjectL,outsideL,subjectChroma,subjectViolet,clipped,subjectClipped,outsideChroma,subjectLocalContrast,subjectOvershoot\n"
 let files = try FileManager.default.contentsOfDirectory(atPath: rawDir.path).filter { [".png", ".jpg", ".jpeg", ".arw"].contains(where: $0.lowercased().hasSuffix) }.sorted()
 let started = Date()
@@ -426,9 +437,41 @@ for name in selected {
         if let p = plan { print("\(name) plan: conf=\(p.confidence) depthConf=\(p.depthConfidence) fit=\(p.waterFitConfidence) binf=\(p.backscatterInfinity) betaD=\(p.betaDirect) betaB=\(p.betaBackscatter) rec=\(p.channelRecoverability) medianDepth=\(p.depth.median)") }
     }
     var outputs: [String: CIImage] = ["original": source, "grayworld": grayWorld(source), "current": current]
+    // HT_EVAL_PROBE="r,g,b;..." (sRGB 0-255, E27): prints the kernel mirror's water-like weight and colour for each.
+    if let probe = ProcessInfo.processInfo.environment["HT_EVAL_PROBE"] {
+        let v = ColorCorrection.make(analysis: settings.analysis, preset: settings.preset, adjustments: settings.adjustments)
+        print("\(name) probe waterChroma=\(v.waterChroma) waterRedness=\(v.waterRedness)")
+        for item in probe.split(separator: ";") {
+            let p = item.split(separator: ",").compactMap { Float($0) }; guard p.count == 3 else { continue }
+            func lin(_ x: Float) -> Float { let u = x / 255; return u <= 0.04045 ? u / 12.92 : pow((u + 0.055) / 1.055, 2.4) }
+            let input = FinishingMath.working(SIMD3(lin(p[0]), lin(p[1]), lin(p[2])))
+            let c = input * v.castGains, top = c.max()
+            let out = FinishingMath.display(FinishingMath.color(input, correction: v))
+            func enc(_ x: Float) -> Int { let u = min(1, max(0, x)); return Int(255 * (u <= 0.0031308 ? 12.92 * u : 1.055 * pow(u, 1 / 2.4) - 0.055)) }
+            print("  \(item): chroma=\((top - c.min()) / max(top, 1e-4)) waterLike=\(FinishingMath.waterLike(c, correction: v)) out=(\(enc(out.x)),\(enc(out.y)),\(enc(out.z)))")
+        }
+    }
+    for (key, change) in ablations {
+        var c = ColorCorrection.make(analysis: settings.analysis, preset: settings.preset, adjustments: settings.adjustments); change(&c)
+        outputs["abl_\(key)"] = engine.apply(source, correction: c, intensity: settings.appliedIntensity)
+    }
+    if !ablations.isEmpty {
+        let c = ColorCorrection.make(analysis: settings.analysis, preset: settings.preset, adjustments: settings.adjustments)
+        outputs["abl_calm"] = engine.apply(source, correction: c, intensity: settings.appliedIntensity, calmWeight: CIImage(color: .black).cropped(to: source.extent))
+        var bare = c; ablations.first { $0.0 == "all" }?.1(&bare)
+        outputs["abl_bare"] = engine.apply(source, correction: bare, intensity: settings.appliedIntensity, calmWeight: CIImage(color: .black).cropped(to: source.extent))
+        if let plan {
+            var off = restoration.corrections(settings: settings, plan: plan)
+            off.current.subjectTone = SIMD3(repeating: 1); off.restored.subjectTone = SIMD3(repeating: 1)
+            outputs["abl_combsubject"] = try? restoration.combined(source, plan: plan, values: off, settings: settings, filter: engine)
+            var offR = restoration.corrections(settings: settings, plan: plan); offR.restored.subjectTone = SIMD3(repeating: 1)
+            outputs["abl_combrestored"] = try? restoration.combined(source, plan: plan, values: offR, settings: settings, filter: engine)
+        }
+    }
     if let plan, let raw = try? restoration.restore(source, plan: plan) {
         outputs["restoration"] = engine.blend(source, raw, amount: plan.confidence)
         outputs["combined"] = (try? restoration.combined(source, plan: plan, settings: settings, filter: engine)) ?? current
+        if videoPath { outputs["videopath"] = try? restoration.combined(source, plan: plan, values: restoration.corrections(settings: settings, plan: plan), settings: settings, filter: engine, video: true) }
         // HT_EVAL_LIFT="strength,chromaCap,highlightStart,noiseFloor,chromaExponent,contrast" renders the lift as its own
         // variant (docs/SubjectEmphasis.md, E4). Without the mask the lift output equals combined.
         if let liftMask, let spec = ProcessInfo.processInfo.environment["HT_EVAL_LIFT"] {

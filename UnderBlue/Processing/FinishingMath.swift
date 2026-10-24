@@ -219,6 +219,13 @@ enum FinishingMath {
     static let lightDetailAmount: Float = 1.3, lightDetailRadius: Float = 0.018
     static let lightDetailLow: Float = 0.5, lightDetailHigh: Float = 0.7
     static let lightDetailEdgeLow: Float = 0.06, lightDetailEdgeHigh: Float = 0.15
+    /// Edge guard (photos, FilterEngine.finishing): the size of the light detail's difference, blurred over
+    /// lightEdgeSpread of its radius. From lightEdgeLow to lightEdgeHigh the pixel goes back to its value
+    /// before the light detail. Mac harness, 24 Oct 2026 (E27): 0.02 to 0.04 removed the DSC03545 band but kept only
+    /// 31% of the light detail in the IMG_7400 light; 0.04 to 0.08 left at most -0.35 of the -1.99 band (OKLab L x100)
+    /// and kept 58%: the rays stay and the bright rims around the dark fish there go; 0.06 to 0.12 kept a -1.09 band.
+    /// Spatial, so the CPU mirror (lightDetail) does not include it.
+    static let lightEdgeSpread: Float = 0.5, lightEdgeLow: Float = 0.04, lightEdgeHigh: Float = 0.08
 
     /// Water calm. Correction lifts the water's noise, and the sharpening steps lift it again. On
     /// IMG_7260 (8 Oct 2026) the open water went from L* noise 1.00 in the source to 1.67; the fine

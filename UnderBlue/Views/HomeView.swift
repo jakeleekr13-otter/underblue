@@ -75,6 +75,9 @@ struct HomeView: View {
                 }
                 .task(id: pickedFiles) { await importFiles() }
                 .task { await openShared() }
+                #if DEBUG
+                .task { openUITestFile() }
+                #endif
                 .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await openShared() } } }
                 // A share that arrived while an editor was open waits until the person comes back here.
                 .onChange(of: media == nil && batch == nil) { _, home in if home { Task { await openShared() } } }
@@ -147,6 +150,16 @@ struct HomeView: View {
         }
         finish(imported, selected: items.count, firstFailure: firstFailure)
     }
+
+    #if DEBUG
+    /// UI tests open a file from Documents with `--ui-test-open=<name>`, as if it was picked in Files.
+    /// The App Store screenshot test uses it, so the photo picker and the photo library never appear.
+    private func openUITestFile() {
+        guard let argument = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--ui-test-open=") }),
+              let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+        pickedFiles = [documents.appendingPathComponent(String(argument.dropFirst("--ui-test-open=".count)))]
+    }
+    #endif
 
     /// Files can hold photos and videos together; the same rules as the Photos picker apply (`open`).
     private func importFiles() async {

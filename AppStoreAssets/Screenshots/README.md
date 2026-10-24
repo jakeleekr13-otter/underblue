@@ -7,14 +7,13 @@ All App Store images live here. Store text for every language is in `docs/AppSto
 | Folder | What | Size | Captions | Phone screens | Upload state |
 |---|---|---|---|---|---|
 | `en-US/final` | 5 iPhone screenshots | 1320 × 2868 JPEG | English | English | 01 changed on 24 Oct (mirrored fish). Upload 01 again. |
-| `ko/final` | 5 iPhone screenshots | 1320 × 2868 JPEG | Korean | English (Korean captures on hold) | Not recorded. 01 changed on 24 Oct. |
-| `ja/final` | 5 iPhone screenshots | 1320 × 2868 JPEG | Japanese | English | Not uploaded. |
-| `zh-Hans/final` | 5 iPhone screenshots | 1320 × 2868 JPEG | Simplified Chinese | English | Not uploaded. |
-| `zh-Hant/final` | 5 iPhone screenshots | 1320 × 2868 JPEG | Traditional Chinese | English | Not uploaded. |
+| `ko/final` | 5 iPhone screenshots | 1320 × 2868 JPEG | Korean | Korean | Not recorded. All 5 changed on 24 Oct (Korean UI). |
+| `ja/final` | 5 iPhone screenshots | 1320 × 2868 JPEG | Japanese | Japanese | Not uploaded. |
+| `zh-Hans/final` | 5 iPhone screenshots | 1320 × 2868 JPEG | Simplified Chinese | Simplified Chinese | Not uploaded. |
+| `zh-Hant/final` | 5 iPhone screenshots | 1320 × 2868 JPEG | Traditional Chinese | Traditional Chinese | Not uploaded. |
 | `header/universal-5244x2950.png` | Product page header and search results, one file for both | 5244 × 2950 PNG | None, so every language uses it | — | Jake uploaded the first version on 23 Oct. Mirrored on 24 Oct, so upload it again. |
 | `mac-en-US/final` | 5 Mac screenshots | 2560 × 1600 JPEG | English | English | Not recorded. |
-| `iphone-duo-en-US` | iPhone Duo screens | — | — | — | See `docs/AppStoreRelease.md`. |
-| `en-US-outdated` | Old sets | — | — | — | Do not upload. |
+| `iphone-duo-en-US` | iPhone Duo screens | — | — | — | Not needed yet; kept in case App Store Connect asks for Duo sizes. See `docs/AppStoreRelease.md`. |
 
 All files are RGB without alpha. Upload screenshots in file order, 01 to 05, to the iPhone 6.9" slot of the matching language.
 
@@ -41,7 +40,7 @@ From the repo root:
 ```sh
 npm i --no-save playwright
 node scripts/app_store_screenshots/render.js            # en-US
-node scripts/app_store_screenshots/render.js ko         # or ja, zh-Hans, zh-Hant
+node scripts/app_store_screenshots/render.js ko         # or ja, zh-Hans, zh-Hant (needs <locale>/source)
 node scripts/app_store_screenshots/creative_render.js   # header
 node scripts/app_store_screenshots/mac_render.js        # Mac
 ```
@@ -53,19 +52,18 @@ node scripts/app_store_screenshots/mac_render.js        # Mac
 
 ## Device captures per language
 
-A language reads `<locale>/source` and writes `<locale>/final`. A missing capture falls back to `en-US/source`, with a warning. That is why the ko, ja and zh sets show English phone screens.
+Each language has its own `<locale>/source`: home, photo and video screens captured on an iPhone 17 in that language.
+Capture them again after any UI change:
 
-To replace them, capture the five screens on the iPhone with the app language set to that language (Settings → Apps → UnderBlue → Language). Use the same states as `en-US/source`:
+```sh
+zsh scripts/app_store_screenshots/capture_device.sh <device id> ko ja zh-Hans zh-Hant
+```
 
-| File | Screen |
-|---|---|
-| `home.PNG` | Home screen |
-| `photo_after.PNG` | Same reef photo, Natural Dive, Intensity 80% |
-| `photo_before.PNG` | Same state, Compare held, so the label reads Original |
-| `video_after.PNG` | Same reef video, Natural Dive, Intensity 80% |
-| `video_before.PNG` | Same state, Compare held |
-
-The video frame pair (`video_frame_*.HEIC`) has no UI, so every language reuses `en-US`. render.js and creative_render.js mirror it, so the clownfish faces right: tail on the "before" side, head on the "after" side (Jake, 24 Oct 2026).
+- `UnderBlueUITests/LocalizedScreenshotTests` drives the app. It never opens the photo picker, so no photo library appears. The script copies the photo and video into the app's Documents, and the Debug-only `--ui-test-open` argument opens them.
+- `compose_sources.py` keeps only the UI from each capture. The photo and video areas and the status bar come from `en-US/source`, so every language shows the same pictures and clock. It writes `layout.json` with where the media sits.
+- Hand-set positions per language are in `scripts/app_store_screenshots/layout_overrides.json`. Korean moves the screen 05 "On-device" badge up, because its 3-line home title would sit under it.
+- Turn on Do Not Disturb first. On 24 Oct a notification banner landed in one capture, and that screen was captured again.
+- The video frame pair (`en-US/source/video_frame_*.HEIC`) has no UI, so every language uses it. render.js and creative_render.js mirror it, so the clownfish faces right: tail on the "before" side, head on the "after" side (Jake, 24 Oct 2026).
 
 ## Media rules
 

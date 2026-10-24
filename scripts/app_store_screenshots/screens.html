@@ -14,6 +14,12 @@
     /* Screenshot geometry, in source pixels (1206 x 2622). */
     --src-w: 1206;
     --src-h: 2622;
+    /* The media area of the edit screens, as % of the screen height: top inset, bottom inset, centre.
+       These are the en-US captures. render.js overrides them from <locale>/source/layout.json. */
+    --photo-top: 18.3%; --photo-bottom: 51.0%; --photo-mid: 33.65%;
+    --video-top: 25.13%; --video-bottom: 49.0%; --video-mid: 38.07%;
+    /* The "On-device" badge on screen 05. A longer home title can need it elsewhere (layout.json). */
+    --badge1-left: 40px; --badge1-right: auto; --badge1-top: 1380px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: #000; font-family: -apple-system, "SF Pro Display", system-ui, sans-serif; color: var(--ink); }
@@ -220,9 +226,9 @@
   <div class="phone" style="left:204px;top:830px">
     <div class="screen">
       <img class="layer" src="assets/photo_after.png">
-      <img class="layer" src="assets/photo_before.png" style="clip-path: inset(18.3% 50% 51.0% 0); filter: url(#bluecast)">
-      <div class="split-line" style="left:50%;top:18.3%;height:30.7%"></div>
-      <div class="knob" style="left:50%;top:33.65%"><svg><use href="#arrows"/></svg></div>
+      <img class="layer" src="assets/photo_before.png" style="clip-path: inset(var(--photo-top) 50% var(--photo-bottom) 0); filter: url(#bluecast)">
+      <div class="split-line" style="left:50%;top:var(--photo-top);height:calc(100% - var(--photo-top) - var(--photo-bottom))"></div>
+      <div class="knob" style="left:50%;top:var(--photo-mid)"><svg><use href="#arrows"/></svg></div>
       <div class="island"></div>
     </div>
   </div>
@@ -241,10 +247,10 @@
     <div class="screen">
       <img class="layer" src="assets/video_after.png">
       <!-- Slightly brighter "after" half of the video frame only; the UI below stays untouched. -->
-      <img class="layer" src="assets/video_after.png" style="clip-path: inset(25.13% 0 49.0% 50%); filter: brightness(1.12)">
-      <img class="layer" src="assets/video_before.png" style="clip-path: inset(25.13% 50% 49.0% 0)">
-      <div class="split-line" style="left:50%;top:25.13%;height:25.87%"></div>
-      <div class="knob" style="left:50%;top:38.07%"><svg><use href="#arrows"/></svg></div>
+      <img class="layer" src="assets/video_after.png" style="clip-path: inset(var(--video-top) 0 var(--video-bottom) 50%); filter: brightness(1.12)">
+      <img class="layer" src="assets/video_before.png" style="clip-path: inset(var(--video-top) 50% var(--video-bottom) 0)">
+      <div class="split-line" style="left:50%;top:var(--video-top);height:calc(100% - var(--video-top) - var(--video-bottom))"></div>
+      <div class="knob" style="left:50%;top:var(--video-mid)"><svg><use href="#arrows"/></svg></div>
       <div class="island"></div>
     </div>
   </div>
@@ -281,7 +287,7 @@
       <div class="island"></div>
     </div>
   </div>
-  <div class="float-badge glass" style="left:40px;top:1380px">
+  <div class="float-badge glass" style="left:var(--badge1-left);right:var(--badge1-right);top:var(--badge1-top)">
     <span class="ic"><svg><use href="#chip"/></svg></span>
     <span data-t="s5.badge1">On-device<small>Private processing</small></span>
   </div>

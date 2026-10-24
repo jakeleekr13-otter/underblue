@@ -120,8 +120,8 @@ If a diagnostic attachment is retained together with the sender's email address,
 
 Five uploadable English iPhone screenshots are in `AppStoreAssets/Screenshots/en-US/final`.
 Each is a 1320×2868 RGB JPEG without alpha. They were rendered on 29 Sep 2026 from the device
-captures in `en-US/source` by `scripts/app_store_screenshots/render.js`. The old `final-v2` set is in
-`en-US-outdated`.
+captures in `en-US/source` by `scripts/app_store_screenshots/render.js`. The old `final-v2` set and its
+generator were deleted on 24 Oct 2026; they are in git history.
 
 1. `01-before-after.jpg`
 2. `02-photo.jpg`

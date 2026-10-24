@@ -23,6 +23,9 @@ function sourceFile(file) {
   console.warn(`warning: ${locale}/source/${file} missing, using en-US`);
   return path.join(shots, 'en-US/source', file);
 }
+// Where the photo and video sit on this language's edit screens (compose_sources.py writes it).
+const layoutFile = path.join(shots, locale, 'source', 'layout.json');
+const layout = fs.existsSync(layoutFile) ? JSON.parse(fs.readFileSync(layoutFile, 'utf8')) : {};
 
 // Chromium cannot read HEIC, so stage every source as PNG or JPEG next to the page.
 const work = fs.mkdtempSync(path.join(os.tmpdir(), 'underblue-shots-'));
@@ -32,10 +35,11 @@ fs.copyFileSync(path.join(__dirname, 'screens.html'), path.join(work, 'screens.h
 for (const n of ['home', 'photo_before', 'photo_after', 'video_before', 'video_after']) {
   fs.copyFileSync(sourceFile(n + '.PNG'), path.join(assets, n + '.png'));
 }
-// Mirrored, so the clownfish in screenshot 01 faces right (see screens.html).
+// The video frame pair has no UI, so every language uses en-US. Mirrored, so the clownfish in
+// screenshot 01 faces right (see screens.html).
 for (const n of ['video_frame_before', 'video_frame_after']) {
   execFileSync('sips', ['-s', 'format', 'jpeg', '-s', 'formatOptions', '95', '--flip', 'horizontal',
-    sourceFile(n + '.HEIC'), '--out', path.join(assets, n + '.jpg')], { stdio: 'ignore' });
+    path.join(shots, 'en-US/source', n + '.HEIC'), '--out', path.join(assets, n + '.jpg')], { stdio: 'ignore' });
 }
 
 (async () => {
@@ -45,15 +49,16 @@ for (const n of ['video_frame_before', 'video_frame_after']) {
   await page.goto('file://' + path.join(work, 'screens.html'));
   await page.waitForLoadState('networkidle');
   // lang picks the right CJK glyphs (Japanese and Chinese share code points).
-  const missing = await page.evaluate(([lang, t]) => {
+  const missing = await page.evaluate(([lang, t, vars]) => {
     document.documentElement.lang = lang;
+    for (const [name, value] of Object.entries(vars)) document.documentElement.style.setProperty('--' + name, value);
     if (lang === 'en-US') return [];
     const keys = [];
     for (const el of document.querySelectorAll('[data-t]')) {
       if (el.dataset.t in t) el.innerHTML = t[el.dataset.t]; else keys.push(el.dataset.t);
     }
     return keys;
-  }, [locale, captions]);
+  }, [locale, captions, layout]);
   if (missing.length) throw new Error(`captions.json ${locale} lacks: ${[...new Set(missing)].join(', ')}`);
   await page.evaluate(() => Promise.all([...document.images].map(i => i.decode())));
   const sections = await page.locator('section').all();

@@ -32,7 +32,7 @@ Nobody on the team reads Japanese, Chinese or Spanish. An independent reviewer c
 
 Other languages: `scripts/app_store_screenshots/captions.json`.
 
-Store copy uses the app's own UI words. The app translates "Look" as 効果 (ja), 效果 (zh) and Efecto (es). The Korean UI says 효과, but the Korean captions and description still say 룩.
+Store copy uses the app's own UI words. The app translates "Look" as 효과 (ko), 効果 (ja), 效果 (zh) and Efecto (es).
 
 ## Regenerate
 

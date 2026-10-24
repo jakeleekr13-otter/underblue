@@ -51,6 +51,14 @@ func fit(_ image: CIImage, width: Int, height: Int) -> CIImage {
 // sRGB. PhotoProcessor saves in P3, so an sRGB sheet is not what the app shows: a saturated orange
 // reef is pushed to the sRGB gamut edge and reads redder there (23 Oct 2026).
 let outputSpace = ProcessInfo.processInfo.environment["HT_EVAL_P3"] == "1" ? FilterEngine.photoSpace : sRGB
+// HT_EVAL_PRECISE_MASK=1 makes both masks with SubjectMask.estimatePrecise (E24), as the single-photo
+// editor would, and falls back to estimate when it returns nil.
+let preciseMask = ProcessInfo.processInfo.environment["HT_EVAL_PRECISE_MASK"] == "1"
+func subjectMask(_ image: CIImage, cap: Float) async -> SubjectMask? {
+    if preciseMask, #available(macOS 27.0, *),
+       let m = await SubjectMask.estimatePrecise(image, cap: cap, context: engine.context) { return m }
+    return SubjectMask.estimate(image, cap: cap)
+}
 func render(_ image: CIImage, _ w: Int, _ h: Int) -> [UInt8] {
     var px = [UInt8](repeating: 0, count: w * h * 4)
     engine.context.render(image, toBitmap: &px, rowBytes: w * 4, bounds: CGRect(x: 0, y: 0, width: w, height: h),
@@ -253,7 +261,7 @@ for name in selected {
     // image itself. "_jpg.jpg:_raw.arw" renders a camera JPEG with its RAW's analysis.
     // As PhotoProcessor does: the veil's mask, made before the analysis, which trusts a white
     // reference on a subject. HT_EVAL_NO_SUBJECT_REFERENCE=1 analyses without it, as 1.1.4 did.
-    let subjects = SubjectMask.estimate(source)
+    let subjects = await subjectMask(source, cap: SubjectMask.maximumShare)
     var analysis = engine.analyze(source, subjects: ProcessInfo.processInfo.environment["HT_EVAL_NO_SUBJECT_REFERENCE"] == nil ? subjects : nil)
     if let swap = ProcessInfo.processInfo.environment["HT_EVAL_ANALYSIS_SWAP"] {
         let parts = swap.split(separator: ":").map(String.init)
@@ -293,7 +301,7 @@ for name in selected {
         // As PhotoProcessor does. The uniform (video) plan below has no mask, as video has none.
         plan?.subjectMask = subjects
         // The subject lift has its own cap (docs/SubjectEmphasis.md, E2), so m5's coral block counts.
-        liftMask = SubjectMask.estimate(source, cap: SubjectMask.liftMaximumShare)
+        liftMask = await subjectMask(source, cap: SubjectMask.liftMaximumShare)
         // HT_EVAL_WATER_SWAP="<from>:<to>" fits the water model on a different file and puts it on
         // this image's plan. Depth, limits and the subject mask stay this image's. It separates the
         // water fit from the image, the way HT_EVAL_ANALYSIS_SWAP separates the analysis.

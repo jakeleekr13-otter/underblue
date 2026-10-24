@@ -739,6 +739,8 @@ The branch merged main at `287743d`. Every number above E15 predates that merge.
 | E20 | Green cast check on r14 and r15 | Sand colour, gate, m5, 25 video frames | r14 fixed. The iPhone agrees with the Mac |
 | E21 | Give Vision the whole image | Mask share of 36 photos at three sizes, device time and memory | r14 gets its mask back. One Vision call, faster |
 | E22 | Read the water share from alpha in the lift | notWater on open water, gate on the lift render, 8 photos on Mac and iPhone | Fixed. Changes are small. Jake judges by eye |
+| E23 | Why the lift looks foreign at the mask edge | Lift terms switched off, a brightening cap, four mask cues, 100% crops | Jake: no lift beats every variant with the Vision mask |
+| E24 | A precise mask from Vision iterative segmentation (iOS 27, macOS 27) | 14 photos, leak check, lift spill, 100% crops, a 4K clip, iPhone probe | Spill outside the subject falls 2 to 90 times. The iPhone matches the Mac. Jake: "surprisingly much better" |
 
 ### E15, the Vision input, 23 Oct 2026
 
@@ -1049,6 +1051,130 @@ Before and after, OKLab distance x100:
 - Open water changes by about 0.3 to 0.6. The densest 400 px window changes by under 1 on every photo.
 - By eye at 100%: small fish and wreck edges next to open water get a little less sharpening and contrast. The water is a little smoother.
 - The sunlit surface in DSC03696 does not change. It reads as not-water through alpha too, so the lift reaches it before and after. The picker session saw the same for bubbles and sand.
+
+### E23, why the lift looks foreign, 24 Oct 2026
+
+Jake found the r15 hose and the water between the fingers "very awkward". The Vision mask covers the water inside the hose loop and between the fingers. Inside the mask the lift raised that water.
+
+r15, inside the mask, L change from the lift (OKLab x100, iPhone export against main):
+
+| L before the lift | pixels | L change |
+|---|---|---|
+| 0.1 to 0.2 (black suit) | 659k | -0.9 |
+| 0.2 to 0.5 | 243k | +3.5 to +5.8 |
+| 0.5 to 0.8 (water gaps, yellow hose, hand) | 67k | +11.9 to +13.7 |
+| outside the mask | | +0.00 |
+
+The water gaps rose by 13.7. Switching off one term at a time (Mac harness, against the same run's `combined`): the gamma lift gives about +6 to +7, clarity about +4.2, contrast about +1.9, detail about +1.7.
+
+Four cues were tried to find the gaps inside the mask. None works on r15:
+
+| cue | gap water | the subject |
+|---|---|---|
+| water share (alpha) | 1.00 | 0.99 to 1.00 on the whole diver |
+| plan depth | 0.11 | hose 0.05; open water 0.99 |
+| guided filter on the mask | weight 0.73 to 0.84 | kept |
+| colour of the local water outside the mask | weight 0.40 to 0.66 | the yellow hose drops to 0.74 at the stronger setting |
+
+A cap on the brightening (0.08, 0.05, 0.03) was rendered too. Jake judged no lift better than every variant on the r15 hose. On DSC03545 cap 0.03 was the least bad. The cap code was removed.
+
+### E24, a precise mask, 24 Oct 2026
+
+Jake asked for precise masking at the photo's own resolution. It runs for one photo at a time, so it may cost more.
+
+Methods tried on r15. Mean mask weight on the gap water; lower is better:
+
+| method | gap water | notes |
+|---|---|---|
+| Vision foreground mask (512 model) | 0.98 | the current mask |
+| the same, `generateScaledMaskForImage` at full size | 0.95 | Vision only scales its 512 result |
+| `VNGeneratePersonSegmentationRequest`, accurate | 0.01 | loses the fingertips and all the gear |
+| VisionKit subject lifting (`ImageAnalysisOverlayView`) | 0.92 | clears the loop's big hole, keeps the small gaps |
+| closed-form matting, water seeds by colour | 0.20 to 0.40 | loses the hand: its colour is close to the water's |
+| closed-form matting, the Vision core as subject seeds | 0.74 to 0.82 | keeps the gaps |
+
+Adopted for the experiment: `GenerateIterativeSegmentationRequest` (Vision, iOS 27 and macOS 27). Apple downloads its model on first use (3.9 s on the Mac), so the app does not grow. `SubjectMask.estimatePrecise` seeds it with the box around the foreground instances, quality `accurate`. The result is full size. It is scaled to a 2048 grid on the GPU, so no full-size array is built. The harness uses it with `HT_EVAL_PRECISE_MASK=1`.
+
+- r15: gap water 0.68, the hand 0.87. The water between the fingers is clear. The top of each finger is a little weak.
+- Include points added after the first result (`addIncludedPoint`) take 21 ms more. Points chosen deep inside the mask did not bring the fingertips back. Before a first result they fail ("getBestMask failed with status 14").
+- Quality `balanced` and `fast` leave the gaps at 0.80.
+
+14 photos, Mac. Every photo had one Vision instance:
+
+| photo | Vision share | precise share | precise ms |
+|---|---|---|---|
+| r15 | 0.1187 | 0.1149 | 107 |
+| r14 | 0.0171 | 0.0173 | 98 |
+| DSC03545 | 0.0254 | 0.0251 | 166 |
+| DSC03546 | 0.1669 | 0.0909 | 113 |
+| DSC03656 | 0.0142 | 0.0147 | 129 |
+| DSC03687 | 0.0221 | 0.0212 | 121 |
+| DSC03696 | 0.1073 | 0.1071 | 121 |
+| m5 | 0.3118 | 0.3098 | 92 |
+| m6 | 0.1428 | 0.1465 | 98 |
+| O2 | 0.1476 | 0.1475 | 102 |
+| O3 | 0.1808 | 0.1753 | 93 |
+| O4 | 0.1434 | 0.1468 | 98 |
+| r03 | 0.0806 | 0.0795 | 113 |
+| r06 | 0.2201 | 0.2071 | 102 |
+
+The precise time includes the foreground request. DSC03546 drops most: Vision filled the openings of the wreck, and the precise mask clears them. Some wreck parts come out at half weight.
+
+Leak check, 50 rounds of both methods in one process: no growth. DSC03545 stays at 415 to 531 MB, r15 at 281 to 330 MB. The swing is one full-size mask buffer held or freed.
+
+Lift spill: the mean L change from the lift in the ring 2 to 40 px outside the precise subject, x100. Harness, the photo's own size, app lift defaults:
+
+| photo | old mask | precise mask |
+|---|---|---|
+| r15 | 1.81 | 0.02 |
+| r14 | 1.88 | 0.64 |
+| DSC03545 | 1.03 | 0.02 |
+| DSC03546 | 5.21 | 0.12 |
+| DSC03696 | 2.07 | 0.96 |
+| O4 | 0.54 | 0.11 |
+| m6 | 0.41 | 0.11 |
+
+The lift on the subject itself does not change (median L change the same within 0.1). By eye at 100%: the light blue patches in the r15 hose are gone. The water between the fingers is no longer lifted. One thin bright line stays at one finger gap. The water inside the DSC03546 wreck no longer brightens. The pale rim on the hose edges is there with no lift too, so it is E18, not the lift.
+
+A first try flipped the mask upside down (`render(toBitmap:)` already writes the top row first). Its numbers were thrown away. The table above is from the fixed code, checked by correlation with the probe's mask: 0.997 for r15, 0.973 for DSC03546.
+
+Video, Mac, 4K thresher shark clip (`Tune_22_Oct/13832750`), 120 consecutive frames:
+
+| | Vision | precise |
+|---|---|---|
+| time per frame, median | 31 ms | 135 ms |
+| frames with a mask | 120 | 120 |
+| mask overlap with the previous frame (IoU), median / min | 0.972 / 0.940 | 0.958 / 0.913 |
+
+- No growth in memory over the clip: 386 to 388 MB, then 338 MB.
+- The precise mask moves a little more from frame to frame. Its fine edges follow the frame.
+- At 135 ms a frame, a 10 s clip at 60 fps would take about 81 s more on the Mac. Per frame it is too slow for video.
+- Clip A (`VID_20230118_095241_0018`) has no Vision subject in 41 frames sampled one per second.
+
+Jake's verdict on the 100% crops (r15 hose and hand, DSC03546), 24 Oct 2026: the lift with the precise mask is "surprisingly much better".
+
+Jake's decision, 24 Oct 2026: the precise mask is adopted for single-photo editing only, on iOS 27 and macOS 27, as a Labs feature. Video does not get it.
+
+#### The iPhone, 24 Oct 2026
+
+iPhone 17, Release build, a probe test calling `SubjectMask.estimate` and `estimatePrecise` (lift cap) on each photo as the app opens it. Peak memory is sampled every 2 ms, so it is approximate.
+
+| photo | Vision | precise, first call | precise, again |
+|---|---|---|---|
+| r15 3840 x 2160 | 17 ms, 0.1187 | 121 ms, +84 MB, 0.1117 | 121 ms, +11 MB |
+| r14 3140 x 2354 | 16 ms, 0.0171 | 124 ms, +41 MB, 0.0143 | 119 ms, +2 MB |
+| DSC03545 JPEG | 31 ms, 0.0255 | 139 ms, +277 MB, 0.0238 | 149 ms, +98 MB |
+| DSC03546 | 25 ms, 0.1690 | 201 ms, +183 MB, 0.0708 | 142 ms, +121 MB |
+| DSC03696 | 20 ms, 0.1073 | 145 ms, +222 MB, 0.1034 | 138 ms, +272 MB |
+| r14 at 48 MP (synthetic) | 27 ms, 0.0172 | 214 ms, +245 MB, 0.0144 | 199 ms, +3 MB |
+| DSC03545 ARW | 316 ms, no mask | 11165 ms, no mask | 473 ms, no mask |
+
+- The ARW ran first. Its first call holds the model download and the RAW decode. The probe gives Vision the RAW rendering, not the embedded preview the picker session now uses (`c89b881`), so no mask is expected there.
+- iPhone against Mac, the same function on the same photos: correlation 1.000 (three decimals) on all six, and no pixel differs by more than 0.5. The iPhone's share is 3 to 6% higher, in the soft edges.
+- Leak loop, 20 rounds on the 48 MP photo: footprint 902 MB, then 847 MB. No growth.
+- Video, 10 consecutive 4K frames of the shark clip: precise 116 to 128 ms a frame (324 ms the first), +87 MB peak a call. Vision 14 to 18 ms. Leak loop: 531 MB, then 525 MB.
+
+The E21 ARW numbers predate the picker session's RAW change.
 
 ### The control photos
 

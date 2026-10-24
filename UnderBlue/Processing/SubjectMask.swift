@@ -1,4 +1,5 @@
 import CoreImage
+import CoreImage.CIFilterBuiltins
 import Vision
 
 /// The subject lift (docs/SubjectEmphasis.md). It brightens the subject and follows with its chroma.
@@ -96,6 +97,77 @@ struct SubjectMask: Sendable, Equatable {
         let share = mask.values.reduce(0, +) / Float(mask.values.count)
         guard share >= minimumShare, share <= cap else { return nil }
         return mask
+    }
+
+    /// The precise mask's long side. Its source is full size, so 1024 would blur finger gaps on a 48 MP photo.
+    static let preciseSide: CGFloat = 2048
+
+    /// The foreground mask refined by Vision's iterative segmentation, for one photo at a time (E24).
+    /// The foreground instances give the seed box; the segmentation then follows the photo's own edges at
+    /// full size, so water between fingers and inside a hose loop leaves the mask. The full-size result is
+    /// scaled down on the GPU, so no full-size array is built. Nil when either request fails or the
+    /// share is out of range; the caller then uses `estimate`. `precise` does the segmentation.
+    @available(iOS 27.0, macOS 27.0, *)
+    static func estimatePrecise(_ image: CIImage, cap: Float = maximumShare, context: CIContext) async -> SubjectMask? {
+        guard let input = visionInput(image),
+              let instances = try? await GenerateForegroundInstanceMaskRequest().perform(on: input),
+              !instances.allInstances.isEmpty,
+              let coarse = try? instances.generateMask(for: instances.allInstances),
+              let box = seedBox(coarse),
+              let mask = await precise(image, box: box, context: context) else { return nil }
+        let share = mask.values.reduce(0, +) / Float(mask.values.count)
+        guard share >= minimumShare, share <= cap else { return nil }
+        return mask
+    }
+
+    /// The iterative segmentation seeded with one box (Vision's normalized space, origin at the bottom left),
+    /// on the `preciseSide` grid, with no share test. The picker calls it once per group box.
+    @available(iOS 27.0, macOS 27.0, *)
+    static func precise(_ image: CIImage, box: NormalizedRect, context: CIContext) async -> SubjectMask? {
+        guard let input = visionInput(image) else { return nil }
+        let request = GenerateIterativeSegmentationRequest(seedBox: box)
+        request.qualityLevel = .accurate
+        if case .ready = await request.assetStatus {} else {
+            guard (try? await request.downloadAssets()) != nil else { return nil }
+        }
+        guard let observation = try? await request.perform(on: input) else { return nil }
+        let extent = input.extent
+        let scale = min(1, preciseSide / max(extent.width, extent.height))
+        let width = max(2, Int((extent.width * scale).rounded(.down))), height = max(2, Int((extent.height * scale).rounded(.down)))
+        var values = [Float](repeating: 0, count: width * height)
+        observation.pixelBuffer.withUnsafeBuffer { buffer in
+            let full = CIImage(cvPixelBuffer: buffer)
+            let resample = CIFilter.lanczosScaleTransform()
+            resample.inputImage = full
+            resample.scale = Float(CGFloat(width) / full.extent.width)
+            resample.aspectRatio = Float((CGFloat(height) / full.extent.height) / (CGFloat(width) / full.extent.width))
+            let small = resample.outputImage ?? full
+            // render(toBitmap:) writes the top row first, which is the mask's row 0, so no flip.
+            values.withUnsafeMutableBytes { raw in
+                context.render(small, toBitmap: raw.baseAddress!, rowBytes: width * MemoryLayout<Float>.size,
+                               bounds: CGRect(x: 0, y: 0, width: width, height: height), format: .Rf, colorSpace: nil)
+            }
+        }
+        for i in values.indices { values[i] = values[i].isFinite ? min(1, max(0, values[i])) : 0 }
+        return SubjectMask(width: width, height: height, values: values)
+    }
+
+    /// The box around the coarse mask's values above 0.5, in Vision's normalized space (origin at the bottom left).
+    @available(iOS 27.0, macOS 27.0, *)
+    private static func seedBox(_ buffer: CVPixelBuffer) -> NormalizedRect? {
+        CVPixelBufferLockBaseAddress(buffer, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
+        let w = CVPixelBufferGetWidth(buffer), h = CVPixelBufferGetHeight(buffer), row = CVPixelBufferGetBytesPerRow(buffer)
+        guard CVPixelBufferGetPixelFormatType(buffer) == kCVPixelFormatType_OneComponent32Float,
+              let base = CVPixelBufferGetBaseAddress(buffer) else { return nil }
+        var minX = w, maxX = -1, minY = h, maxY = -1
+        for y in 0..<h {
+            let line = (base + y * row).assumingMemoryBound(to: Float.self)
+            for x in 0..<w where line[x] > 0.5 { minX = min(minX, x); maxX = max(maxX, x); minY = min(minY, y); maxY = max(maxY, y) }
+        }
+        guard maxX >= minX, maxY >= minY else { return nil }
+        return NormalizedRect(x: CGFloat(minX) / CGFloat(w), y: 1 - CGFloat(maxY + 1) / CGFloat(h),
+                              width: CGFloat(maxX - minX + 1) / CGFloat(w), height: CGFloat(maxY - minY + 1) / CGFloat(h))
     }
 
     /// The image Vision reads: the whole image, moved to the origin. Nil for an empty or infinite extent.

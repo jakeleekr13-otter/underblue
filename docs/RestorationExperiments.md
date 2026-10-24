@@ -234,6 +234,48 @@ Photos and single video frames, harness only.
 
 Go rule: every chosen image prints a value. After the baseline, set a guard for A2 and B: how much the count and the median peak may rise.
 
+#### D1 result (24 Oct 2026, `main` at 085a6f3): go
+
+Tool: `particle-bench` modes `photo` (census) and `pair` (same groups in original and output). Harness run with `HT_EVAL_MAXDIM=1920 HT_EVAL_PNG=1`, so no JPEG step sits between render and metric.
+
+A raw count is a poor proxy. Crops checked by eye showed what the census finds:
+
+- r12 (diver, deep blue): mostly sensor grain, not particles. Not used.
+- r10 (sunlit boat): many real bright specks: backscatter, bubbles, surface glints.
+- DSC03546: real specks, small far fish and reef texture points, mixed.
+- c3 at 30 s: faint soft marine snow. c1 at 1 s: mostly highlights on fish and coral (median peak 42, above the 30-level speck limit).
+
+So D1 uses the paired measure. It finds the isolated groups of 1-40 px in the original. Then it reads their peak at the same place in our output. A ratio above 1 means the spots stand out more.
+
+| Image | Groups in original | Ours: median peak ratio (p10-p90) | Ours (video path) |
+|---|---|---|---|
+| r10 sunlit boat | 710 | 1.07 (0.42-1.66) | 1.06 |
+| DSC03546 wreck | 420 | 0.48 (0.30-1.77) | 0.48 |
+| r14 teal sand | 60 | 0.32 (0.27-1.44) | 0.33 |
+| c3 snow still | 91 | 0.60 (0.45-1.22) | 0.79 |
+| c1 fish still | 168 | 1.29 (0.69-1.45) | 1.31 |
+
+- In open water our output makes faint specks weaker, not stronger. Crops confirm it: the water calm step smooths them.
+- c1 rises, but its groups are mostly subject highlights, not particles.
+- Guard for A2 and B: the median ratio may rise by 0.10 at most over this table.
+
+#### Finding: grain on bright sand (r14)
+
+At 1:1, our output turns the fine grain of r14's teal sand into grey-white blotches. Box (0.55, 0.70, 0.80, 0.95) at 1920 px, std of luma minus a 4 px blur:
+
+| Output | Std | Note |
+|---|---|---|
+| Original | 4.38 | |
+| Restoration only | 4.36 | The optical step adds none. |
+| Gray-world | 4.19 | Same mean colour as ours. |
+| Ours (`combined`) | 12.36 | Video path 11.48. |
+| Finishing only (`current`) | 12.63 | The two rows below start from this one. |
+| `current`, `detail` off | 8.43 | Largest single cause. |
+| `current`, all local and tone stages off | 8.83 | The rest comes from the colour stages. Which one is not located. |
+
+- This is not a particle. It is a quality defect in the current output. It was seen in the harness at 1920 px. The app at full size is unchecked.
+- A2 adds red made from green, so it adds green's grain to red. Check this box before and after A2.
+
 ### D2 — the video prototype in the full chain
 
 1. Run particles, then our colour, on S1 and S3. Compare with colour only.

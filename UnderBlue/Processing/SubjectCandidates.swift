@@ -5,6 +5,9 @@ import Vision
 /// Which subjects protect the water around them. `.auto` is the automatic mask (SubjectMask.estimate).
 /// `.picked(nil)` means the user chose no subject at all.
 enum SubjectChoice: Sendable, Equatable {
+    /// Labs off, or below 27: no subject lift. The local veil keeps the automatic mask, as main ships.
+    case off
+    /// Labs on: the lift on the automatic subjects.
     case auto
     case picked(SubjectMask?)
 }
@@ -126,6 +129,44 @@ struct SubjectCandidates: Sendable {
         return SubjectMask(width: width, height: height, values: values)
     }
 
+    /// The same groups with new masks of one size, such as the precise masks (SubjectMask.precise).
+    /// Shares, boxes and the drawing follow the new masks. The drawing is made at a long side of at most
+    /// `drawingSide`, because the outline's dilation is slow on a 2048 grid. Nil when the count or sizes
+    /// differ, or a mask is empty.
+    static let drawingSide = 1024
+    func replacingMasks(_ masks: [SubjectMask]) -> SubjectCandidates? {
+        guard masks.count == groups.count, let first = masks.first,
+              masks.allSatisfy({ $0.width == first.width && $0.height == first.height && $0.values.count == first.width * first.height })
+        else { return nil }
+        let w = first.width, h = first.height
+        let step = max(1, Int((Float(max(w, h)) / Float(Self.drawingSide)).rounded(.up)))
+        let dw = max(2, w / step), dh = max(2, h / step)
+        var built: [SubjectGroup] = []
+        for (group, mask) in zip(groups, masks) {
+            let share = mask.values.reduce(0, +) / Float(mask.values.count)
+            var minX = w, maxX = -1, minY = h, maxY = -1
+            for y in 0..<h { for x in 0..<w where mask.values[y * w + x] > 0.5 {
+                minX = min(minX, x); maxX = max(maxX, x); minY = min(minY, y); maxY = max(maxY, y)
+            } }
+            guard share > 0, maxX >= minX, maxY >= minY else { return nil }
+            let bounds = CGRect(x: CGFloat(minX) / CGFloat(w), y: CGFloat(minY) / CGFloat(h),
+                                width: CGFloat(maxX - minX + 1) / CGFloat(w), height: CGFloat(maxY - minY + 1) / CGFloat(h))
+            // Box mean over step x step cells, for the drawing only.
+            var small = [Float](repeating: 0, count: dw * dh)
+            for y in 0..<dh { for x in 0..<dw {
+                var sum: Float = 0
+                for sy in 0..<step { for sx in 0..<step { sum += mask.values[min(h - 1, y * step + sy) * w + min(w - 1, x * step + sx)] } }
+                small[y * dw + x] = sum / Float(step * step)
+            } }
+            built.append(SubjectGroup(id: group.id, instances: group.instances, share: share, bounds: bounds, mask: mask.values,
+                                      fill: Self.fill(small, width: dw, height: dh),
+                                      thickOutline: Self.outline(small, width: dw, height: dh, radius: 4),
+                                      thinOutline: Self.outline(small, width: dw, height: dh, radius: 1),
+                                      anchor: Self.top(small, width: dw, height: dh)))
+        }
+        return SubjectCandidates(width: w, height: h, groups: built, merged: merged)
+    }
+
     /// The group under a point (0...1, top left origin): one whose mask covers it, else the nearest group
     /// whose box, grown by `tolerance`, holds it. A small subject then stays easy to hit.
     func group(at point: CGPoint, tolerance: CGFloat) -> Int? {
@@ -242,7 +283,7 @@ struct SubjectCandidates: Sendable {
         return CGPoint(x: 0.5, y: 0.5)
     }
 
-    private static func fill(_ values: [Float], width: Int, height: Int) -> CGImage? {
+    static func fill(_ values: [Float], width: Int, height: Int) -> CGImage? {
         var bytes = [UInt8](repeating: 0, count: width * height * 4)
         for i in values.indices {
             let alpha = UInt8((values[i] * 255).rounded())

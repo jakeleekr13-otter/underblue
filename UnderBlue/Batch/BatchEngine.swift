@@ -23,8 +23,8 @@ final class BatchEngine {
         /// The name the sink stored the result under.
         var savedName: String?
         var error: String?
-        /// The subjects this photo protects. Auto unless the user picked them. A video ignores it.
-        var subjects = SubjectChoice.auto
+        /// The subjects this photo protects. Off (no lift) unless the Labs switch is on. A video ignores it.
+        var subjects = SubjectChoice.off
     }
 
     /// Jobs allowed at once in each stage. `inFlight` caps the items that were admitted but are not delivered yet,

@@ -112,6 +112,26 @@ final class SubjectCandidatesTests: XCTestCase {
         XCTAssertNil(all.group(at: CGPoint(x: .nan, y: 0.2), tolerance: 0.05))
     }
 
+    func testReplacingMasksKeepsGroupsAndFollowsTheNewMasks() throws {
+        let a = group(0, bounds: CGRect(x: 0, y: 0, width: 0.5, height: 0.5), share: 0.25)
+        let b = group(1, bounds: CGRect(x: 0.5, y: 0.5, width: 0.5, height: 0.5), share: 0.25)
+        let coarse = candidates([a, b])
+        // 40 x 40 precise masks: a smaller square for each group.
+        func square(_ x0: Int, _ y0: Int) -> SubjectMask {
+            var v = [Float](repeating: 0, count: 1600)
+            for y in y0..<(y0 + 10) { for x in x0..<(x0 + 10) { v[y * 40 + x] = 1 } }
+            return SubjectMask(width: 40, height: 40, values: v)
+        }
+        let fine = try XCTUnwrap(coarse.replacingMasks([square(0, 0), square(30, 30)]))
+        XCTAssertEqual(fine.width, 40)
+        XCTAssertEqual(fine.groups.map(\.id), [0, 1])
+        XCTAssertEqual(fine.groups[0].share, 100 / 1600, accuracy: 0.0001)
+        XCTAssertEqual(fine.groups[1].bounds.minX, 0.75, accuracy: 0.0001)
+        XCTAssertNotNil(fine.groups[0].thickOutline)
+        XCTAssertNil(coarse.replacingMasks([square(0, 0)]), "one mask per group")
+        XCTAssertNil(coarse.replacingMasks([square(0, 0), SubjectMask(width: 40, height: 40, values: .init(repeating: 0, count: 1600))]), "an empty mask fails")
+    }
+
     func testTapMapsToTheSamePhotoPointAtEveryZoomAndAspect() {
         let a = group(0, bounds: CGRect(x: 0.1, y: 0.1, width: 0.2, height: 0.2), share: 0.04)
         let all = candidates([a])
@@ -137,7 +157,9 @@ final class SubjectCandidatesTests: XCTestCase {
         let tiny = candidates([group(0, bounds: CGRect(x: 0, y: 0, width: 0.05, height: 0.05), share: 0.002)])
         XCTAssertEqual(SubjectSelection.autoPicks(tiny), [], "under the 0.005 floor Auto has no mask")
         let reef = candidates([group(0, bounds: CGRect(x: 0, y: 0, width: 0.6, height: 0.6), share: 0.31)])
-        XCTAssertEqual(SubjectSelection.autoPicks(reef), [], "31% is a reef; Auto drops it")
+        XCTAssertEqual(SubjectSelection.autoPicks(reef), [0], "31% passes the lift's 0.5 cap (m5's coral block)")
+        let scene = candidates([group(0, bounds: CGRect(x: 0, y: 0, width: 0.8, height: 0.8), share: 0.64)])
+        XCTAssertEqual(SubjectSelection.autoPicks(scene), [], "above half the frame it is a scene")
     }
 
     func testNoSubjectFoundKeepsAutoAndSaysSo() {
@@ -198,21 +220,23 @@ final class SubjectCandidatesTests: XCTestCase {
 
     func testTiersSplitNotWaterByTransmissionAndLeaveSubjectsAndWaterOut() throws {
         // 20 x 20. Left half water (share 1). Right half not water: top rows near (t 0.9), bottom rows far (t 0.2).
-        // A Vision subject covers x 15...19, y 0...4.
+        // A picked Vision subject covers x 15...19, y 0...4.
         let w = 20, h = 20
         var share = [Float](repeating: 1, count: w * h), t = [Float](repeating: 0.9, count: w * h), subject = [Float](repeating: 0, count: w * h)
         for y in 0..<h { for x in 10..<w { share[y * w + x] = 0.1 } }
         for y in 10..<h { for x in 0..<w { t[y * w + x] = 0.2 } }
         for y in 0..<5 { for x in 15..<w { subject[y * w + x] = 1 } }
-        let tiers = try XCTUnwrap(SubjectTiers.make(waterShare: share, transmission: t, subject: subject, width: w, height: h))
+        let tiers = try XCTUnwrap(SubjectTiers.make(waterShare: share, transmission: t, width: w, height: h))
         XCTAssertEqual(tiers.tier2[2 * w + 12], 1, "near, not water")
         XCTAssertEqual(tiers.tier3[15 * w + 12], 1, "far, not water")
-        XCTAssertEqual(tiers.tier2[2 * w + 17], 0, "a Vision subject is tier one")
+        XCTAssertEqual(tiers.tier2[2 * w + 17], 1, "the map ignores the picks: an excluded subject is scene")
+        XCTAssertGreaterThan(tiers.map.tier2[2 * w + 17], 0.5)
+        let picked = SubjectMask(width: w, height: h, values: subject)
+        XCTAssertNotNil(tiers.drawing(excluding: picked).tier2Outline, "the drawing takes the picked group out")
         XCTAssertEqual(tiers.tier2[2 * w + 3] + tiers.tier3[15 * w + 3], 0, "open water is in no tier")
-        XCTAssertNotNil(tiers.tier2Outline)
-        XCTAssertNotNil(tiers.tier3Outline)
+        XCTAssertNotNil(tiers.drawing(excluding: nil).tier3Outline)
         XCTAssertFalse(tiers.isEmpty)
-        XCTAssertNil(SubjectTiers.make(waterShare: share, transmission: [0.5], subject: nil, width: w, height: h), "sizes must match")
+        XCTAssertNil(SubjectTiers.make(waterShare: share, transmission: [0.5], width: w, height: h), "sizes must match")
     }
 
     func testLightAtTheWatersDepthIsNoTier() throws {
@@ -224,12 +248,12 @@ final class SubjectCandidatesTests: XCTestCase {
         let t = [Float](repeating: 0.9, count: w * h)
         for y in 10..<h { for x in 0..<w { share[y * w + x] = 0.1; depth[y * w + x] = y < 15 ? 0.9 : 0.4 } }
         XCTAssertEqual(SubjectTiers.waterDepth(waterShare: share, depth: depth), 0.95)
-        let tiers = try XCTUnwrap(SubjectTiers.make(waterShare: share, transmission: t, subject: nil, depth: depth, width: w, height: h))
+        let tiers = try XCTUnwrap(SubjectTiers.make(waterShare: share, transmission: t, depth: depth, width: w, height: h))
         XCTAssertEqual(tiers.tier2[12 * w + 5], 0, "light at the water's depth is not an object")
         XCTAssertEqual(tiers.tier2[17 * w + 5], 1, "the object in front stays")
         // No open water in the frame: the depth test is off, and the light counts.
         let noWater = [Float](repeating: 0.1, count: w * h)
-        let without = try XCTUnwrap(SubjectTiers.make(waterShare: noWater, transmission: t, subject: nil, depth: depth, width: w, height: h))
+        let without = try XCTUnwrap(SubjectTiers.make(waterShare: noWater, transmission: t, depth: depth, width: w, height: h))
         XCTAssertNil(SubjectTiers.waterDepth(waterShare: noWater, depth: depth))
         XCTAssertEqual(without.tier2[12 * w + 5], 1)
     }
@@ -244,7 +268,7 @@ final class SubjectCandidatesTests: XCTestCase {
         XCTAssertEqual(texture[20 * w + 5], 0, accuracy: 0.0001, "flat")
         XCTAssertGreaterThan(texture[20 * w + 35], SubjectTiers.minimumTexture)
         let share = [Float](repeating: 0, count: w * h), t = [Float](repeating: 0.9, count: w * h)
-        let tiers = try XCTUnwrap(SubjectTiers.make(waterShare: share, transmission: t, subject: nil, texture: texture, width: w, height: h))
+        let tiers = try XCTUnwrap(SubjectTiers.make(waterShare: share, transmission: t, texture: texture, width: w, height: h))
         XCTAssertEqual(tiers.tier2[20 * w + 5], 0, "sand is no tier")
         XCTAssertEqual(tiers.tier2[20 * w + 35], 1, "a reef is")
     }
@@ -273,6 +297,18 @@ final class SubjectCandidatesTests: XCTestCase {
 
     // MARK: One place for the choice
 
+    func testWhiteReferenceAnalysisFollowsThePicks() {
+        var base = FilterSettings(); base.analysis.exposure = 0.1
+        var asked: [SubjectMask?] = []
+        let measure: (SubjectMask?) -> WaterAnalysis = { mask in asked.append(mask); var a = WaterAnalysis(); a.exposure = 0.7; return a }
+        XCTAssertEqual(PhotoProcessor.settings(base, for: .auto, analyze: measure).analysis.exposure, 0.1, "Auto keeps the caller's analysis")
+        XCTAssertTrue(asked.isEmpty)
+        let picked = SubjectMask(width: 2, height: 2, values: [1, 0, 0, 0])
+        XCTAssertEqual(PhotoProcessor.settings(base, for: .picked(picked), analyze: measure).analysis.exposure, 0.7)
+        _ = PhotoProcessor.settings(base, for: .picked(nil), analyze: measure)
+        XCTAssertEqual(asked, [picked, nil], "picks are measured with the picked mask, none with no mask")
+    }
+
     func testApplyingAChoiceChangesOnlyTheSubjectMask() throws {
         let map = try NormalizedDepthMap(width: 4, height: 4, values: .init(repeating: 0.6, count: 16))
         var plan = RestorationPlan(depth: map, depthSource: .monocular,
@@ -286,5 +322,13 @@ final class SubjectCandidatesTests: XCTestCase {
         XCTAssertEqual(PhotoProcessor.applying(.picked(picked), to: plan)?.subjectMask, picked)
         XCTAssertNil(PhotoProcessor.applying(.picked(nil), to: plan)?.subjectMask)
         XCTAssertNil(PhotoProcessor.applying(.picked(picked), to: nil), "no plan: the current correction runs, nothing to apply")
+        plan.subjectLift = SubjectLift(mask: auto)
+        let off = PhotoProcessor.applying(.off, to: plan)
+        XCTAssertNil(off?.subjectLift, "Labs off: no lift")
+        XCTAssertEqual(off?.subjectMask, auto, "the veil keeps the automatic mask, as main ships")
+        XCTAssertEqual(PhotoProcessor.applying(.auto, to: plan, autoLift: picked)?.subjectLift?.mask, picked, "Labs on, Auto: the lift on all groups")
+        XCTAssertNil(PhotoProcessor.applying(.auto, to: plan)?.subjectLift, "no auto mask, no lift")
+        XCTAssertEqual(PhotoProcessor.applying(.picked(picked), to: plan)?.subjectLift?.mask, picked, "the picks drive the lift")
+        XCTAssertNil(PhotoProcessor.applying(.picked(nil), to: plan)?.subjectLift, "nothing picked, no lift")
     }
 }

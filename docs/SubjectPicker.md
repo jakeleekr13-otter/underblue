@@ -205,6 +205,18 @@ If S1b shows no gain, schools stay Auto and only tap picking ships. A brush beco
 - On 27 the groups still come from the instance mask. The precise mask (`SubjectMask.precise(box:)`, subject-lift session) is not wired into the picker. Jake has not decided yet.
 - The 26 screens were not seen: this Mac and the simulators run 27.
 
+### Precise groups, one tier map, model download (24 Oct 2026)
+
+- Agreed with the subject-lift session and decided by Jake. Record of the lift side: docs/SubjectEmphasis.md, E25.
+- Groups: on 27 each coarse group's box seeds `SubjectMask.precise`. A group whose segmentation fails is left out. The coarse mask is never used (its lift was rejected in E23).
+- One tier map (`SubjectTiers`) for the lift and the outline. It is notWater x in front x texture, split by t, then cleaned and feathered. It has no group term. The kernel multiplies it by (1 - picked mask), so an excluded subject is treated like the scene around it (Jake: it must still look natural). The drawing takes the picked groups out (`drawing(excluding:)`). The map is cached per photo, with Natural's correction.
+- `SubjectChoice.off` is the default: no lift, and the veil keeps the auto mask. Auto with Labs on means all groups. Every Vision-mask use follows the picks, including the white reference in `FilterEngine.analyze`.
+- `PreciseModelLoader`: it tries the on-device model first, with no network. It then downloads with a 30 s stall limit. An `NWPathMonitor` retries when a network returns. Jake confirmed on the iPhone that it works offline after the download.
+- Save gate (Labs on only): "Subject model not ready", with "Export without subject emphasis". The Mac batch does the same.
+- Compare (Mac: Original) closes the picker, as Done does. So both sides compare without the lines.
+- iPhone 17 Release (subject-lift session): the first Labs-on preview adds about 0.3-0.45 s for a JPEG, and 1.7 s for an ARW.
+- Open: fish that Vision does not return (the bannerfish around the O3 sunfish) get tier 2 but no badge. They cannot be tapped.
+
 ### Changes from the plan
 
 - Outline is the group's bounding box, not its exact area. The fill shows the real mask.

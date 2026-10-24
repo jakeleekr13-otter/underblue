@@ -153,7 +153,7 @@ final class BatchEngineTests: XCTestCase {
         let picked = SubjectChoice.picked(SubjectMask(width: 2, height: 2, values: [1, 0, 0, 0]))
         XCTAssertTrue(queue.setSubjects(queue.items[0].id, picked))
         XCTAssertEqual(queue.items[0].subjects, picked)
-        XCTAssertEqual(queue.items[1].subjects, .auto, "only the picked item changes")
+        XCTAssertEqual(queue.items[1].subjects, .off, "only the picked item changes")
         XCTAssertFalse(queue.setSubjects(UUID(), picked), "an unknown item is refused")
     }
 

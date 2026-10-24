@@ -73,6 +73,11 @@ struct MainWindow: View {
         } message: {
             Text("There isn’t enough free memory for this video. Close other apps, then choose Check again.")
         }
+        .alert("Subject model not ready", isPresented: $model.modelNotReadyForStart) {
+            Button("Export without subject emphasis") { model.startWithoutEmphasis() }
+            if PreciseModelLoader.shared.state == .failed { Button("Try again") { PreciseModelLoader.shared.start() } }
+            Button("Wait", role: .cancel) { }
+        } message: { Text(SubjectPickerText.modelWait(PreciseModelLoader.shared.state)) }
         .frame(minWidth: 900, minHeight: 560)
     }
 

@@ -24,10 +24,28 @@ final class EditorModel {
         didSet {
             guard subjectPickerEnabled != oldValue else { return }
             subjectStore.save(subjectPickerEnabled)
+            if subjectPickerEnabled { PreciseModelLoader.shared.start() }
             if !subjectPickerEnabled { subjects.useAuto() }
         }
     }
     private let subjectStore: SubjectPickerStore
+    /// What preview and export receive. The lift is a Labs feature: with the switch off there is none.
+    var subjectChoice: SubjectChoice { subjectPickerEnabled && !saveWithoutEmphasis ? subjects.choice : .off }
+    /// Set when Save waits for the precise model. Jake (24 Oct 2026): with Labs on, a photo is not saved
+    /// before the model is ready. The way out is to save once without subject emphasis.
+    var modelNotReadyForSave = false
+    /// The user chose to save this photo without subject emphasis while the model was not ready.
+    private(set) var saveWithoutEmphasis = false
+    /// Save is blocked: Labs is on, the item is a photo, and the precise model is not ready.
+    var saveNeedsModel: Bool {
+        media.kind == .photo && subjectPickerEnabled && !saveWithoutEmphasis && !PreciseModelLoader.shared.isReady
+    }
+    func saveAnywayWithoutEmphasis(purchases: PurchaseStore, trial: TrialStore) async {
+        saveWithoutEmphasis = true
+        modelNotReadyForSave = false
+        await refreshPreview()
+        await requestExport(purchases: purchases, trial: trial)
+    }
     var player: AVPlayer?
     var clipPlaying = false
     private var clipStart: CMTime?
@@ -85,6 +103,7 @@ final class EditorModel {
         videoPreview = VideoPreview(diagnostics: diagnostics, pixelRateBudget: VideoPreview.phonePixelRateBudget)
         settings.adjustments = adjustmentStore.load()
         options.photoFormat = formatStore.load()
+        if subjectPickerEnabled { PreciseModelLoader.shared.start() }
     }
     func load() async {
         defer { loading = false; analyzing = false }
@@ -163,7 +182,7 @@ final class EditorModel {
         }
         do {
             let rendered = try await photos.preview(media.url, settings: settings, original: false, maxPixel: previewMaxPixel,
-                                                    subjects: subjects.choice)
+                                                    subjects: subjectChoice)
             try Task.checkCancellation()
             preview = rendered
             previewFailures = 0
@@ -201,6 +220,7 @@ final class EditorModel {
         clipStart = nil
     }
     func requestExport(purchases: PurchaseStore, trial: TrialStore) async {
+        if saveNeedsModel { modelNotReadyForSave = true; PreciseModelLoader.shared.start(); return }
         await purchases.refreshEntitlement()
         if !purchases.isPro {
             guard trial.available else { report(UnderBlueError.trialUnavailable); return }
@@ -272,7 +292,7 @@ final class EditorModel {
         optionsDismissing = showExportOptions
         showExportOptions = false
         let chosenSettings = settings
-        let chosenSubjects = subjects.choice
+        let chosenSubjects = subjectChoice
         var chosenOptions = options
         cancellationNotice = String(localized: "Export cancelled")
         backgroundTask.begin("Finish or cancel export") { [weak self] in
@@ -348,13 +368,24 @@ final class EditorModel {
             let found = try await photos.subjectCandidates(media.url)
             subjects.finishDetecting(found)
             // The outline of tiers two and three is a hint. Without it the picker still works.
-            subjects.setTiers(try? await photos.subjectTiers(media.url, settings: settings, candidates: found))
+            subjects.setTiers(try? await photos.subjectTiers(media.url))
         } catch is CancellationError {
             subjects.useAuto()
+        } catch SubjectModelError.notReady {
+            subjects.waitForModel()
+            PreciseModelLoader.shared.recheck()
         } catch {
             subjects.finishDetecting(nil)
             report(error, operation: .preview)
         }
+    }
+
+    /// The precise model arrived: redraw with the lift, and open the picker if the user was waiting for it.
+    func preciseModelReady() async {
+        saveWithoutEmphasis = false
+        guard media.kind == .photo, subjectPickerEnabled, !loading else { return }
+        if subjects.status == .waitingForModel { await chooseManualSubjects() }
+        await refreshPreview()
     }
     func chooseAutoSubjects() { subjects.useAuto() }
     func toggleSubject(_ id: Int) { subjects.toggle(id) }

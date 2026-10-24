@@ -34,6 +34,7 @@ struct EditorView: View {
             .task(id: model.settings) { if !model.loading { await model.refreshPreview() } }
             .task(id: model.comparing) { if !model.loading { await model.refreshPreview() } }
             .task(id: model.subjects.key) { if !model.loading { await model.refreshPreview() } }
+            .task(id: PreciseModelLoader.shared.isReady) { if PreciseModelLoader.shared.isReady { await model.preciseModelReady() } }
             .onDisappear { model.close() }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in model.memoryWarning() }
             .onReceive(NotificationCenter.default.publisher(for: .AVPlayerItemFailedToPlayToEndTime)) { model.playbackFailed($0) }
@@ -46,6 +47,11 @@ struct EditorView: View {
             .overlay { if model.exporting { exportProgress } }
             .alert("Couldn’t finish", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) { Button("OK") { model.error = nil } } message: { Text(model.error ?? "") }
             .alert("UnderBlue", isPresented: Binding(get: { model.notice != nil }, set: { if !$0 { model.notice = nil } })) { Button("OK") { model.notice = nil } } message: { Text(model.notice ?? "") }
+            .alert("Subject model not ready", isPresented: $model.modelNotReadyForSave) {
+                Button("Export without subject emphasis") { Task { await model.saveAnywayWithoutEmphasis(purchases: purchases, trial: trial) } }
+                if PreciseModelLoader.shared.state == .failed { Button("Try again") { PreciseModelLoader.shared.start() } }
+                Button("Wait", role: .cancel) { }
+            } message: { Text(SubjectPickerText.modelWait(PreciseModelLoader.shared.state)) }
     }
     /// Landscape always gets the side panel. A regular-width screen close to square (an unfolded foldable)
     /// gets it too, because a bottom panel would leave the preview a short, wide strip.
@@ -81,7 +87,7 @@ struct EditorView: View {
                 let picking = model.subjects.showsOverlay && !model.comparing
                 ZoomablePreview(image: preview, zoom: $zoom, overlayActive: picking, onZoomIn: { model.requestDetailPreview() }) { size in
                     if picking, let candidates = model.subjects.candidates {
-                        SubjectPicker(candidates: candidates, picks: model.subjects.picks, tiers: model.subjects.tiers, size: size, zoom: zoom.scale) { model.toggleSubject($0) }
+                        SubjectPicker(candidates: candidates, picks: model.subjects.picks, tiers: model.subjects.tierDrawing, size: size, zoom: zoom.scale) { model.toggleSubject($0) }
                     }
                 }
             }
@@ -126,7 +132,11 @@ struct EditorView: View {
                     }.buttonStyle(.bordered).frame(minHeight: 44).disabled(!model.ready || model.analyzing)
                         .accessibilityHint("Play three seconds from the current position, then return")
                 }
-                Button { model.comparing.toggle() } label: {
+                Button {
+                    // Compare closes the picker, as Done does, so both sides compare without the lines.
+                    if !model.comparing { model.finishSubjectPicking() }
+                    model.comparing.toggle()
+                } label: {
                     Label("Compare", systemImage: model.comparing ? "eye.fill" : "eye").lineLimit(1).fixedSize()
                 }
                     .buttonStyle(.bordered).frame(minHeight: 44)

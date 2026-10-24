@@ -31,6 +31,7 @@ struct PreviewPane: View {
         }
         .onChange(of: model.selection) { _, _ in zoom = PreviewZoom() }
         .onChange(of: subjectPickerSwitch, initial: true) { _, on in model.subjectPickerEnabled = on && SubjectPickerStore.isSupported }
+        .onChange(of: PreciseModelLoader.shared.isReady) { _, ready in if ready { model.preciseModelReady() } }
     }
 
     @ViewBuilder private var content: some View {
@@ -43,7 +44,7 @@ struct PreviewPane: View {
                     let picking = model.subjects.showsOverlay && !model.showingOriginal
                     ZoomablePreview(image: image, zoom: $zoom, overlayActive: picking) { size in
                         if picking, let candidates = model.subjects.candidates {
-                            SubjectPicker(candidates: candidates, picks: model.subjects.picks, tiers: model.subjects.tiers, size: size, zoom: zoom.scale) { model.toggleSubject($0) }
+                            SubjectPicker(candidates: candidates, picks: model.subjects.picks, tiers: model.subjects.tierDrawing, size: size, zoom: zoom.scale) { model.toggleSubject($0) }
                         }
                     }
                 } else {

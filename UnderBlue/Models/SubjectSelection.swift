@@ -30,8 +30,9 @@ struct SubjectPickerStore {
 ///   until the user taps. Reset is the only action that clears the picks.
 struct SubjectSelection {
     enum Mode: Equatable, Sendable { case auto, manual }
-    /// `none` means Vision found no usable subject for this photo.
-    enum Status: Equatable, Sendable { case idle, detecting, none, ready }
+    /// `none` means Vision found no usable subject for this photo. `waitingForModel` means the precise
+    /// model is still downloading; the picker opens by itself when it is ready.
+    enum Status: Equatable, Sendable { case idle, detecting, waitingForModel, none, ready }
     /// Why the last tap did nothing, for a message next to the picker.
     enum Notice: Equatable, Sendable { case tooMuch, tooLarge }
 
@@ -43,6 +44,8 @@ struct SubjectSelection {
     private(set) var candidates: SubjectCandidates?
     /// Tier two and three regions, shown with the picker but not picked. Nil when none was found.
     private(set) var tiers: SubjectTiers?
+    /// The tier lines with the picked groups taken out. Rebuilt when the picks or the tiers change.
+    private(set) var tierDrawing: SubjectTiers.Drawing?
     private(set) var notice: Notice?
     /// What preview and export receive. Rebuilt on every change, not on every read.
     private(set) var choice = SubjectChoice.auto
@@ -75,6 +78,9 @@ struct SubjectSelection {
         rebuild()
     }
 
+    /// The precise model is not ready. The photo stays in Auto until it is.
+    mutating func waitForModel() { status = .waitingForModel; mode = .auto; overlayVisible = false; choice = .auto }
+
     /// Back to the automatic mask. The picks stay, so Manual returns to them.
     mutating func useAuto() {
         mode = .auto; overlayVisible = false; notice = nil; choice = .auto
@@ -87,7 +93,7 @@ struct SubjectSelection {
         mode = .manual; overlayVisible = true; notice = nil; rebuild()
     }
 
-    mutating func setTiers(_ found: SubjectTiers?) { tiers = found }
+    mutating func setTiers(_ found: SubjectTiers?) { tiers = found; redraw() }
 
     mutating func done() { overlayVisible = false }
     mutating func edit() { if mode == .manual { overlayVisible = true } }
@@ -115,16 +121,21 @@ struct SubjectSelection {
     var pickedCount: Int { picks.count }
     var groupCount: Int { candidates?.groups.count ?? 0 }
 
-    /// What Auto would protect: every group, or none when the whole is outside the auto limits.
-    /// This is the same test as SubjectMask.estimate, on the group shares.
+    /// What Auto would protect: every group, or none when the whole is outside the lift's limits.
+    /// This is the test of PhotoProcessor's auto lift mask, so Manual starts where Auto is.
     static func autoPicks(_ candidates: SubjectCandidates) -> Set<Int> {
         let total = candidates.groups.reduce(0) { $0 + $1.share }
-        guard total >= SubjectMask.minimumShare, total <= SubjectMask.maximumShare else { return [] }
+        guard total >= SubjectMask.minimumShare, total <= SubjectMask.liftMaximumShare else { return [] }
         return Set(candidates.groups.map(\.id))
     }
 
     private mutating func rebuild() {
+        redraw()
         guard mode == .manual, let candidates else { choice = .auto; return }
         choice = .picked(candidates.mask(picking: picks))
+    }
+
+    private mutating func redraw() {
+        tierDrawing = tiers?.drawing(excluding: candidates?.mask(picking: picks))
     }
 }

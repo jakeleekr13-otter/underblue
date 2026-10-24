@@ -32,7 +32,7 @@ enum SubjectPickerGeometry {
 struct SubjectPicker: View {
     let candidates: SubjectCandidates
     let picks: Set<Int>
-    var tiers: SubjectTiers? = nil
+    var tiers: SubjectTiers.Drawing? = nil
     /// Fitted size of the photo on screen, at zoom 1.
     let size: CGSize
     let zoom: CGFloat
@@ -90,7 +90,7 @@ struct SubjectPicker: View {
     static let tier2Color = Color(red: 1.0, green: 0.72, blue: 0.2)
     static let tier3Color = Color(red: 0.78, green: 0.66, blue: 1.0)
 
-    @ViewBuilder private func tierLines(_ tiers: SubjectTiers, unit: CGFloat) -> some View {
+    @ViewBuilder private func tierLines(_ tiers: SubjectTiers.Drawing, unit: CGFloat) -> some View {
         ForEach(Array([(tiers.tier3Outline, Self.tier3Color), (tiers.tier2Outline, Self.tier2Color)].enumerated()), id: \.offset) { _, entry in
             if let line = entry.0 {
                 Image(decorative: line, scale: 1).renderingMode(.template).resizable()
@@ -110,10 +110,15 @@ struct SubjectPicker: View {
 }
 
 /// The text under the picker controls: what is selected, and why a tap did nothing.
+@MainActor
 enum SubjectPickerText {
     static func summary(_ selection: SubjectSelection) -> String {
         switch selection.status {
         case .detecting: return String(localized: "Looking for subjects…")
+        case .waitingForModel:
+            return PreciseModelLoader.shared.state == .waitingForNetwork
+                ? String(localized: "Connect to the internet to download the subject model.")
+                : String(localized: "Getting the subject model ready…")
         case .none: return String(localized: "No subjects found. UnderBlue uses Auto.")
         case .idle: return String(localized: "Auto protects the main subjects it finds.")
         case .ready:
@@ -132,6 +137,20 @@ enum SubjectPickerText {
         case nil:
             return selection.showsOverlay && (selection.candidates?.merged ?? false)
                 ? String(localized: "Many subjects were found. Nearby ones are grouped.") : nil
+        }
+    }
+
+    /// Why Save waits, with the download's progress.
+    static func modelWait(_ state: PreciseModelLoader.State) -> String {
+        switch state {
+        case .downloading(let fraction):
+            return String(localized: "Labs subject emphasis needs a model that is still downloading (\(Int((fraction * 100).rounded()))%). Wait, or save this photo without subject emphasis.")
+        case .failed:
+            return String(localized: "The subject model couldn’t be downloaded. Check your connection, or save this photo without subject emphasis.")
+        case .waitingForNetwork:
+            return String(localized: "Connect to the internet to download the subject model, or save this photo without subject emphasis.")
+        case .idle, .ready:
+            return String(localized: "Getting the subject model ready…")
         }
     }
 

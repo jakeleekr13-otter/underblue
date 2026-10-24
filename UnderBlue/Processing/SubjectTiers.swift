@@ -1,10 +1,11 @@
 import CoreGraphics
 import CoreImage
 
-/// Regions for the picker to outline tiers two and three of the subject lift (docs/SubjectEmphasis.md).
-/// The lift itself has no regions: it weighs every pixel. These regions only show the user where the
-/// weight leans, so they cut the same quantities the lift reads, at the points where its weights cross.
+/// Tiers two and three of the subject lift (docs/SubjectEmphasis.md), as one soft map that both the lift
+/// and the picker outline use. The outline is the same map cut at 0.5. Before 24 Oct 2026 the outline left
+/// out sand, glow and bubbles while the lift still brightened them; one map keeps the two in step.
 ///
+/// Each test below is a soft ramp, not a cut, so the lift makes no step at an edge.
 /// - Not water: 1 - water share (FilterEngine.waterShare, alpha) at least 0.5, outside the Vision groups.
 /// - In front: nearer than the open water by `depthMargin`. Light in the water (the sunlit surface, bubbles)
 ///   fails the colour test for water but sits at the water's depth. An object sits in front of it.
@@ -13,21 +14,25 @@ import CoreImage
 /// - Textured: sand is a flat surface under even light, so it holds little local contrast. A reef, a wreck or a
 ///   fish has relief and shadow. Mean gradient of gamma luminance (`texture`), measured 24 Oct 2026:
 ///   m5 sand 0.009 and 0.027; front white fish 0.045; reef, coral and wreck 0.052 to 0.10. Jake: sand is no tier.
-/// - Tier two: not water, contrast transmission t at least 0.5. The reef in front.
-/// - Tier three: not water, t below 0.5. The reef further back.
+/// - No Vision group term. The lift multiplies the map by (1 - the picked mask), so a picked subject gets
+///   tier one only. A subject the user excluded is treated like the scene around it, by its own water,
+///   depth and texture: no emphasis, and no hole in the reef (Jake, 24 Oct 2026: an excluded subject must
+///   still look natural). The drawing removes the picked groups the same way (`drawing(excluding:)`).
+/// - Tier two weight = object x t, tier three weight = object x (1 - t), t the contrast transmission.
+///   They are equal at t = 0.5 in every photo. The outline draws tier two where t is at least 0.5.
+/// - Pieces and holes too small to draw are cleaned on the outline. The map is multiplied by the cleaned
+///   region, feathered, so the lift leaves out what the outline leaves out.
 ///
-/// The lift gives tier two `t` and tier three `1 - t` of a pixel, so 0.5 is where they are equal in every photo.
 /// They are shown, not picked: a layer has no instances to tap.
 struct SubjectTiers: Sendable {
     let width: Int
     let height: Int
-    /// 1 inside the region, 0 outside. Row 0 is the top row, as in SubjectMask.
+    /// The cleaned regions, before the picks: 1 inside, 0 outside. Row 0 is the top row, as in SubjectMask.
     let tier2: [Float]
     let tier3: [Float]
-    let tier2Outline: CGImage?
-    let tier3Outline: CGImage?
+    /// The soft weights the lift reads (SubjectLift.tiers).
+    let map: SubjectTierMap
 
-    static let notWaterSplit: Float = 0.5
     static let transmissionSplit: Float = 0.5
     /// A piece below this share of the frame is noise: it is removed, and a hole this small is filled.
     /// 0.2% removed the front white fish on DSC03545 (0.093% of the frame, JPG and RAW). Jake wants it kept;
@@ -36,44 +41,112 @@ struct SubjectTiers: Sendable {
     /// A hole inside a region below this share is filled. The texture test left many small smooth patches
     /// inside the DSC03696 reef, each drawn as its own ring.
     static let minimumHoleShare: Float = 0.01
-    /// A Vision group pixel above this weight belongs to tier one.
-    static let subjectSplit: Float = 0.5
     /// Open water: a water share at least this high. Its median depth is the depth of the water.
     static let openWaterShare: Float = 0.9
-    /// How much nearer than the open water a pixel must be. The surface glow on DSC03696 sat 0.05 to 0.07 nearer.
+    /// How much nearer than the open water a pixel must be: the centre of `depthRamp`.
+    /// The surface glow on DSC03696 sat 0.05 to 0.07 nearer.
     static let depthMargin: Float = 0.1
     /// With less open water than this share of the frame, the water's depth is not known and the depth test is off.
     static let minimumOpenWaterShare: Float = 0.01
-    /// Below this texture a surface is flat, like sand. Between m5's sand (0.027) and the front white fish (0.045).
+    /// Below this texture a surface is flat, like sand: the centre of `textureRamp`.
+    /// Between m5's sand (0.027) and the front white fish (0.045).
     static let minimumTexture: Float = 0.035
+    /// The soft ramps around each cut. First values, agreed with the subject-lift session on 24 Oct 2026.
+    static let notWaterRamp: ClosedRange<Float> = 0.4...0.6
+    static let textureRamp: ClosedRange<Float> = 0.025...0.045
+    /// In front: full weight at (water depth - 0.15), none at (water depth - 0.05).
+    static let depthRamp: ClosedRange<Float> = 0.05...0.15
+    /// The feather on the cleaned region, in grid pixels each way (a 5 x 5 box).
+    static let featherRadius = 2
+
+    static func smoothstep(_ range: ClosedRange<Float>, _ x: Float) -> Float {
+        let t = min(1, max(0, (x - range.lowerBound) / (range.upperBound - range.lowerBound)))
+        return t * t * (3 - 2 * t)
+    }
 
     var isEmpty: Bool { !tier2.contains(1) && !tier3.contains(1) }
 
-    /// The two regions from per-pixel values of the same size. `subject` is tier one; nil means no Vision group.
+    /// The map and the cleaned regions from per-pixel values of the same size. They do not depend on the picks.
     /// `depth` is the plan's normalised depth, 0 nearest; nil turns the depth test off.
     /// `texture` is from `texture(luma:width:height:)`; nil turns the texture test off.
-    static func make(waterShare: [Float], transmission: [Float], subject: [Float]?, depth: [Float]? = nil,
+    static func make(waterShare: [Float], transmission: [Float], depth: [Float]? = nil,
                      texture: [Float]? = nil, width: Int, height: Int) -> SubjectTiers? {
         let count = width * height
         guard width > 1, height > 1, waterShare.count == count, transmission.count == count,
-              subject.map({ $0.count == count }) ?? true, depth.map({ $0.count == count }) ?? true,
-              texture.map({ $0.count == count }) ?? true else { return nil }
-        let front = depth.flatMap { waterDepth(waterShare: waterShare, depth: $0) }.map { $0 - depthMargin }
-        var two = [Bool](repeating: false, count: count), three = two
+              depth.map({ $0.count == count }) ?? true, texture.map({ $0.count == count }) ?? true else { return nil }
+        let water = depth.flatMap { waterDepth(waterShare: waterShare, depth: $0) }
+        var object = [Float](repeating: 0, count: count)
         for i in 0..<count {
-            let notWater = 1 - min(1, max(0, waterShare[i]))
-            guard notWater >= notWaterSplit, (subject?[i] ?? 0) < subjectSplit else { continue }
-            if let front, let depth, depth[i] >= front { continue }
-            if let texture, texture[i] < minimumTexture { continue }
+            var w = smoothstep(notWaterRamp, 1 - min(1, max(0, waterShare[i])))
+            if let water, let depth { w *= 1 - smoothstep(water - depthRamp.upperBound...water - depthRamp.lowerBound, depth[i]) }
+            if let texture { w *= smoothstep(textureRamp, texture[i]) }
+            object[i] = w
+        }
+        // The outline: the same map at 0.5, split by t, cleaned for drawing.
+        var two = [Bool](repeating: false, count: count), three = two
+        for i in 0..<count where object[i] >= 0.5 {
             if transmission[i] >= transmissionSplit { two[i] = true } else { three[i] = true }
         }
         let minimum = max(1, Int(Float(count) * minimumPieceShare)), hole = max(1, Int(Float(count) * minimumHoleShare))
         let cleanTwo = cleaned(two, width: width, height: height, minimum: minimum, hole: hole)
         let cleanThree = cleaned(three, width: width, height: height, minimum: minimum, hole: hole)
         let a = cleanTwo.map { $0 ? Float(1) : 0 }, b = cleanThree.map { $0 ? Float(1) : 0 }
+        // The lift: the soft weights inside the cleaned region, feathered. A filled hole takes the
+        // weight around it, so the lift has no ring where the outline has none.
+        let kept = boxMean(zip(a, b).map { max($0, $1) }, width: width, height: height, radius: featherRadius)
+        let neighbour = boxMean(object, width: width, height: height, radius: featherRadius * 4)
+        var map2 = [Float](repeating: 0, count: count), map3 = map2
+        for i in 0..<count {
+            let inside = max(a[i], b[i]) > 0
+            let weight = (inside && object[i] < 0.5 ? max(object[i], neighbour[i]) : object[i]) * kept[i]
+            let t = min(1, max(0, transmission[i]))
+            map2[i] = weight * t
+            map3[i] = weight * (1 - t)
+        }
         return SubjectTiers(width: width, height: height, tier2: a, tier3: b,
-                            tier2Outline: SubjectCandidates.outline(a, width: width, height: height, radius: 2),
-                            tier3Outline: SubjectCandidates.outline(b, width: width, height: height, radius: 2))
+                            map: SubjectTierMap(width: width, height: height, tier2: map2, tier3: map3))
+    }
+
+    /// The tier lines for the picker, with the picked groups taken out, as the lift takes them out.
+    struct Drawing: Sendable {
+        let tier2Outline: CGImage?
+        let tier3Outline: CGImage?
+    }
+
+    /// `picked` is the picked mask on any grid (nearest sample). Nil means nothing is picked.
+    func drawing(excluding picked: SubjectMask?) -> Drawing {
+        var a = tier2, b = tier3
+        if let picked, picked.width > 0, picked.height > 0, picked.values.count == picked.width * picked.height {
+            for y in 0..<height {
+                let py = min(picked.height - 1, y * picked.height / height)
+                for x in 0..<width {
+                    let px = min(picked.width - 1, x * picked.width / width)
+                    if picked.values[py * picked.width + px] >= 0.5 { a[y * width + x] = 0; b[y * width + x] = 0 }
+                }
+            }
+        }
+        return Drawing(tier2Outline: SubjectCandidates.outline(a, width: width, height: height, radius: 2),
+                       tier3Outline: SubjectCandidates.outline(b, width: width, height: height, radius: 2))
+    }
+
+    /// The mean over a (2 x radius + 1) square around each pixel, through a summed-area table.
+    static func boxMean(_ values: [Float], width: Int, height: Int, radius: Int) -> [Float] {
+        guard values.count == width * height, radius > 0 else { return values }
+        var table = [Double](repeating: 0, count: (width + 1) * (height + 1))
+        for y in 0..<height {
+            var line = 0.0
+            for x in 0..<width {
+                line += Double(values[y * width + x])
+                table[(y + 1) * (width + 1) + x + 1] = table[y * (width + 1) + x + 1] + line
+            }
+        }
+        var output = [Float](repeating: 0, count: width * height)
+        for y in 0..<height { for x in 0..<width {
+            let x0 = max(0, x - radius), x1 = min(width, x + radius + 1), y0 = max(0, y - radius), y1 = min(height, y + radius + 1)
+            let sum = table[y1 * (width + 1) + x1] - table[y0 * (width + 1) + x1] - table[y1 * (width + 1) + x0] + table[y0 * (width + 1) + x0]
+            output[y * width + x] = Float(sum / Double((x1 - x0) * (y1 - y0)))
+        } }
+        return output
     }
 
     /// Local contrast per pixel: the mean, over a window of 1% of the short side, of the gradient of `luma`
@@ -88,22 +161,7 @@ struct SubjectTiers: Sendable {
         for y in 0..<height { for x in 0..<width {
             gradient[y * width + x] = (abs(at(x + step, y) - at(x - step, y)) + abs(at(x, y + step) - at(x, y - step))) / 2
         } }
-        // Box mean through a summed-area table.
-        var table = [Double](repeating: 0, count: (width + 1) * (height + 1))
-        for y in 0..<height {
-            var line = 0.0
-            for x in 0..<width {
-                line += Double(gradient[y * width + x])
-                table[(y + 1) * (width + 1) + x + 1] = table[y * (width + 1) + x + 1] + line
-            }
-        }
-        var output = [Float](repeating: 0, count: width * height)
-        for y in 0..<height { for x in 0..<width {
-            let x0 = max(0, x - radius), x1 = min(width, x + radius + 1), y0 = max(0, y - radius), y1 = min(height, y + radius + 1)
-            let sum = table[y1 * (width + 1) + x1] - table[y0 * (width + 1) + x1] - table[y1 * (width + 1) + x0] + table[y0 * (width + 1) + x0]
-            output[y * width + x] = Float(sum / Double((x1 - x0) * (y1 - y0)))
-        } }
-        return output
+        return boxMean(gradient, width: width, height: height, radius: radius)
     }
 
     /// The median depth of the open water, or nil when the frame holds too little of it.

@@ -736,7 +736,8 @@ The branch merged main at `287743d`. Every number above E15 predates that merge.
 | E17 | Split the tiers by the water, not by a depth cut | Transmission maps, metrics, full-size crops | Adopted (Jake, 23 Oct 2026) |
 | E18 | Find the cause of the pale ring around fish | Ring chroma with each stage switched off | Cause: the subject light removal. Fix needs Jake |
 | E19 | Device check of E15 to E17 | Parity analysis and export on the iPhone | Done: the phone agrees with the Mac |
-| E20 | Green cast check on r14 and r15 | Sand colour, gate, m5, 25 video frames | r14 fixed on the Mac. Device check open |
+| E20 | Green cast check on r14 and r15 | Sand colour, gate, m5, 25 video frames | r14 fixed. The iPhone agrees with the Mac |
+| E21 | Give Vision the whole image | Mask share of 36 photos at three sizes, device time and memory | r14 gets its mask back. One Vision call, faster |
 
 ### E15, the Vision input, 23 Oct 2026
 
@@ -752,6 +753,8 @@ The mask of one photo came and went with the input size. `SubjectMask.visionInpu
 `visionInput` now uses Lanczos. The harness renders at 4000 px, so before this change it saw no mask on this photo. The app reads the full file, so it did. The two disagreed.
 
 On the AquaColorFix gate, E15 alone changes nothing: 11.33, the same as main. The ARW of DSC03545 still gets no mask at any size.
+
+E21 replaced this Lanczos input. It took r14's mask away.
 
 ### E16, a white reference on a subject, 23 Oct 2026
 
@@ -935,7 +938,81 @@ Change: a bright candidate above the water's chroma still counts when its hue is
 - 25 frames from 9 test clips: no frame changes its analysis.
 - Test: `testGreenLitSandIsAWhiteReferenceUnderBlueWater`. The simulator ran `RestorationTests`, `PhotoTests`, `PresetTests` and `VideoRestorationTests`: 120 tests, 0 failures, 2 skipped.
 
-Not done: the iPhone check of r14.
+#### The iPhone check, 24 Oct 2026
+
+iPhone 17, `PhotoParityTests`, Natural Dive at 0.8. The Mac column is the harness at 4000 px. r14 has no subject mask, so its `combined` render is the app's path.
+
+| r14 | iPhone | Mac harness |
+|---|---|---|
+| white reference share | 0.2001 | 0.2001 |
+| neutral gains | 1.1976, 0.9678, 1.0004 | 1.1981, 0.9677, 1.0004 |
+| sand L, chroma, hue | 0.908, 0.0237, 166 | 0.908, 0.0237, 165 |
+
+- Mean OKLab distance x100 between the two exports: 0.31 for the whole frame, 0.26 on the sand.
+- The sand here is a different mask from the table above: source pixels with L above 0.75, hue 165 to 205 and chroma above 0.08 (22% of the frame). So its numbers do not match that table.
+- By eye the two exports look the same. The sand is near neutral on both.
+
+main (`e244636`) on the same iPhone, same photos:
+
+| r14 | main, iPhone | branch, iPhone |
+|---|---|---|
+| white reference share | 0 | 0.2001 |
+| sand L, chroma, hue | 0.893, 0.0663, 172 | 0.908, 0.0237, 166 |
+| sand mean RGB | 175, 235, 215 | 211, 230, 221 |
+
+- Mean OKLab distance x100, main to branch: 1.72 for the whole frame, 4.66 on the sand. Mac to iPhone on the branch was 0.31.
+- By eye: main keeps mint sand and a green batfish. The branch makes the sand near white, the fish less green, and the top water a little bluer.
+- r15: whole frame 1.12. The branch diver is brighter (the lift). The water looks the same.
+- The Mac harness at 4000 px finds a subject mask on r14 with main (share 0.0172) and none with the branch. The cause is not checked. The parity test does not print the mask, so the phone was not checked for it.
+
+### E21, the whole image to Vision, 24 Oct 2026
+
+The E20 device check compared the branch with main. With main, the Mac harness found a subject mask on r14 (share 0.0172). With the branch it found none.
+
+Cause: Vision reads a borderline subject differently when its input is one pixel larger or smaller. E15 scaled the image to 1024 px and rounded the size down.
+
+| Vision input | r14 (3140 x 2354) | DSC03545 camera JPEG (3648 x 5472) |
+|---|---|---|
+| E15: Lanczos to 1024, size rounded down | none (1024 x 767) | 0.0259 (682 x 1024) |
+| Lanczos to 1024, size rounded up | 0.0172 (1024 x 768) | 0.0019 (683 x 1024) |
+| main: plain transform, not cropped | 0.0172 | 0.0250 |
+| E21: the whole image | 0.0171 | 0.0254 |
+
+No rounding rule keeps both. Three repeated runs gave the same answer, so Vision is not random here.
+
+Change: `SubjectMask.visionInput` gives Vision the whole image, moved to the origin. Vision scales it to its own model size, 512 x 512. The mask comes from `generateMask` at that size, which is the frame stretched to a square. `SubjectMask.grid` resamples it (bilinear) to the old grid: long side 1024, the frame's aspect. No mask is built at the photo's own size. `SubjectCandidates` uses the same input and the same grid.
+
+- The 512 mask stretched back matches the full-size mask from `generateScaledMaskForImage`: mean absolute difference 0.0004 to 0.0082 on 31 photos.
+- 36 photos (real, market, AquaColorFix sources, subject photos): the same photos have a mask as with main. Shares move by 0.004 or less.
+- At the file size, 4000 px and 2000 px from the harness's `fit`, the shares agree within 0.004. A Lanczos copy that ends in a part pixel still moved DSC03545 (0.0077 at 4000 px). The app and the harness never give Vision such an edge.
+- The AquaColorFix gate does not move: 13.41 before and after, every pair the same. m5: no patch moves, and the noise and black shares are the same.
+- Simulator: `RestorationTests`, `PhotoTests`, `PresetTests`, `VideoRestorationTests`, `SubjectCandidatesTests`: 134 tests, 0 failures, 2 skipped.
+
+#### Time and memory on the iPhone
+
+iPhone 17, Release build. The first call per photo. Peak memory is sampled every 2 ms, so it is approximate. The 48 MP photo is r14 scaled up, not a camera file.
+
+| photo | size | 32fac32 `SubjectMask.estimate` | E21 | 32fac32 `SubjectCandidates.estimate` | E21 |
+|---|---|---|---|---|---|
+| r15 | 3840 x 2160 | 26 ms, +67 MB | 28 ms, +0 MB | 42 ms, +63 MB | 29 ms, +26 MB |
+| O1 | 3840 x 2160 | 25 ms, no mask | 20 ms, no mask | 26 ms | 18 ms |
+| r14 | 3140 x 2354 | 30 ms, no mask | 24 ms, +0 MB | 25 ms, no groups | 32 ms, +9 MB |
+| DSC03545 JPEG | 3648 x 5472 | 46 ms, +166 MB | 22 ms, +0 MB | 46 ms, +166 MB | 32 ms, +2 MB |
+| DSC03545 ARW | 3648 x 5472 | 327 ms, +304 MB | 186 ms, +314 MB | 228 ms, +319 MB | 107 ms, +106 MB |
+| 8682 | 6192 x 4128 | 83 ms, +262 MB | 31 ms, +78 MB | 70 ms, +257 MB | 35 ms, +9 MB |
+| r14 at 48 MP | 8064 x 6048 | 113 ms, +255 MB | 45 ms, +90 MB | 124 ms, +248 MB | 39 ms, +8 MB |
+
+The scale pass before Vision is gone, and so is the full-size mask. The ARW's first call is mostly the RAW decode.
+
+#### r14 on the iPhone
+
+| r14, `PhotoParityTests` | main | E20 | E21 |
+|---|---|---|---|
+| sand L, chroma, hue | 0.893, 0.0663, 172 | 0.908, 0.0237, 166 | 0.902, 0.0236, 166 |
+
+- E20 to E21: mean OKLab distance x100 0.55 for the whole frame. The sand stays near neutral.
+- The batfish now has its mask, so the lift reaches it: by eye it is whiter, with more contrast. No pale ring shows on it.
+- r15: 0.03 from E20.
 
 ### The control photos
 

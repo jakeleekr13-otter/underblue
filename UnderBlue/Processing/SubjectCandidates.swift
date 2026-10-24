@@ -146,14 +146,14 @@ struct SubjectCandidates: Sendable {
 
     /// Runs Vision once and builds the groups. Nil when Vision finds no usable subject.
     static func estimate(_ image: CIImage) -> SubjectCandidates? {
-        guard let small = SubjectMask.visionInput(image) else { return nil }
+        guard let input = SubjectMask.visionInput(image) else { return nil }
         let request = VNGenerateForegroundInstanceMaskRequest()
-        let handler = VNImageRequestHandler(ciImage: small, options: [:])
+        let handler = VNImageRequestHandler(ciImage: input, options: [:])
         guard (try? handler.perform([request])) != nil, let observation = request.results?.first,
               !observation.allInstances.isEmpty,
               let instances = measure(observation.instanceMask, allowed: observation.allInstances)
         else { return nil }
-        let aspect = small.extent.width / max(1, small.extent.height)
+        let aspect = image.extent.width / max(1, image.extent.height)
         let found = grouped(instances, aspect: aspect)
         var built: [SubjectGroup] = []
         var size: (width: Int, height: Int)?
@@ -161,8 +161,8 @@ struct SubjectCandidates: Sendable {
             let share = cluster.reduce(0) { $0 + $1.share }
             guard share >= minimumGroupShare else { continue }
             let indices = cluster.map(\.index)
-            guard let buffer = try? observation.generateScaledMaskForImage(forInstances: IndexSet(indices), from: handler),
-                  let soft = floats(buffer) else { continue }
+            guard let buffer = try? observation.generateMask(forInstances: IndexSet(indices)),
+                  let soft = SubjectMask.grid(buffer, extent: image.extent) else { continue }
             if let size, size != (soft.width, soft.height) { continue }
             size = (soft.width, soft.height)
             let bounds = cluster.dropFirst().reduce(cluster[0].bounds) { $0.union($1.bounds) }
@@ -206,21 +206,6 @@ struct SubjectCandidates: Sendable {
                              height: CGFloat(maxY[label] - minY[label] + 1) / CGFloat(height))
             return SubjectInstance(index: label, bounds: box, share: share)
         }
-    }
-
-    private static func floats(_ buffer: CVPixelBuffer) -> (width: Int, height: Int, values: [Float])? {
-        CVPixelBufferLockBaseAddress(buffer, .readOnly)
-        defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
-        let width = CVPixelBufferGetWidth(buffer), height = CVPixelBufferGetHeight(buffer)
-        let row = CVPixelBufferGetBytesPerRow(buffer)
-        guard CVPixelBufferGetPixelFormatType(buffer) == kCVPixelFormatType_OneComponent32Float,
-              width > 1, height > 1, let base = CVPixelBufferGetBaseAddress(buffer) else { return nil }
-        var values = [Float](repeating: 0, count: width * height)
-        for y in 0..<height {
-            let line = (base + y * row).assumingMemoryBound(to: Float.self)
-            for x in 0..<width { values[y * width + x] = line[x].isFinite ? min(1, max(0, line[x])) : 0 }
-        }
-        return (width, height, values)
     }
 
     /// The subject's edge as white alpha, `radius` mask pixels thick on each side. Edge = a subject pixel next to a non-subject pixel.

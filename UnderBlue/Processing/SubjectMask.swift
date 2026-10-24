@@ -1,5 +1,4 @@
 import CoreImage
-import CoreImage.CIFilterBuiltins
 import Vision
 
 /// The subject lift (docs/SubjectEmphasis.md). It brightens the subject and follows with its chroma.
@@ -86,46 +85,67 @@ struct SubjectMask: Sendable, Equatable {
     /// Nil when Vision finds no subject, or the subjects cover too little or too much of the frame.
     /// `cap` is the largest share the caller accepts. The default is the local veil's cap.
     static func estimate(_ image: CIImage, cap: Float = maximumShare) -> SubjectMask? {
-        guard let small = visionInput(image) else { return nil }
+        guard let input = visionInput(image) else { return nil }
         let request = VNGenerateForegroundInstanceMaskRequest()
-        let handler = VNImageRequestHandler(ciImage: small, options: [:])
+        let handler = VNImageRequestHandler(ciImage: input, options: [:])
         guard (try? handler.perform([request])) != nil, let observation = request.results?.first,
               !observation.allInstances.isEmpty,
-              let buffer = try? observation.generateScaledMaskForImage(forInstances: observation.allInstances, from: handler)
+              let buffer = try? observation.generateMask(forInstances: observation.allInstances),
+              let mask = grid(buffer, extent: image.extent)
         else { return nil }
-        CVPixelBufferLockBaseAddress(buffer, .readOnly)
-        defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
-        let width = CVPixelBufferGetWidth(buffer), height = CVPixelBufferGetHeight(buffer)
-        let row = CVPixelBufferGetBytesPerRow(buffer)
-        guard CVPixelBufferGetPixelFormatType(buffer) == kCVPixelFormatType_OneComponent32Float,
-              width > 1, height > 1, let base = CVPixelBufferGetBaseAddress(buffer) else { return nil }
-        var values = [Float](repeating: 0, count: width * height)
-        for y in 0..<height {
-            let line = (base + y * row).assumingMemoryBound(to: Float.self)
-            for x in 0..<width { values[y * width + x] = line[x].isFinite ? min(1, max(0, line[x])) : 0 }
-        }
-        let share = values.reduce(0, +) / Float(values.count)
+        let share = mask.values.reduce(0, +) / Float(mask.values.count)
         guard share >= minimumShare, share <= cap else { return nil }
-        return SubjectMask(width: width, height: height, values: values)
+        return mask
     }
 
-    /// The image Vision reads: moved to the origin and scaled to `side`. Nil for an empty or infinite extent.
+    /// The image Vision reads: the whole image, moved to the origin. Nil for an empty or infinite extent.
+    /// Vision scales it to its own model size (512 x 512) by itself. A copy we scaled first was read
+    /// twice: r14 lost its mask at 1024 x 767 and kept it at 1024 x 768, and DSC03545 the other way
+    /// round. From the whole image both keep it, at every input size, on the Mac and the iPhone
+    /// (docs/SubjectEmphasis.md, E21). It is also faster: no full-size scale pass before Vision.
     static func visionInput(_ image: CIImage) -> CIImage? {
         let extent = image.extent
         guard extent.width > 0, extent.height > 0, extent.width.isFinite, extent.height.isFinite else { return nil }
+        return image.transformed(by: CGAffineTransform(translationX: -extent.minX, y: -extent.minY))
+    }
+
+    /// Vision's mask at its model size, which is the frame stretched to a square, resampled
+    /// (bilinear) to `side` at the frame's aspect. It never builds a mask at the photo's own size.
+    /// Nil when the buffer is not one float per pixel.
+    static func grid(_ buffer: CVPixelBuffer, extent: CGRect) -> SubjectMask? {
+        CVPixelBufferLockBaseAddress(buffer, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
+        let sourceWidth = CVPixelBufferGetWidth(buffer), sourceHeight = CVPixelBufferGetHeight(buffer)
+        let row = CVPixelBufferGetBytesPerRow(buffer)
+        guard CVPixelBufferGetPixelFormatType(buffer) == kCVPixelFormatType_OneComponent32Float,
+              sourceWidth > 1, sourceHeight > 1, let base = CVPixelBufferGetBaseAddress(buffer) else { return nil }
+        var source = [Float](repeating: 0, count: sourceWidth * sourceHeight)
+        for y in 0..<sourceHeight {
+            let line = (base + y * row).assumingMemoryBound(to: Float.self)
+            for x in 0..<sourceWidth { source[y * sourceWidth + x] = line[x].isFinite ? min(1, max(0, line[x])) : 0 }
+        }
         let scale = min(1, side / max(extent.width, extent.height))
-        let moved = image.transformed(by: CGAffineTransform(translationX: -extent.minX, y: -extent.minY))
-        guard scale < 1 else { return moved }
-        // Lanczos, as FilterEngine.analyze does. With a plain transform the default sampler reads a
-        // few source pixels per output pixel, so the same photo gave Vision different inputs at
-        // different sizes. DSC03545 got a mask from its full 5472 px and none from a 4000 px copy.
-        // With Lanczos its share was 0.0254 to 0.0259 at every size (docs/SubjectEmphasis.md, E15).
-        let resample = CIFilter.lanczosScaleTransform()
-        resample.inputImage = moved
-        resample.scale = Float(scale)
-        resample.aspectRatio = 1
-        let bounds = CGRect(x: 0, y: 0, width: (extent.width * scale).rounded(.down), height: (extent.height * scale).rounded(.down))
-        return (resample.outputImage ?? moved.transformed(by: CGAffineTransform(scaleX: scale, y: scale))).cropped(to: bounds)
+        let width = max(2, Int((extent.width * scale).rounded(.down))), height = max(2, Int((extent.height * scale).rounded(.down)))
+        // Sample positions on the source grid, pixel centres to pixel centres.
+        func taps(_ count: Int, _ sourceCount: Int) -> [(Int, Int, Float)] {
+            (0..<count).map { i in
+                let p = max(0, (Float(i) + 0.5) * Float(sourceCount) / Float(count) - 0.5)
+                let low = min(sourceCount - 1, Int(p))
+                return (low, min(sourceCount - 1, low + 1), p - Float(low))
+            }
+        }
+        let columns = taps(width, sourceWidth), rows = taps(height, sourceHeight)
+        var values = [Float](repeating: 0, count: width * height)
+        for y in 0..<height {
+            let (y0, y1, fy) = rows[y]
+            for x in 0..<width {
+                let (x0, x1, fx) = columns[x]
+                let top = source[y0 * sourceWidth + x0] * (1 - fx) + source[y0 * sourceWidth + x1] * fx
+                let bottom = source[y1 * sourceWidth + x0] * (1 - fx) + source[y1 * sourceWidth + x1] * fx
+                values[y * width + x] = top * (1 - fy) + bottom * fy
+            }
+        }
+        return SubjectMask(width: width, height: height, values: values)
     }
 
     /// The mask as an image over `extent` (red holds the mask).

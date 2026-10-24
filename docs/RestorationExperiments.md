@@ -56,7 +56,7 @@ The harness checks neutral surfaces with fixed boxes (`NEUTRAL` in `scripts/colo
 | Check | Pass rule | Images |
 |---|---|---|
 | Black gear stays black | Box median in OKLab. L stays below 0.35. Hue is never orange-brown (40 to 90) when chroma is 0.02 or more. Chroma rises by 0.01 at most over the baseline below. | r15 wetsuit chest (teal water), r12 BCD chest (deep blue cast), DSC03696 wetsuit torso and BCD (clear blue water). |
-| Plants keep their colour | Box median chroma stays at 0.6 × source chroma or more. Hue stays inside 90 to 160 (yellow-green to green). | None. See C0. |
+| Plants keep their colour | Median of the box's plant pixels (original OKLab hue below 180, so water between the leaves stays out). Hue stays inside 60 to 160: golden-brown algae to green seagrass. Chroma falls by 0.01 at most from the baseline below. The report also flags chroma below 0.6 × original as `GREY`. | Sargassum in green water (`pl1`), kelp in teal water (`pl2`). Jake gave both on 24 Oct 2026. |
 
 Steps:
 
@@ -70,9 +70,10 @@ Cost on iPhone: none. Harness only.
 
 ### C0 and C1 result (24 Oct 2026)
 
-- Black gear: three photos, four boxes. DSC03696 is rendered as `g1` in a small extra set in `tune_eval.sh`.
-- Plants: no image found. All photos in `DeveloperMedia/` and the challenge video stills were checked by eye. m1 is the only green scene, but it is 318 × 227 px. Its yellow-green mass cannot be told apart from coral. **Open: Jake to add a photo with weed or seagrass.** Until then the plants guard does not exist, so C's go rule is not met.
+- Black gear: three photos, four boxes. DSC03696 is rendered as `g1` in a small extra set (`guard`) in `tune_eval.sh`.
+- Plants: no photo in `DeveloperMedia/` had weed or seagrass (all checked by eye). Jake then gave two: `tune/photo/plants/`. The yellow fans in the kelp photo look like gorgonians, which are animals, so no box sits on them.
 - The boxes were drawn on the rendered outputs and checked by eye.
+- C's go rule is met: both checks print a value for every chosen image.
 
 Baseline, `main` at 085a6f3 (OKLab L / chroma / hue of the box median):
 
@@ -86,6 +87,24 @@ Baseline, `main` at 085a6f3 (OKLab L / chroma / hue of the box median):
 - No box turns brown. The residual cast is blue (hue 256 to 262) in three boxes.
 - The first-draft rule (chroma below 0.04) failed on two boxes at baseline. These are r12 (0.134, a near-monochrome blue photo) and the DSC03696 BCD (0.044).
 - So the rule now guards against change from this baseline. The report flags only `BROWN` and `LIGHT`. Compare chroma with this table.
+
+Plants baseline, same commit (median of the plant pixels, OKLab L / chroma / hue):
+
+| Box | Plant share | Original | Ours | Ours (video path) |
+|---|---|---|---|---|
+| Sargassum foreground | 100% | 0.53 / 0.110 / 110 | 0.49 / 0.099 / 82 | 0.41 / 0.083 / 84 |
+| Sargassum right cluster | 100% | 0.59 / 0.122 / 107 | 0.55 / 0.113 / 79 | 0.47 / 0.097 / 78 |
+| Kelp blades | 75% | 0.52 / 0.061 / 162 | 0.57 / 0.030 / 107 | 0.57 / 0.030 / 107 |
+| Kelp stipe | 100% | 0.45 / 0.049 / 162 | 0.48 / 0.028 / 107 | 0.49 / 0.029 / 107 |
+| Green water (sargassum photo) | | 0.61 / 0.093 / 152 | 0.48 / 0.035 / 201 | 0.51 / 0.031 / 208 |
+| Teal water (kelp photo) | | 0.75 / 0.118 / 209 | 0.79 / 0.085 / 234 | 0.79 / 0.090 / 233 |
+
+Seen on the sheets and in these numbers:
+
+- Sargassum turns golden-amber (hue 110 to 82) and keeps its chroma. It is a brown alga, so this looks natural. The first-draft band (90 to 160) assumed green plants and flagged it, so the band is now 60 to 160.
+- Kelp turns a dull khaki: chroma halves (0.061 to 0.030), below the 0.6 × flag. Part of the original chroma is the teal cast, so the flag may overstate it, but the sheet agrees: the kelp looks grey-olive.
+- The green water moves to hue 201, short of the 215-265 target in `tune_report.py`, and its chroma falls to 0.035. It looks grey-teal, not clear cyan. This misses Jake's rule of 24 Oct 2026: green water goes cyan or blue.
+- The surface highlights in the sargassum photo lean magenta (hue 315), but only at chroma 0.015. This is the known pale surface pink, at a low level.
 
 ## Stage A — cross-channel red estimate
 

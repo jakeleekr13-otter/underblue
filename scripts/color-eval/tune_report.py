@@ -90,8 +90,8 @@ if all(os.path.exists(f"{O}/market/{k}__original.jpg") for k, _, _ in NEUTRAL):
 # over the baseline table in the doc, so compare it there.
 BLACK = [("real", "r15", "wetsuit chest, teal water", (0.52, 0.88, 0.64, 0.98)),
          ("real", "r12", "BCD chest, deep blue cast", (0.42, 0.43, 0.48, 0.50)),
-         ("gear", "g1", "wetsuit torso (DSC03696)", (0.61, 0.385, 0.645, 0.41)),
-         ("gear", "g1", "BCD bladder (DSC03696)", (0.685, 0.345, 0.705, 0.40))]
+         ("guard", "g1", "wetsuit torso (DSC03696)", (0.61, 0.385, 0.645, 0.41)),
+         ("guard", "g1", "BCD bladder (DSC03696)", (0.685, 0.345, 0.705, 0.40))]
 def black_cell(rgb):
     L, A, B = ok_lab(rgb); C = math.hypot(A, B); hue = math.degrees(math.atan2(B, A)) % 360
     flags = (" BROWN" if C >= 0.02 and 40 <= hue <= 90 else "") + (" LIGHT" if L >= 0.35 else "")
@@ -102,6 +102,46 @@ if all(os.path.exists(f"{O}/{d}/{k}__original.jpg") for d, k, _, _ in BLACK):
     print("| surface | original | ours | ours (video path) |")
     for d, k, name, box in BLACK:
         print(f"| {k} {name} | " + " | ".join(black_cell(box_median(f"{O}/{d}/{k}__{v}.jpg", box)) for v in ["original", "combined", "uniform"]) + " |")
+# Plants and their water (Stage C). Plants must keep their colour while the water around them turns cyan or blue.
+# Plant pixels = pixels of the box whose ORIGINAL OKLab hue is below 180 (the water in these photos sits at 150-215,
+# the kelp blades at 150-170), so water between the leaves stays out. The same pixels are read in every output.
+PLANTS = [("guard", "pl1", "sargassum foreground", (0.32, 0.82, 0.52, 0.95)),
+          ("guard", "pl1", "sargassum right cluster", (0.63, 0.72, 0.74, 0.84)),
+          ("guard", "pl2", "kelp blades", (0.53, 0.14, 0.63, 0.28)),
+          ("guard", "pl2", "kelp stipe", (0.49, 0.33, 0.56, 0.41))]
+PLANT_WATER = [("guard", "pl1", "green water", (0.05, 0.30, 0.30, 0.45)),
+               ("guard", "pl2", "teal water", (0.05, 0.10, 0.35, 0.35))]
+def ok_lab_px(a):
+    lin = np.where(a <= 0.04045, a / 12.92, ((a + 0.055) / 1.055) ** 2.4)
+    l = np.cbrt(lin @ np.array([0.4122214708, 0.5363325363, 0.0514459929]))
+    mm = np.cbrt(lin @ np.array([0.2119034982, 0.6806995451, 0.1073969566]))
+    ss = np.cbrt(lin @ np.array([0.0883024619, 0.2817188376, 0.6299787005]))
+    A = 1.9779984951 * l - 2.4285922050 * mm + 0.4505937099 * ss
+    B = 0.0259040371 * l + 0.7827717662 * mm - 0.8086757660 * ss
+    return np.degrees(np.arctan2(B, A)) % 360
+def box_pixels(p, box):
+    im = Image.open(p).convert("RGB"); w, h = im.size; x0, y0, x1, y1 = box
+    return np.asarray(im.crop((int(x0 * w), int(y0 * h), int(x1 * w), int(y1 * h)))).reshape(-1, 3)
+def lch(rgb):
+    L, A, B = ok_lab(rgb); return L, math.hypot(A, B), math.degrees(math.atan2(B, A)) % 360
+if all(os.path.exists(f"{O}/{d}/{k}__original.jpg") for d, k, _, _ in PLANTS):
+    print("\n== PLANTS (median of the box's plant pixels, OKLab L / chroma / hue; flags: GREY = chroma below 0.6 x original,"
+          " HUE = hue outside 60-160, golden-brown algae to green seagrass; compare with the baseline in docs/RestorationExperiments.md)")
+    print("| plant | plant share | original | ours | ours (video path) |")
+    for d, k, name, box in PLANTS:
+        src = box_pixels(f"{O}/{d}/{k}__original.jpg", box)
+        mask = ok_lab_px(src / 255) < 180
+        cells, c0 = [], None
+        for v in ["original", "combined", "uniform"]:
+            L, C, hue = lch(np.median(box_pixels(f"{O}/{d}/{k}__{v}.jpg", box)[mask], axis=0))
+            c0 = C if c0 is None else c0
+            flags = "" if v == "original" else (" GREY" if C < 0.6 * c0 else "") + (" HUE" if not 60 <= hue <= 160 else "")
+            cells.append(f"{L:.2f} / {C:.3f} / {hue:.0f}{flags}")
+        print(f"| {k} {name} | {mask.mean() * 100:.0f}% | " + " | ".join(cells) + " |")
+    print("| water box | | original | ours | ours (video path) |")
+    for d, k, name, box in PLANT_WATER:
+        print(f"| {k} {name} | | " + " | ".join("{:.2f} / {:.3f} / {:.0f}".format(*lch(box_median(f"{O}/{d}/{k}__{v}.jpg", box)))
+                                            for v in ["original", "combined", "uniform"]) + " |")
 mx, mean = lab_chroma(f"{O}/market/n_grey__combined.jpg"); ux, umean = lab_chroma(f"{O}/market/n_grey__uniform.jpg")
 print(f"\n== NEUTRAL grey ramp: max Lab chroma ours {mx:.2f} (mean {mean:.2f}), video path {ux:.2f} (mean {umean:.2f}). Must stay below about 3.")
 sheet(f"{O}/market", ["m1.png", "m2.png", "m3.png", "m4.png", "m5.png", "m6.png", "n_grey.png"], cols, f"{O}/market_sheet.jpg")

@@ -20,7 +20,7 @@ Store page work for 1.1.4 (23 Oct 2026). Jake submitted the app the same day.
 
 - New app icon: `UnderBlue/Resources/AppIcon.icon` (Icon Composer), in build 10. See `docs/IconComposer.md`.
 - Product page header: `AppStoreAssets/Screenshots/header/universal-5244x2950.png`, uploaded by Jake.
-- Search results (same file), Korean metadata (`docs/AppStoreMetadata.md`) and Korean screenshots (`AppStoreAssets/Screenshots/ko/final`): prepared. Upload not recorded.
+- Search results (same file), Korean metadata (`docs/AppStoreMetadata.md`) and Korean screenshots (`AppStoreAssets/Screenshots/ko/final`): prepared. The Korean app information was already in App Store Connect before 1.1.5 (Jake, 24 Oct 2026); the screenshot upload is not recorded.
 - Product Page Optimization: not used (Jake, 23 Oct 2026).
 
 ## Release decision for 1.0 (history, 29 Sep 2026)

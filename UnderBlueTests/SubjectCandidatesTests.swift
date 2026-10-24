@@ -181,7 +181,7 @@ final class SubjectCandidatesTests: XCTestCase {
         XCTAssertTrue(selection.showsOverlay)
         selection.toggle(1)
         XCTAssertEqual(selection.picks, [0])
-        guard case .picked(let one?) = selection.choice else { return XCTFail("expected a mask") }
+        guard case .picked(let one?, _) = selection.choice else { return XCTFail("expected a mask") }
         XCTAssertEqual(one.values.reduce(0, +), 36)
         selection.toggle(0)
         XCTAssertEqual(selection.choice, .picked(nil), "None selected: no subject")
@@ -271,6 +271,61 @@ final class SubjectCandidatesTests: XCTestCase {
         let tiers = try XCTUnwrap(SubjectTiers.make(waterShare: share, transmission: t, texture: texture, width: w, height: h))
         XCTAssertEqual(tiers.tier2[20 * w + 5], 0, "sand is no tier")
         XCTAssertEqual(tiers.tier2[20 * w + 35], 1, "a reef is")
+    }
+
+    func testTierPiecesCanBeTurnedOffOneByOne() throws {
+        // 60 x 40, all near (t 0.9), no water except two blocks: a reef across the bottom and a fish far from it.
+        let w = 60, h = 40
+        var share = [Float](repeating: 1, count: w * h)
+        let t = [Float](repeating: 0.9, count: w * h)
+        for y in 30..<40 { for x in 0..<60 { share[y * w + x] = 0 } }       // reef
+        for y in 5..<10 { for x in 45..<52 { share[y * w + x] = 0 } }       // fish, far from the reef
+        let tiers = try XCTUnwrap(SubjectTiers.make(waterShare: share, transmission: t, width: w, height: h))
+        let pieces = tiers.pieces(excluding: nil)
+        XCTAssertEqual(pieces.items.count, 2, "the reef and the fish are two pieces")
+        XCTAssertEqual(pieces.items[0].tier, 2)
+        let reef = try XCTUnwrap(tiers.piece(at: CGPoint(x: 0.5, y: 0.9), tolerance: 0, in: pieces))
+        let fish = try XCTUnwrap(tiers.piece(at: CGPoint(x: 0.8, y: 0.18), tolerance: 0, in: pieces))
+        XCTAssertNotEqual(reef, fish)
+        XCTAssertEqual(reef, pieces.items[0].id, "largest first")
+        // Turning the fish off zeroes the map on the fish and leaves the reef alone.
+        let map = tiers.map(excluding: [fish], pieces: pieces)
+        XCTAssertEqual(map.tier2[7 * w + 48], 0, accuracy: 0.0001)
+        XCTAssertEqual(map.tier2[35 * w + 30], tiers.map.tier2[35 * w + 30], accuracy: 0.0001)
+        XCTAssertNotNil(tiers.drawing(excluding: nil, off: [fish], pieces: pieces).offOutline)
+        // A Vision group over the fish takes it out of the pieces: the group has its own badge.
+        var fishMask = [Float](repeating: 0, count: w * h)
+        for y in 5..<10 { for x in 45..<52 { fishMask[y * w + x] = 1 } }
+        XCTAssertEqual(tiers.pieces(excluding: SubjectMask(width: w, height: h, values: fishMask)).items.count, 1)
+        XCTAssertNil(tiers.drawing(excluding: nil).offOutline)
+        // The selection carries it into the choice, and Reset turns every piece back on.
+        var selection = SubjectSelection()
+        selection.finishDetecting(candidates([group(0, bounds: CGRect(x: 0, y: 0, width: 0.2, height: 0.2), share: 0.04)]))
+        selection.setTiers(tiers)
+        selection.toggleTier(fish)
+        XCTAssertEqual(selection.choice, .picked(selection.candidates?.mask(picking: [0]), tiersOff: [fish]))
+        selection.reset()
+        XCTAssertTrue(selection.tiersOff.isEmpty)
+    }
+
+    func testATapOnASmallFishBesideABigSubjectPicksTheFish() throws {
+        // A big subject in the middle, its box reaching up over a small fish that is a tier piece.
+        let w = 100, h = 100
+        var big = [Float](repeating: 0, count: w * h)
+        for y in 40..<90 { for x in 30..<70 { big[y * w + x] = 1 } }
+        big[10 * w + 50] = 1   // one stray pixel at the top makes the box tall, as a fin does
+        let subject = SubjectGroup(id: 0, instances: [1], share: 0.2, bounds: CGRect(x: 0.3, y: 0.1, width: 0.4, height: 0.8), mask: big, fill: nil)
+        let all = SubjectCandidates(width: w, height: h, groups: [subject], merged: false)
+        var share = [Float](repeating: 1, count: w * h)
+        for y in 20..<26 { for x in 55..<63 { share[y * w + x] = 0 } }   // the fish, inside the big box
+        let tiers = try XCTUnwrap(SubjectTiers.make(waterShare: share, transmission: .init(repeating: 0.9, count: w * h), width: w, height: h))
+        let pieces = tiers.pieces(excluding: SubjectMask(width: w, height: h, values: big))
+        let size = CGSize(width: 100, height: 100)
+        XCTAssertEqual(SubjectPickerGeometry.hit(at: CGPoint(x: 58, y: 22), in: size, zoom: 1, of: all, tiers: tiers, pieces: pieces), .piece(0))
+        XCTAssertEqual(SubjectPickerGeometry.hit(at: CGPoint(x: 50, y: 60), in: size, zoom: 1, of: all, tiers: tiers, pieces: pieces), .group(0))
+        XCTAssertEqual(SubjectPickerGeometry.hit(at: CGPoint(x: 58, y: 30), in: size, zoom: 1, of: all, tiers: tiers, pieces: pieces), .piece(0),
+                       "just below the fish: the fish is nearer than the subject")
+        XCTAssertNil(SubjectPickerGeometry.hit(at: CGPoint(x: 5, y: 5), in: size, zoom: 1, of: all, tiers: tiers, pieces: pieces), "open water")
     }
 
     func testTierCleanUpDropsSmallPiecesAndFillsSmallHoles() {

@@ -87,7 +87,9 @@ struct EditorView: View {
                 let picking = model.subjects.showsOverlay && !model.comparing
                 ZoomablePreview(image: preview, zoom: $zoom, overlayActive: picking, onZoomIn: { model.requestDetailPreview() }) { size in
                     if picking, let candidates = model.subjects.candidates {
-                        SubjectPicker(candidates: candidates, picks: model.subjects.picks, tiers: model.subjects.tierDrawing, size: size, zoom: zoom.scale) { model.toggleSubject($0) }
+                        SubjectPicker(candidates: candidates, picks: model.subjects.picks, tiers: model.subjects.tiers, tierPieces: model.subjects.tierPieces,
+                                          tierDrawing: model.subjects.tierDrawing, tiersOff: model.subjects.tiersOff,
+                                          size: size, zoom: zoom.scale, onToggleTier: { model.toggleTier($0) }) { model.toggleSubject($0) }
                     }
                 }
             }

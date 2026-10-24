@@ -164,7 +164,16 @@ actor PhotoProcessor {
         let base = try await prepare(url: url, source: source).plan
         let auto = subjects == .auto ? try await autoLiftMask(url) : nil
         var plan = Self.applying(subjects, to: base, autoLift: auto)
-        if plan?.subjectLift != nil, let tiers = try await subjectTiers(url) { plan?.subjectLift?.tiers = tiers.map }
+        if plan?.subjectLift != nil, let tiers = try await subjectTiers(url) {
+            var off: Set<Int> = []
+            if case .picked(_, let tiersOff) = subjects { off = tiersOff }
+            // The same pieces as the picker: outside every group. Preview and export build them alike.
+            var pieces: SubjectTiers.Pieces?
+            if !off.isEmpty, let found = try? await subjectCandidates(url) {
+                pieces = tiers.pieces(excluding: found.mask(picking: Set(found.groups.map(\.id))))
+            }
+            plan?.subjectLift?.tiers = tiers.map(excluding: off, pieces: pieces)
+        }
         return plan
     }
     func preview(_ url: URL, settings: FilterSettings, original: Bool, maxPixel: CGFloat = 1600,
@@ -275,7 +284,7 @@ actor PhotoProcessor {
     /// caller's analysis, which `prepare` made with the automatic mask.
     static func settings(_ settings: FilterSettings, for choice: SubjectChoice,
                          analyze: (SubjectMask?) -> WaterAnalysis) -> FilterSettings {
-        guard case .picked(let mask) = choice else { return settings }
+        guard case .picked(let mask, _) = choice else { return settings }
         var chosen = settings
         chosen.analysis = analyze(mask)
         return chosen
@@ -290,7 +299,7 @@ actor PhotoProcessor {
         switch choice {
         case .off: plan.subjectLift = nil
         case .auto: plan.subjectLift = autoLift.map { SubjectLift(mask: $0) }
-        case .picked(let mask):
+        case .picked(let mask, _):
             plan.subjectMask = mask
             plan.subjectLift = mask.map { SubjectLift(mask: $0) }
         }

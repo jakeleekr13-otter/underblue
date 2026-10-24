@@ -7,9 +7,10 @@ import Vision
 enum SubjectChoice: Sendable, Equatable {
     /// Labs off, or below 27: no subject lift. The local veil keeps the automatic mask, as main ships.
     case off
-    /// Labs on: the lift on the automatic subjects.
+    /// Labs on: the lift on the automatic subjects, with every tier piece on.
     case auto
-    case picked(SubjectMask?)
+    /// The picked groups as tier one, and the tier pieces the user turned off (SubjectTiers.pieces).
+    case picked(SubjectMask?, tiersOff: Set<Int> = [])
 }
 
 /// Vision instances that are close to each other, shown to the user as one thing.
@@ -176,6 +177,14 @@ struct SubjectCandidates: Sendable {
            let hit = groups.first(where: { $0.mask.count == width * height && $0.mask[y * width + x] > 0.5 }) { return hit.id }
         let near = groups.filter { $0.bounds.insetBy(dx: -tolerance, dy: -tolerance).contains(point) }
         return near.min { distance(point, $0.bounds) < distance(point, $1.bounds) }?.id
+    }
+
+    /// The group whose mask covers the point, and only that. No box: the O3 sunfish's box covered the
+    /// bannerfish above it, so a tap on a fish toggled the sunfish (24 Oct 2026).
+    func groupMask(at point: CGPoint) -> Int? {
+        guard point.x >= 0, point.x <= 1, point.y >= 0, point.y <= 1 else { return nil }
+        let x = min(width - 1, Int(point.x * CGFloat(width))), y = min(height - 1, Int(point.y * CGFloat(height)))
+        return groups.first(where: { $0.mask.count == width * height && $0.mask[y * width + x] > 0.5 })?.id
     }
 
     private func distance(_ point: CGPoint, _ rect: CGRect) -> CGFloat {

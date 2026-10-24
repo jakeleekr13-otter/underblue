@@ -39,6 +39,8 @@ struct SubjectSelection {
     private(set) var mode = Mode.auto
     private(set) var status = Status.idle
     private(set) var picks: Set<Int> = []
+    /// Tier pieces the user turned off (SubjectTiers.pieces). Every piece starts on.
+    private(set) var tiersOff: Set<Int> = []
     /// False after Done. The mode stays Manual and the picks stay applied.
     private(set) var overlayVisible = false
     private(set) var candidates: SubjectCandidates?
@@ -46,13 +48,15 @@ struct SubjectSelection {
     private(set) var tiers: SubjectTiers?
     /// The tier lines with the picked groups taken out. Rebuilt when the picks or the tiers change.
     private(set) var tierDrawing: SubjectTiers.Drawing?
+    /// The tappable tier pieces, outside every group. Rebuilt when the groups or the tiers change.
+    private(set) var tierPieces: SubjectTiers.Pieces?
     private(set) var notice: Notice?
     /// What preview and export receive. Rebuilt on every change, not on every read.
     private(set) var choice = SubjectChoice.auto
 
     /// Changes whenever the rendered result can change. A view task can wait on it.
-    struct Key: Hashable, Sendable { let manual: Bool; let picks: Set<Int> }
-    var key: Key { Key(manual: mode == .manual, picks: picks) }
+    struct Key: Hashable, Sendable { let manual: Bool; let picks: Set<Int>; let tiersOff: Set<Int> }
+    var key: Key { Key(manual: mode == .manual, picks: picks, tiersOff: tiersOff) }
 
     var isManual: Bool { mode == .manual }
     /// The overlay shows in Manual mode, until the user presses Done.
@@ -93,14 +97,19 @@ struct SubjectSelection {
         mode = .manual; overlayVisible = true; notice = nil; rebuild()
     }
 
-    mutating func setTiers(_ found: SubjectTiers?) { tiers = found; redraw() }
+    mutating func setTiers(_ found: SubjectTiers?) {
+        tiers = found
+        tierPieces = candidates.flatMap { c in found?.pieces(excluding: c.mask(picking: Set(c.groups.map(\.id)))) }
+            ?? found?.pieces(excluding: nil)
+        redraw()
+    }
 
     mutating func done() { overlayVisible = false }
     mutating func edit() { if mode == .manual { overlayVisible = true } }
 
     mutating func reset() {
         guard let candidates else { return }
-        picks = Self.autoPicks(candidates); notice = nil; rebuild()
+        picks = Self.autoPicks(candidates); tiersOff = []; notice = nil; rebuild()
     }
 
     /// A tap on a group. Adding a group is refused when the picks would cover too much of the frame.
@@ -113,6 +122,14 @@ struct SubjectSelection {
         } else {
             notice = group.share > SubjectCandidates.maximumPickedShare ? .tooLarge : .tooMuch
         }
+        rebuild()
+    }
+
+    /// A tap on a tier piece: on or off. A tier piece has no share cap, because it adds no subject.
+    mutating func toggleTier(_ id: Int) {
+        guard mode == .manual, tierPieces?.items.contains(where: { $0.id == id }) == true else { return }
+        if tiersOff.contains(id) { tiersOff.remove(id) } else { tiersOff.insert(id) }
+        notice = nil
         rebuild()
     }
 
@@ -132,10 +149,10 @@ struct SubjectSelection {
     private mutating func rebuild() {
         redraw()
         guard mode == .manual, let candidates else { choice = .auto; return }
-        choice = .picked(candidates.mask(picking: picks))
+        choice = .picked(candidates.mask(picking: picks), tiersOff: tiersOff)
     }
 
     private mutating func redraw() {
-        tierDrawing = tiers?.drawing(excluding: candidates?.mask(picking: picks))
+        tierDrawing = tiers?.drawing(excluding: candidates?.mask(picking: picks), off: tiersOff, pieces: tierPieces)
     }
 }

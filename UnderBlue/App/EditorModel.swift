@@ -389,6 +389,7 @@ final class EditorModel {
     }
     func chooseAutoSubjects() { subjects.useAuto() }
     func toggleSubject(_ id: Int) { subjects.toggle(id) }
+    func toggleTier(_ id: Int) { subjects.toggleTier(id) }
     func finishSubjectPicking() { subjects.done() }
     func editSubjects() { subjects.edit() }
     func resetSubjects() { subjects.reset() }

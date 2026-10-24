@@ -1,6 +1,6 @@
 # Subject picker — plan
 
-**ON HOLD (Jake, 22 Oct 2026).** The picker is paused. First find a way to make subjects bright, vivid and natural. That plan is [SubjectEmphasis.md](SubjectEmphasis.md). The mask alone only reduces the halo beside a subject. It does not change the subject.
+**DONE (Jake, 24 Oct 2026).** The picker shipped as a Labs feature: single photo, iOS 27 and macOS 27. Earlier status, kept for the record: **ON HOLD (Jake, 22 Oct 2026).** The picker is paused. First find a way to make subjects bright, vivid and natural. That plan is [SubjectEmphasis.md](SubjectEmphasis.md). The mask alone only reduces the halo beside a subject. It does not change the subject.
 
 Status (22 Oct 2026): code written on branch `subject-picker`, not committed. Not checked on a real photo or a device yet. See "Progress" below.
 
@@ -216,6 +216,15 @@ If S1b shows no gain, schools stay Auto and only tap picking ships. A brush beco
 - Compare (Mac: Original) closes the picker, as Done does. So both sides compare without the lines.
 - iPhone 17 Release (subject-lift session): the first Labs-on preview adds about 0.3-0.45 s for a JPEG, and 1.7 s for an ARW.
 - Open: fish that Vision does not return (the bannerfish around the O3 sunfish) get tier 2 but no badge. They cannot be tapped.
+
+### Tier pieces can be picked; done (Jake, 24 Oct 2026)
+
+- Tiers 2 and 3 can be turned off piece by piece, as the first plan said. A piece is a connected part of the cleaned tier region outside every Vision group, merged by the group rules (gap 4%, at most 6). Slivers left by the groups drop below the piece minimum.
+- Each piece has a badge (amber or lavender with a check). A tap turns it off: a thin white line and an empty circle. An off piece loses its tier weight inside, feathered outside, and keeps the base correction. Reset turns every piece back on.
+- Taps: a group's mask first, then a piece's pixels. Off every mask, the nearest mask pixel within half the tap size decides. Boxes never decide: the O3 sunfish's box covered the bannerfish above it.
+- O3, measured on the Mac at 1600 px: turning a bannerfish piece on against off gives mean OKLab difference x100 of 0.84 to 1.28, and p90 of 1.9 to 2.8. Lightness and chroma barely move. Only the contrast spread rises, by 3.9 to 4.8%, from tier 2 at 0.2. Jake: keep it as it is.
+- An excluded group is treated as scene, so tier lines can show on it without a badge. Jake kept this as it is.
+- Jake declared the subject picker finished on 24 Oct 2026.
 
 ### Changes from the plan
 

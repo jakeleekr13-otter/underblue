@@ -10500,47 +10500,6 @@
         }
       }
     },
-    "Mint: subjects you can tap. Amber: reef in front. Lavender: reef further back." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mint: subjects you can tap. Amber: reef in front. Lavender: reef further back."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Menta: sujetos que puedes tocar. Ámbar: arrecife delante. Lavanda: arrecife al fondo."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ミント: タップできる被写体。オレンジ: 手前のサンゴ礁。ラベンダー: 奥のサンゴ礁。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "민트: 탭할 수 있는 피사체. 주황: 앞쪽 산호초. 라벤더: 뒤쪽 산호초."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "薄荷色：可轻点的主体。琥珀色：前方的礁石。淡紫色：后方的礁石。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "薄荷色：可點選的主體。琥珀色：前方的礁石。淡紫色：後方的礁石。"
-          }
-        }
-      }
-    },
     "Subject group %lld, selected, %lld included" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -11316,6 +11275,129 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "請連上網際網路下載主體模型，或不強調主體直接儲存這張照片。"
+          }
+        }
+      }
+    },
+    "Mint: subjects. Amber: the scene in front. Lavender: the scene further back. Tap any of them to turn it on or off." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mint: subjects. Amber: the scene in front. Lavender: the scene further back. Tap any of them to turn it on or off."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menta: sujetos. Ámbar: la escena delante. Lavanda: la escena al fondo. Toca cualquiera para activarla o desactivarla."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ミント: 被写体。オレンジ: 手前の景色。ラベンダー: 奥の景色。タップするとオン・オフを切り替えられます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "민트: 피사체. 주황: 앞쪽 장면. 라벤더: 뒤쪽 장면. 탭하면 켜고 끌 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "薄荷色：主体。琥珀色：前方的景物。淡紫色：后方的景物。轻点任意一项即可开启或关闭。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "薄荷色：主體。琥珀色：前方的景物。淡紫色：後方的景物。點一下任一項即可開啟或關閉。"
+          }
+        }
+      }
+    },
+    "Scene area %lld, on" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scene area %lld, on"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zona de escena %lld, activada"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "景色エリア%lld、オン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "장면 영역 %lld, 켜짐"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "景物区域 %lld，已开启"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "景物區域 %lld，已開啟"
+          }
+        }
+      }
+    },
+    "Scene area %lld, off" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scene area %lld, off"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zona de escena %lld, desactivada"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "景色エリア%lld、オフ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "장면 영역 %lld, 꺼짐"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "景物区域 %lld，已关闭"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "景物區域 %lld，已關閉"
           }
         }
       }

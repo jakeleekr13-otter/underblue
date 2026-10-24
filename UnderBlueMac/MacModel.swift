@@ -467,6 +467,7 @@ final class MacModel {
     }
     func chooseAutoSubjects() { change { $0.useAuto() } }
     func toggleSubject(_ id: Int) { change { $0.toggle(id) } }
+    func toggleTier(_ id: Int) { change { $0.toggleTier(id) } }
     func finishSubjectPicking() { change { $0.done() } }
     func editSubjects() { change { $0.edit() } }
     func resetSubjects() { change { $0.reset() } }

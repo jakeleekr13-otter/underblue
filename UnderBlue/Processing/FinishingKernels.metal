@@ -373,7 +373,9 @@ static float violetHue(float3 o) { return fmod(atan2(o.z, o.y) * 57.29578f + 360
     const float f = clamp(signal.r, 0.0f, 1.0f);
     float w2 = 0.0f, w3 = 0.0f;
     if (shape.w > 0.0f || tier.x > 0.0f) {
-        const float notWater = (1.0f - clamp(water.r, 0.0f, 1.0f)) * (1.0f - w);
+        // The share is in alpha. Red holds gamma luminance times the share (UnderBlueCalmShare), so
+        // reading red put tiers two and three on open water at 0.33 to 0.59 of their weight (E22).
+        const float notWater = (1.0f - clamp(water.a, 0.0f, 1.0f)) * (1.0f - w);
         w2 = shape.w * notWater * f;
         w3 = tier.x * notWater * (1.0f - f);
         w = w + w2 + w3;

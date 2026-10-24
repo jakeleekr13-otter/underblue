@@ -738,6 +738,7 @@ The branch merged main at `287743d`. Every number above E15 predates that merge.
 | E19 | Device check of E15 to E17 | Parity analysis and export on the iPhone | Done: the phone agrees with the Mac |
 | E20 | Green cast check on r14 and r15 | Sand colour, gate, m5, 25 video frames | r14 fixed. The iPhone agrees with the Mac |
 | E21 | Give Vision the whole image | Mask share of 36 photos at three sizes, device time and memory | r14 gets its mask back. One Vision call, faster |
+| E22 | Read the water share from alpha in the lift | notWater on open water, gate on the lift render, 8 photos on Mac and iPhone | Fixed. Changes are small. Jake judges by eye |
 
 ### E15, the Vision input, 23 Oct 2026
 
@@ -1013,6 +1014,41 @@ The scale pass before Vision is gone, and so is the full-size mask. The ARW's fi
 - E20 to E21: mean OKLab distance x100 0.55 for the whole frame. The sand stays near neutral.
 - The batfish now has its mask, so the lift reaches it: by eye it is whiter, with more contrast. No pale ring shows on it.
 - r15: 0.03 from E20.
+
+### E22, the lift read the wrong channel, 24 Oct 2026
+
+Found by the picker session (code read), then measured here. `UnderBlueSubjectLift` read the water share from red. `UnderBlueCalmShare` puts gamma luminance times the share in red, and the share itself in alpha. So open water did not count as water. The bug was there since the tiers came in (`2ed30a9`, E8).
+
+notWater before the subject term, mean over pixels whose share (alpha) is above 0.9, Mac, 1024 px:
+
+| photo | open water, share of frame | from red (the bug) | from alpha |
+|---|---|---|---|
+| r14 | 4.5% | 0.589 | 0.041 |
+| m5 | 47.7% | 0.342 | 0.005 |
+| r15 | 84.3% | 0.335 | 0.004 |
+| DSC03696 | 31.0% | 0.420 | 0.006 |
+
+Tiers two and three reached open water at about a third to a half of their weight. Change: the kernel reads `water.a`. The white stand-in (no share image) has alpha 1, so it still turns the tiers off.
+
+The AquaColorFix gate and `m5_eval.sh` score `combined`, `current` and `uniform`. None of them has the lift, so neither can see a lift change. A gate claim for a lift-only change (E8 to E21) is about `combined` only. Here the gate was also scored on the `lift` render with the app's defaults (`HT_EVAL_LIFT`): 13.66 before, 13.74 after. p2 moves most (17.76 to 17.98), and p2 swings with a 1 degree water hue change. p4 goes 12.53 to 12.52.
+
+Before and after, OKLab distance x100:
+
+| photo | Mac 4000 px: mean | Mac: pixels moved > 1 | iPhone export: mean | iPhone: pixels moved > 1 |
+|---|---|---|---|---|
+| DSC03545 | 0.40 | 5.4% | 0.43 | 7.1% |
+| DSC03546 | 0.49 | 3.4% | 0.50 | 4.9% |
+| DSC03656 | 0.19 | 1.0% | 0.20 | 1.5% |
+| DSC03687 | 0.22 | 1.4% | 0.23 | 2.0% |
+| DSC03696 | 0.22 | 1.8% | 0.24 | 2.5% |
+| r15 | 0.45 | 0.5% | 0.45 | 0.8% |
+| r14 | 0.08 | 0.0% | 0.09 | 0.0% |
+| m5 | 0.10 | 0.2% | 0.14 | 0.5% |
+
+- The iPhone builds were made from clean worktrees (`a00c7e5`, and `a00c7e5` plus this change), because the shared tree holds the picker session's uncommitted work.
+- Open water changes by about 0.3 to 0.6. The densest 400 px window changes by under 1 on every photo.
+- By eye at 100%: small fish and wreck edges next to open water get a little less sharpening and contrast. The water is a little smoother.
+- The sunlit surface in DSC03696 does not change. It reads as not-water through alpha too, so the lift reaches it before and after. The picker session saw the same for bubbles and sand.
 
 ### The control photos
 

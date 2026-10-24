@@ -1,5 +1,5 @@
 import csv, sys, os, math
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 import numpy as np
 O = sys.argv[1]
 def load(p):
@@ -142,6 +142,27 @@ if all(os.path.exists(f"{O}/{d}/{k}__original.jpg") for d, k, _, _ in PLANTS):
     for d, k, name, box in PLANT_WATER:
         print(f"| {k} {name} | | " + " | ".join("{:.2f} / {:.3f} / {:.0f}".format(*lch(box_median(f"{O}/{d}/{k}__{v}.jpg", box)))
                                             for v in ["original", "combined", "uniform"]) + " |")
+# Grain on flat bright sand (Stage C): std of luma minus its 4 px Gaussian blur, in a box, at 1920 px (lossless PNG).
+# Ratio = output over original. Sea-thru's m5 output is the reference point for a good result.
+GRAIN = [("r14", "teal sand", (0.55, 0.70, 0.80, 0.95)), ("r03", "white sand", (0.72, 0.80, 0.86, 0.90)),
+         ("m5", "sand", (0.70, 0.88, 0.85, 0.98)), ("pl1", "sand beside sargassum", (0.00, 0.55, 0.15, 0.70))]
+def grain(im, box):
+    w, h = im.size; x0, y0, x1, y1 = box
+    c = im.crop((int(x0 * w), int(y0 * h), int(x1 * w), int(y1 * h)))
+    hp = np.asarray(c, dtype=np.float64) - np.asarray(c.filter(ImageFilter.GaussianBlur(4)), dtype=np.float64)
+    return float((0.2126 * hp[..., 0] + 0.7152 * hp[..., 1] + 0.0722 * hp[..., 2]).std())
+if all(os.path.exists(f"{O}/grain/{k}__original.png") for k, _, _ in GRAIN):
+    print("\n== GRAIN on flat bright sand (1920 px; std of luma minus a 4 px blur; ratio over original; compare with the baseline in docs/RestorationExperiments.md)")
+    print("| sand | original | ours | ours (video path) | Sea-thru |")
+    seathru = os.path.join(os.path.dirname(O.rstrip("/")), "cache/market/ref/m5.png")
+    for k, name, box in GRAIN:
+        src = Image.open(f"{O}/grain/{k}__original.png").convert("RGB"); g0 = grain(src, box)
+        cells = [f"{g0:.2f}"] + [f"{g:.2f} ({g / g0:.2f}x)" for g in (grain(Image.open(f"{O}/grain/{k}__{v}.png").convert("RGB"), box) for v in ("combined", "uniform"))]
+        if k == "m5" and os.path.exists(seathru):
+            g = grain(Image.open(seathru).convert("RGB").resize(src.size, Image.LANCZOS), box); cells.append(f"{g:.2f} ({g / g0:.2f}x)")
+        else:
+            cells.append("")
+        print(f"| {k} {name} | " + " | ".join(cells) + " |")
 mx, mean = lab_chroma(f"{O}/market/n_grey__combined.jpg"); ux, umean = lab_chroma(f"{O}/market/n_grey__uniform.jpg")
 print(f"\n== NEUTRAL grey ramp: max Lab chroma ours {mx:.2f} (mean {mean:.2f}), video path {ux:.2f} (mean {umean:.2f}). Must stay below about 3.")
 sheet(f"{O}/market", ["m1.png", "m2.png", "m3.png", "m4.png", "m5.png", "m6.png", "n_grey.png"], cols, f"{O}/market_sheet.jpg")

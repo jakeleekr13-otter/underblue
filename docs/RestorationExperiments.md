@@ -15,7 +15,7 @@ Overall goal (Jake, 24 Oct 2026): more natural and more vivid photo and video re
 | B | Can one water matte from transmission replace several colour-based water tests? | Halos and rings form where these tests disagree. |
 | D | How well do we deal with floating particles (marine snow, backscatter)? Does our correction make them more visible? | Jake asked for this check (24 Oct 2026). A vivid look also lifts specks. |
 
-Order: C, then D1, then A1, then B, then A2, then D2. Each stage has a go/no-go rule. A1 ran before D1 because D was added later.
+Order: C, then D1, then A1, then B1, then the sand grain fix, then B2, then A2, then D2. Each stage has a go/no-go rule. A1 ran before D1 because D was added later. The grain fix came in from the D1 finding (Jake, 24 Oct 2026).
 
 ## Decisions that limit this plan
 
@@ -56,6 +56,7 @@ The harness checks neutral surfaces with fixed boxes (`NEUTRAL` in `scripts/colo
 | Check | Pass rule | Images |
 |---|---|---|
 | Black gear stays black | Box median in OKLab. L stays below 0.35. Hue is never orange-brown (40 to 90) when chroma is 0.02 or more. Chroma rises by 0.01 at most over the baseline below. | r15 wetsuit chest (teal water), r12 BCD chest (deep blue cast), DSC03696 wetsuit torso and BCD (clear blue water). |
+| Grain on flat bright sand | Std of luma minus its 4 px blur, in a box, at 1920 px with lossless PNG. The ratio over the original rises by 0.10 at most over the baseline below. Added 24 Oct 2026 after the D1 finding. | r14 teal sand, r03 white sand, m5 sand (Sea-thru output as the reference point), sand beside the sargassum. |
 | Plants keep their colour | Median of the box's plant pixels (original OKLab hue below 180, so water between the leaves stays out). Hue stays inside 60 to 160: golden-brown algae to green seagrass. Chroma falls by 0.01 at most from the baseline below. The report also flags chroma below 0.6 × original as `GREY`. | Sargassum in green water (`pl1`), kelp in teal water (`pl2`). Jake gave both on 24 Oct 2026. |
 
 Steps:
@@ -105,6 +106,19 @@ Seen on the sheets and in these numbers:
 - Kelp turns a dull khaki: chroma halves (0.061 to 0.030), below the 0.6 × flag. Part of the original chroma is the teal cast, so the flag may overstate it, but the sheet agrees: the kelp looks grey-olive.
 - The green water moves to hue 201, short of the 215-265 target in `tune_report.py`, and its chroma falls to 0.035. It looks grey-teal, not clear cyan. This misses Jake's rule of 24 Oct 2026: green water goes cyan or blue.
 - The surface highlights in the sargassum photo lean magenta (hue 315), but only at chroma 0.015. This is the known pale surface pink, at a low level.
+
+Grain baseline, same commit (1920 px; std of luma minus a 4 px blur; ratio over the original):
+
+| Sand | Original | Ours | Ours (video path) | Sea-thru |
+|---|---|---|---|---|
+| r14 teal sand | 4.38 | 12.36 (2.82×) | 11.48 (2.62×) | none |
+| r03 white sand | 4.47 | 11.86 (2.65×) | 11.87 (2.65×) | none |
+| m5 sand | 4.59 | 11.57 (2.52×) | 9.36 (2.04×) | 6.56 (1.43×) |
+| Sand beside the sargassum | 3.75 | 5.42 (1.44×) | 5.44 (1.45×) | none |
+
+- The grain rises on three of four sand areas by 2.5 to 2.8 times. Sea-thru adds 1.43 times on m5.
+- The 1:1 crops agree: our m5 sand gets a coarse salt-and-pepper grain, while Sea-thru's stays smooth. r03 turns white with grey blotches, like r14.
+- The measure cannot tell wanted detail from noise by itself. So it runs only on flat sand, and the crops are checked by eye.
 
 ## Stage A — cross-channel red estimate
 
@@ -294,6 +308,8 @@ At 1:1, our output turns the fine grain of r14's teal sand into grey-white blotc
 
 - This is not a particle. It is a quality defect in the current output. It was seen in the harness at 1920 px. The app at full size is unchecked.
 - A2 adds red made from green, so it adds green's grain to red. Check this box before and after A2.
+- It is not r14 alone: r03 and m5 show the same rise (see the grain baseline in Stage C).
+- Decision (Jake, 24 Oct 2026): guard it now in Stage C, and fix it as its own item after B1, before A2.
 
 ### D2 — the video prototype in the full chain
 

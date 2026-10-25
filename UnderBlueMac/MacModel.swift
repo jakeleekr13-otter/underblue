@@ -125,6 +125,8 @@ final class MacModel {
     /// Launch arguments for screenshots and UI checks. They do not exist in a Release build.
     /// `--ui-demo-folder <path>` queues a folder, `--ui-demo-output <path>` sets the output folder,
     /// `--ui-demo-pro` lets Start run without a purchase, and `--ui-demo-start` presses Start.
+    /// `--ui-demo-subjects manual` opens Manual on the selected photo, `--ui-demo-press x,y` clicks there (0...1 from
+    /// the top left) and `--ui-demo-strength <0...1.5>` sets the subject strength (docs/ManualSubject.md).
     private var demoPro = false
     private var demoNoPreview = false
     private func applyDemoArguments() {
@@ -139,6 +141,17 @@ final class MacModel {
             Task {
                 await add([URL(fileURLWithPath: folder, isDirectory: true)])
                 if let name = value("--ui-demo-select") { selection = engine.items.first { $0.originalName == name }?.id }
+                if value("--ui-demo-subjects") == "manual" {
+                    // The press needs the precise model. Wait for the loader, at most 60 s.
+                    for _ in 0..<1200 where !PreciseModelLoader.shared.isReady { try? await Task.sleep(for: .milliseconds(50)) }
+                    chooseManualSubjects()
+                    let xy = value("--ui-demo-press")?.split(separator: ",").compactMap { Double($0) } ?? []
+                    if xy.count == 2 {
+                        pressSubject(at: CGPoint(x: xy[0], y: xy[1]))
+                        while subjects.pressing != nil { try? await Task.sleep(for: .milliseconds(50)) }
+                    }
+                    if let strength = value("--ui-demo-strength").flatMap(Float.init) { setSubjectStrength(strength) }
+                }
                 if arguments.contains("--ui-demo-start") { start() }
             }
         }
@@ -443,12 +456,12 @@ final class MacModel {
 
     // MARK: Subject picking
 
-    /// Manual: finds the subject groups once, then shows the picker. A photo with none stays in Auto.
-    func chooseManualSubjects() {
+    /// Semi-auto: finds the subject groups once, then shows the picker. A photo with none stays in Auto.
+    func chooseSemiAutoSubjects() {
         guard canPickSubjects, let item = selectedItem else { return }
         var state = subjectStates[item.id] ?? SubjectSelection()
         guard !state.isDetecting else { return }
-        if state.candidates != nil { state.resumeManual(); applySubjects(state, to: item); return }
+        if state.candidates != nil { state.resumeSemiAuto(); applySubjects(state, to: item); return }
         state.startDetecting()
         subjectStates[item.id] = state
         Task {
@@ -466,6 +479,29 @@ final class MacModel {
         }
     }
     func chooseAutoSubjects() { change { $0.useAuto() } }
+    /// Manual: no detection. A click on a subject picks it (docs/ManualSubject.md).
+    func chooseManualSubjects() {
+        guard canPickSubjects, let item = selectedItem else { return }
+        var state = subjectStates[item.id] ?? SubjectSelection()
+        state.useManual()
+        applySubjects(state, to: item)
+    }
+    /// A click in Manual: on a picked subject it removes that subject, elsewhere it adds the subject under the point.
+    func pressSubject(at point: CGPoint) {
+        guard canPickSubjects, let item = selectedItem, var state = subjectStates[item.id], state.isManual, state.pressing == nil else { return }
+        if let index = state.press(at: point) { state.removePress(index); applySubjects(state, to: item); return }
+        state.startPress(at: point)
+        subjectStates[item.id] = state
+        Task {
+            var done = subjectStates[item.id] ?? state
+            do { done.finishPress(try await previewPhotos.pressMask(item.url, at: point)) }
+            catch SubjectModelError.notReady { done.cancelPress(); PreciseModelLoader.shared.recheck() }
+            catch { done.cancelPress(); if !(error is CancellationError) { previewError = Failure.classify(error, operation: .preview).message } }
+            applySubjects(done, to: item)
+        }
+    }
+    func removeSubjectPress(_ index: Int) { change { $0.removePress(index) } }
+    func setSubjectStrength(_ value: Float) { change { $0.setStrength(value) } }
     func toggleSubject(_ id: Int) { change { $0.toggle(id) } }
     func toggleTier(_ id: Int) { change { $0.toggleTier(id) } }
     func finishSubjectPicking() { change { $0.done() } }
@@ -509,7 +545,7 @@ final class MacModel {
     /// The precise model arrived: redraw with the lift, and open the picker if the user was waiting for it.
     func preciseModelReady() {
         guard subjectPickerEnabled, let item = selectedItem, item.kind == .photo else { return }
-        if subjectStates[item.id]?.status == .waitingForModel { chooseManualSubjects() }
+        if subjectStates[item.id]?.status == .waitingForModel { chooseSemiAutoSubjects() }
         if !showingOriginal { refreshPreview() }
     }
 

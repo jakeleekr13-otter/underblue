@@ -43,7 +43,12 @@ struct PreviewPane: View {
                     // The picker shows over the corrected image only. The Original view hides it.
                     let picking = model.subjects.showsOverlay && !model.showingOriginal
                     ZoomablePreview(image: image, zoom: $zoom, overlayActive: picking) { size in
-                        if picking, let candidates = model.subjects.candidates {
+                        if picking, model.subjects.isManual {
+                            let pressed = model.subjects.pressed ?? .empty
+                            SubjectPicker(candidates: pressed, picks: Set(pressed.groups.map(\.id)), size: size, zoom: zoom.scale,
+                                          pressMode: true, pressing: model.subjects.pressing,
+                                          onPress: { model.pressSubject(at: $0) }) { model.removeSubjectPress($0) }
+                        } else if picking, let candidates = model.subjects.candidates {
                             SubjectPicker(candidates: candidates, picks: model.subjects.picks, tiers: model.subjects.tiers, tierPieces: model.subjects.tierPieces,
                                           tierDrawing: model.subjects.tierDrawing, tiersOff: model.subjects.tiersOff,
                                           size: size, zoom: zoom.scale, onToggleTier: { model.toggleTier($0) }) { model.toggleSubject($0) }
@@ -62,7 +67,8 @@ struct PreviewPane: View {
         }
     }
 
-    /// Subjects: Auto or Manual, then Done or Edit and Reset while Manual. Beside the Corrected or Original picker.
+    /// Subjects: Auto, Semi-auto or Manual, then Done or Edit and Reset, and the strength once something is picked.
+    /// Beside the Corrected or Original picker.
     private var subjectControls: some View {
         let subjects = model.subjects
         return HStack(spacing: 8) {
@@ -73,19 +79,34 @@ struct PreviewPane: View {
     @ViewBuilder private func subjectBar(_ subjects: SubjectSelection) -> some View {
         HStack(spacing: 8) {
             Picker("Subjects", selection: Binding(
-                get: { subjects.isManual },
-                set: { manual in if manual { model.chooseManualSubjects() } else { model.chooseAutoSubjects() } })) {
-                Text("Auto subjects").tag(false)
-                Text("Pick subjects").tag(true)
-            }.pickerStyle(.segmented).labelsHidden().frame(width: 220).disabled(subjects.isDetecting)
+                get: { subjects.mode },
+                set: { mode in
+                    switch mode {
+                    case .auto: model.chooseAutoSubjects()
+                    case .semiAuto: model.chooseSemiAutoSubjects()
+                    case .manual: model.chooseManualSubjects()
+                    }
+                })) {
+                Text("Auto").tag(SubjectSelection.Mode.auto)
+                Text("Semi-auto").tag(SubjectSelection.Mode.semiAuto)
+                Text("Manual").tag(SubjectSelection.Mode.manual)
+            }.pickerStyle(.segmented).labelsHidden().frame(width: 280).disabled(subjects.isDetecting || subjects.pressing != nil)
                 .accessibilityLabel("Subjects")
-            if subjects.isManual {
+            if subjects.mode != .auto {
                 if subjects.showsOverlay {
                     Button("Done") { model.finishSubjectPicking() }
                 } else {
                     Button { model.editSubjects() } label: { Label("Edit", systemImage: "pencil") }
                 }
                 Button("Reset") { model.resetSubjects() }
+            }
+            if subjects.showsStrength {
+                // It scales only the lift on the picked subjects; Intensity stays the base.
+                Text("Subject strength")
+                Slider(value: Binding(get: { Double(subjects.strength) }, set: { model.setSubjectStrength(Float($0)) }),
+                       in: 0...Double(SubjectSelection.maximumStrength), step: 0.05)
+                    .frame(width: 140).accessibilityLabel("Subject strength")
+                Text(Double(subjects.strength), format: .percent.precision(.fractionLength(0))).monospacedDigit()
             }
         }
     }

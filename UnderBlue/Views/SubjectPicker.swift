@@ -67,21 +67,47 @@ struct SubjectPicker: View {
     /// Fitted size of the photo on screen, at zoom 1.
     let size: CGSize
     let zoom: CGFloat
+    /// Manual mode (docs/ManualSubject.md): `candidates` are the presses, all picked. A press and hold (a click on
+    /// the Mac) calls `onPress` with the point, 0...1 from the top left. A single tap does nothing there.
+    var pressMode = false
+    /// Where a press is being segmented, 0...1. A ring shows there.
+    var pressing: CGPoint? = nil
+    var onPress: (CGPoint) -> Void = { _ in }
     var onToggleTier: (Int) -> Void = { _ in }
     let onToggle: (Int) -> Void
+
+    /// How long a press is held, and how far the finger may move on screen meanwhile.
+    static let holdDuration: Duration = .milliseconds(500)
+    static let holdSlop: CGFloat = 10
+    @State private var holdStart: CGPoint?
+    @State private var holdFired = false
+    @State private var holdTask: Task<Void, Never>?
+    @State private var holds = 0
 
     var body: some View {
         // Lines and badges keep their size on screen while the image zooms.
         let unit = 1 / max(1, zoom)
         ZStack(alignment: .topLeading) {
-            Color.clear.contentShape(Rectangle())
-                .onTapGesture(count: 1, coordinateSpace: .local) { location in
-                    switch SubjectPickerGeometry.hit(at: location, in: size, zoom: zoom, of: candidates, tiers: tiers, pieces: tierPieces) {
-                    case .group(let id)?: onToggle(id)
-                    case .piece(let id)?: onToggleTier(id)
-                    case nil: break
+            if pressMode {
+                #if os(macOS)
+                Color.clear.contentShape(Rectangle())
+                    .onTapGesture(count: 1, coordinateSpace: .local) { location in
+                        if let point = SubjectPickerGeometry.normalized(location, in: size) { onPress(point) }
                     }
-                }
+                #else
+                // Simultaneous, so the preview's pinch and pan still work. A finger that moves cancels the hold.
+                Color.clear.contentShape(Rectangle()).simultaneousGesture(holdGesture)
+                #endif
+            } else {
+                Color.clear.contentShape(Rectangle())
+                    .onTapGesture(count: 1, coordinateSpace: .local) { location in
+                        switch SubjectPickerGeometry.hit(at: location, in: size, zoom: zoom, of: candidates, tiers: tiers, pieces: tierPieces) {
+                        case .group(let id)?: onToggle(id)
+                        case .piece(let id)?: onToggleTier(id)
+                        case nil: break
+                        }
+                    }
+            }
             if let tierDrawing { tierLines(tierDrawing, unit: unit) }
             ForEach(tierPieces?.items ?? []) { piece in
                 pieceBadge(piece, on: !tiersOff.contains(piece.id), unit: unit)
@@ -89,7 +115,41 @@ struct SubjectPicker: View {
             ForEach(candidates.groups) { group in
                 groupView(group, selected: picks.contains(group.id), unit: unit)
             }
+            if let pressing {
+                ZStack {
+                    Circle().fill(Color.black.opacity(0.35))
+                    Circle().stroke(Self.selectedColor, lineWidth: 3 * unit)
+                    ProgressView().controlSize(.small).tint(.white)
+                }
+                .frame(width: 44 * unit, height: 44 * unit)
+                .position(x: pressing.x * size.width, y: pressing.y * size.height)
+                .allowsHitTesting(false).accessibilityHidden(true)
+            }
         }
+        .sensoryFeedback(.impact(weight: .medium), trigger: holds)
+    }
+
+    /// A press and hold: a drag of any length that the finger keeps still for `holdDuration`.
+    private var holdGesture: some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .local)
+            .onChanged { value in
+                guard !holdFired else { return }
+                guard let start = holdStart else {
+                    let start = value.startLocation
+                    holdStart = start
+                    holdTask = Task { @MainActor in
+                        try? await Task.sleep(for: Self.holdDuration)
+                        guard !Task.isCancelled, holdStart == start, !holdFired else { return }
+                        holdFired = true; holds += 1
+                        if let point = SubjectPickerGeometry.normalized(start, in: size) { onPress(point) }
+                    }
+                    return
+                }
+                // The overlay zooms with the image, so a distance here is `zoom` times larger on screen.
+                let dx = value.location.x - start.x, dy = value.location.y - start.y
+                if (dx * dx + dy * dy).squareRoot() * max(1, zoom) > Self.holdSlop { holdTask?.cancel(); holdStart = nil; holdFired = true }
+            }
+            .onEnded { _ in holdTask?.cancel(); holdTask = nil; holdStart = nil; holdFired = false }
     }
 
     /// Selected: mint fill, thick mint line along the subject's edge, a check. Not selected: a thin white line and an empty circle.
@@ -178,6 +238,16 @@ struct SubjectPicker: View {
 @MainActor
 enum SubjectPickerText {
     static func summary(_ selection: SubjectSelection) -> String {
+        if selection.isManual {
+            let count = selection.presses.count
+            #if os(macOS)
+            if count == 0 { return String(localized: "Click a subject to pick it.") }
+            return String(localized: "\(count) picked. Click a subject to add it, or a picked one to remove it.")
+            #else
+            if count == 0 { return String(localized: "Press and hold a subject to pick it.") }
+            return String(localized: "\(count) picked. Press and hold a subject to add it, or a picked one to remove it.")
+            #endif
+        }
         switch selection.status {
         case .detecting: return String(localized: "Looking for subjects…")
         case .waitingForModel:
@@ -187,7 +257,7 @@ enum SubjectPickerText {
         case .none: return String(localized: "No subjects found. UnderBlue uses Auto.")
         case .idle: return String(localized: "Auto protects the main subjects it finds.")
         case .ready:
-            if selection.isManual {
+            if selection.isSemiAuto {
                 if selection.pickedCount == 0 { return String(localized: "No subject selected. Tap a subject to protect it.") }
                 return String(localized: "\(selection.pickedCount) of \(selection.groupCount) selected. Tap a subject to change it.")
             }
@@ -199,8 +269,9 @@ enum SubjectPickerText {
         switch selection.notice {
         case .tooMuch?: return String(localized: "Too much of the photo is selected. Deselect a subject first.")
         case .tooLarge?: return String(localized: "This area is too large to be a subject.")
+        case .nothingFound?: return String(localized: "No subject found there. Try another spot.")
         case nil:
-            return selection.showsOverlay && (selection.candidates?.merged ?? false)
+            return selection.isSemiAuto && selection.showsOverlay && (selection.candidates?.merged ?? false)
                 ? String(localized: "Many subjects were found. Nearby ones are grouped.") : nil
         }
     }
@@ -221,7 +292,7 @@ enum SubjectPickerText {
 
     /// What the line colours mean, while tier lines are on screen.
     static func legend(_ selection: SubjectSelection) -> String? {
-        guard selection.showsOverlay, selection.tiers != nil else { return nil }
+        guard selection.isSemiAuto, selection.showsOverlay, selection.tiers != nil else { return nil }
         return String(localized: "Mint: subjects. Amber: the scene in front. Lavender: the scene further back. Tap any of them to turn it on or off.")
     }
 }

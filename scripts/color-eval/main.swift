@@ -4,6 +4,7 @@ import Foundation
 import simd
 import ImageIO
 import UniformTypeIdentifiers
+import Vision
 
 // Analysis fields by name, for HT_EVAL_ANALYSIS_FIELDS. WaterAnalysis.fields holds the same key
 // paths, but without the names an environment variable needs.
@@ -378,6 +379,23 @@ for name in selected {
         plan?.subjectMask = subjects
         // The subject lift has its own cap (docs/SubjectEmphasis.md, E2), so m5's coral block counts.
         liftMask = await subjectMask(source, cap: SubjectMask.liftMaximumShare)
+        // HT_EVAL_PRESS="x,y[+x,y...]" (docs/ManualSubject.md, R6): the lift mask from a press at x,y (top left, 0-1),
+        // with included points after "+". No fallback: a nil mask is reported and the lift is off.
+        if let press = ProcessInfo.processInfo.environment["HT_EVAL_PRESS"], #available(macOS 27.0, *) {
+            let pairs: [[Double]] = press.split(separator: "+").map { $0.split(separator: ",").compactMap { Double($0) } }
+            let points: [NormalizedPoint] = pairs.filter { $0.count == 2 }.map { NormalizedPoint(x: CGFloat($0[0]), y: CGFloat(1 - $0[1])) }
+            if !preciseChecked { preciseChecked = true; print("precise model usable: \(await SubjectMask.preciseModelUsable())") }
+            liftMask = points.isEmpty ? nil
+                : await SubjectMask.precise(source, point: points[0], included: Array(points.dropFirst()), context: engine.context)
+            print("\(name) press mask: \(liftMask.map { "share \($0.values.reduce(0, +) / Float($0.values.count)), grid \($0.width)x\($0.height)" } ?? "nil")")
+        }
+        // HT_EVAL_MASK_DUMP=<dir> writes the lift mask at the render size as raw Float32 <name>_mask_<w>x<h>.raw, top row first.
+        if let dir = ProcessInfo.processInfo.environment["HT_EVAL_MASK_DUMP"], let m = liftMask {
+            var v = [Float](repeating: 0, count: w * h)
+            v.withUnsafeMutableBytes { engine.context.render(m.image(matching: source.extent), toBitmap: $0.baseAddress!, rowBytes: w * 4,
+                                                             bounds: source.extent, format: .Rf, colorSpace: nil) }
+            try? v.withUnsafeBytes { try Data($0).write(to: URL(fileURLWithPath: "\(dir)/\(name)_mask_\(w)x\(h).raw")) }
+        }
         // HT_EVAL_WATER_SWAP="<from>:<to>" fits the water model on a different file and puts it on
         // this image's plan. Depth, limits and the subject mask stay this image's. It separates the
         // water fit from the image, the way HT_EVAL_ANALYSIS_SWAP separates the analysis.
@@ -501,12 +519,13 @@ for name in selected {
         // variant (docs/SubjectEmphasis.md, E4). Without the mask the lift output equals combined.
         if let liftMask, let spec = ProcessInfo.processInfo.environment["HT_EVAL_LIFT"] {
             let v = spec.split(separator: ",").compactMap { Float($0) }
-            precondition(v.count == 15, "HT_EVAL_LIFT: strength,chromaCap,highlightStart,noiseFloor,chromaExponent,contrast,detail,clarity,highlights,maskLow,maskHigh,tier2,tier3,highlights2,highlights3")
+            precondition(v.count == 15 || v.count == 16, "HT_EVAL_LIFT: strength,chromaCap,highlightStart,noiseFloor,chromaExponent,contrast,detail,clarity,highlights,maskLow,maskHigh,tier2,tier3,highlights2,highlights3[,contrastPivot]")
             var lift = SubjectLift(mask: liftMask, strength: v[0], chromaCap: v[1], tier2: v[11],
                                    tier3: v[12], highlights2: v[13], highlights3: v[14],
                                    maskLow: v[9], maskHigh: v[10], clarity: v[7], highlights: v[8],
                                    detail: v[6], contrast: v[5], chromaExponent: v[4],
                                    highlightStart: v[2], noiseFloor: v[3])
+            if v.count == 16 { lift.contrastPivot = v[15] }
             if tierMapOn { lift.tiers = softTiers(source, plan: plan, analysis: analysis, subject: liftMask) }
             // HT_EVAL_TIER_DUMP=<dir> writes the map as <name>_tiers.png: red tier two, green tier three.
             if let dir = ProcessInfo.processInfo.environment["HT_EVAL_TIER_DUMP"], let map = lift.tiers,

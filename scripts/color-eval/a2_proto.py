@@ -68,11 +68,13 @@ def post(src_lin, ours_lin, depth, cap=1.6, s_min=0.3):
     return ours_lin * g, s
 
 
-def red_from_green(ours_lin, depth, red_loss, k0=3.0, near_end=0.7, span=0.5):
+def red_from_green(ours_lin, depth, red_loss, k0=3.0, near_end=0.9, span=0.3):
     """Step 2 (25 Oct 2026): red made from green on near subjects (the A1 lead), on top of our output.
     Only the green excess counts: e = max(0, G - (R + B) / 2). A neutral surface has none, so m5's sand stays grey;
     an olive reef (O4, m6) has a lot. Red += k0 x redLoss x e x nearness, luminance kept. redLoss is the analysis
-    value (0 when the scene lost no red). Nearness fades from depth near_end - span (full) to near_end (none)."""
+    value (0 when the scene lost no red). Nearness fades from depth near_end - span (full) to near_end (none).
+    Water sits at depth 0.97 or more in every test photo, so 0.6 to 0.9 keeps it out while the whole O4 reef
+    (depth 0 to 0.96, left part about 0.5) gets the same red. The first fade (0.2 to 0.7) left O4's far reef green."""
     w = np.clip((near_end - depth) / span, 0, 1); w = (w * w * (3 - 2 * w))[..., None]
     e = np.maximum(0, ours_lin[..., 1:2] - 0.5 * (ours_lin[..., 0:1] + ours_lin[..., 2:3]))
     out = ours_lin.copy(); out[..., 0:1] += k0 * red_loss * e * w

@@ -270,7 +270,8 @@ Rule tried (`a2_proto.red_from_green`): red += k0 × redLoss × green excess × 
 | Steps 1 + 2 | 11.4 | 26.4 | 0.057 / 82 | 0.018 / 139 | 0.009 | 0.101 / 83 | 0.031 / 110 | 0.007 / 247 |
 
 - Seen by eye: O4's reef turns brown and its small fish orange; m5 looks the same; O6's green feather coral turns golden (AquaColorFix also shows it orange); the kelp photo's gorgonians get more golden.
-- The O4 reef's far left changes less (the nearness fade), so a mild green-to-brown change across the reef shows.
+- First fade (full at depth 0.2, none at 0.7): the O4 reef's far left changed less (hue 119 against 82 in the centre), so a green-to-brown change showed across the reef (Jake asked to fix it).
+- Fix: water sits at depth 0.97 or more in every test photo, and the O4 reef spans 0 to 0.96 (left part about 0.5). The fade now runs from 0.6 (full) to 0.9 (none). O4 reef left / centre / right: 0.052/81, 0.057/82, 0.036/149 (was 119, 82, 169). By eye the reef is one brown; O6's far sand is an even beige. Side effects: O4 belly 0.016/85 (a faint warm white), kelp 0.032/89 (olive-brown, inside the band), m6 dE 26.9 (was 26.4), m5 11.3.
 - Not covered: a truly green plant (seagrass) near the camera in a red-poor scene could turn olive. No such photo in the set.
 - The O4 water gap (grey, chroma 0.070) is left: Jake said on O6 that water need not be blue.
 - Next: put steps 1 and 2 into the app as named values (ColorCorrection) and a kernel step, then run all guards. Sheets: `a2_proto.py` writes `<k>__proto.png`.

@@ -472,6 +472,24 @@ Cost on iPhone: one map at depth-map size and one small blur. Depth and the Visi
   - r15: Jake accepted the diver on 20 Oct 2026.
 - So the water tone, white reference and local veil switches have no visible target. B2 stops here; the depth trust rule is recorded for later use.
 
+## Pink ring around the sun (measured 25 Oct 2026, not fixed)
+
+Seen on the Tune_25_Oct clip stills v1 and v3 (hammerheads, sun in frame). It was there before A2.
+
+Measure: median OKLab a (x1000; negative = green, toward 0 = less green, then pink) by distance from the sun, as a share of the width. A share of "pink" pixels (hue 300-40) read 0% on these frames, so it misses the faint ring. On DSC03656 it caught pink coral instead.
+
+| v1_30 | 0.05-0.15 | 0.15-0.25 | 0.25-0.35 | 0.35-0.45 |
+|---|---|---|---|---|
+| original | -87 | -80 | -81 | -77 |
+| physical restoration only | -86 | -77 | -78 | -74 |
+| legacy filter only (`current`) | -70 | -64 | -64 | -61 |
+| ours, photo (`combined`) | -13 | -35 | -43 | -46 |
+| ours, video path | -61 | -55 | -54 | -51 |
+
+- v3_30: the same pattern, weaker (photo -90 against legacy -94 at 0.05-0.15).
+- Neither path alone makes it. The legacy filter with any one stage switched off stays at -68 to -70. So the shift comes from the combination: most likely the finishing step on the physically restored image (`filter.finishing(physicallyRestored, …)`), which no variant shows on its own. Not checked yet.
+- Next: render that finished restored path as its own variant, and switch its stages off one at a time.
+
 ## Stage D — floating particles
 
 Kind: measurement. No new removal step is planned yet. Jake asked for this check on 24 Oct 2026.

@@ -16,6 +16,10 @@ G=$HT_EVAL_OUT/cache/guard; rm -rf $G && mkdir -p $G
 ln -s $HT_EVAL_DATA/subjectpicker/DSC03696.JPG $G/g1.jpg
 ln -s $HT_EVAL_DATA/tune/photo/plants/sargassum_green_water.png $G/pl1.png
 ln -s $HT_EVAL_DATA/tune/photo/plants/kelp_teal_water.png $G/pl2.png
+ln -s $HT_EVAL_DATA/tune/photo/plants/RCA_9472.JPG $G/pl3.jpg
+ln -s $HT_EVAL_DATA/tune/photo/plants/seagrass-900x500.jpg $G/pl4.jpg
+ln -s $HT_EVAL_DATA/tune/photo/plants/sgg_caro3.jpg $G/pl5.jpg
+ln -s $HT_EVAL_DATA/tune/photo/plants/TOF1-1400x700.jpg $G/pl6.jpg
 # Grain on flat bright sand (Stage C). Rendered at 1920 px, near the app preview (1600 px), with lossless PNG:
 # at the default 640 px the grain does not show.
 R=$HT_EVAL_OUT/cache/grain; rm -rf $R && mkdir -p $R

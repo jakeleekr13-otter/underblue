@@ -218,6 +218,37 @@ enum FinishingMath {
         let out = c * (pow(shaped, 2.2) / l)
         return out.x.isFinite && out.y.isFinite && out.z.isFinite ? out : c
     }
+    /// Object colour (UnderBlueObjectColour, photos): CPU mirror. `c` is linear Rec.2020 (the working space);
+    /// the steps run in linear sRGB. `gains` take the water's tint off objects; `redFromGreen` (k x redLoss) adds red
+    /// from the green excess on near pixels (`depth` below objectNearFull full, above objectNearNone none).
+    /// `waterExcess` is the water's own green excess: only the excess above it gets red, so water never does.
+    static func objectColour(_ c: SIMD3<Float>, depth: Float, gains: SIMD3<Float>, redFromGreen: Float, waterExcess: Float = 0) -> SIMD3<Float> {
+        func smoothstep(_ low: Float, _ high: Float, _ x: Float) -> Float {
+            let t = min(1, max(0, (x - low) / max(1e-5, high - low)))
+            return t * t * (3 - 2 * t)
+        }
+        let s = rec2020ToSRGB * c * gains
+        let near = 1 - smoothstep(objectNearFull, objectNearNone, min(1, max(0, depth)))
+        let excess = max(0, s.y - 0.5 * (s.x + s.z) - waterExcess)
+        let l0 = (s * ColorCorrection.luma).sum()
+        var r = s + SIMD3(redFromGreen * excess * near, 0, 0)
+        let l1 = (r * ColorCorrection.luma).sum()
+        r = l1 > 1e-6 ? r * (l0 / l1) : s
+        let out = sRGBToRec2020 * r
+        return out.x.isFinite && out.y.isFinite && out.z.isFinite ? out : c
+    }
+    /// Object colour constants (docs/RestorationExperiments.md, A2, 25 Oct 2026). Water sits at depth 0.97 or more in
+    /// every test photo; the O4 reef spans 0 to 0.96. objectRedK x redLoss is the red from green.
+    static let objectNearFull: Float = 0.6, objectNearNone: Float = 0.9, objectRedK: Float = 3
+    /// The water's tint: strength = how far the near mean leans toward the far mean (OKLab a,b projection over half
+    /// the far chroma); below objectTintFloor it is 0. Gains are capped at objectGainCap and its inverse.
+    static let objectTintFloor: Float = 0.3, objectGainCap: Float = 1.6, objectNear: Float = 0.4, objectFar: Float = 0.8
+    /// The tint step needs objects: the near mean must differ from the far water (OKLab distance, full from the high
+    /// end). In open-water photos the near pixels are water too (r01, r07, r10-r13: 0.004 to 0.089); O6's reef is 0.161.
+    static let objectDistanceLow: Float = 0.10, objectDistanceHigh: Float = 0.14
+    /// Linear Rec.2020 <-> linear sRGB (D65). Columns are the source primaries.
+    static let rec2020ToSRGB = simd_float3x3(rows: [SIMD3(1.6605, -0.5876, -0.0728), SIMD3(-0.1246, 1.1329, -0.0083), SIMD3(-0.0182, -0.1006, 1.1187)])
+    static let sRGBToRec2020 = simd_float3x3(rows: [SIMD3(0.6274, 0.3293, 0.0433), SIMD3(0.0691, 0.9195, 0.0114), SIMD3(0.0164, 0.0880, 0.8956)])
     static let lightDetailAmount: Float = 1.3, lightDetailRadius: Float = 0.018
     static let lightDetailLow: Float = 0.5, lightDetailHigh: Float = 0.7
     static let lightDetailEdgeLow: Float = 0.06, lightDetailEdgeHigh: Float = 0.15

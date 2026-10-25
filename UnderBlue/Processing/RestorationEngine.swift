@@ -1,4 +1,5 @@
 import CoreImage
+import simd
 import CoreImage.CIFilterBuiltins
 
 struct RestorationPixelResult: Sendable, Equatable {
@@ -163,6 +164,7 @@ final class RestorationEngine: Sendable {
     private let subjectFreeLightKernel: CIColorKernel?
     private let liftKernel: CIColorKernel?
     private let signalKernel: CIColorKernel?
+    private let objectColourKernel: CIColorKernel?
     /// Depth (normalized) from which a pixel takes the full restored result. See combined().
     static let nearDepth: Float = 0.25
 
@@ -174,6 +176,7 @@ final class RestorationEngine: Sendable {
         subjectFreeLightKernel = MetalKernels.color("UnderBlueSubjectFreeLight")
         liftKernel = MetalKernels.color("UnderBlueLiftToWide")
         signalKernel = MetalKernels.color("UnderBlueContrastTransmission")
+        objectColourKernel = MetalKernels.color("UnderBlueObjectColour")
     }
 
     /// The blur (share of the short side, at least 1.5 px) that splits the source into the part
@@ -306,7 +309,77 @@ final class RestorationEngine: Sendable {
         let mixed = depthBlendKernel.apply(extent: image.extent, arguments: [current, depthAware, depth,
             CIVector(x: CGFloat(weight), y: CGFloat(Self.nearDepth), z: 0, w: 0)])
         let blended = (mixed ?? filter.blend(current, depthAware, amount: weight)).cropped(to: image.extent)
-        return filter.violetCalm(lifted(blended, subjectLift, filter, share, liftSignal), source: image, calmWeight: calm)
+        let finishedFrame = filter.violetCalm(lifted(blended, subjectLift, filter, share, liftSignal), source: image, calmWeight: calm)
+        // Photos only: video holds one depth per scene, so it never reaches this path, and the flag keeps it out too.
+        guard !video else { return finishedFrame }
+        return objectColour(finishedFrame, plan: plan, depth: depth, redLoss: settings.analysis.redLoss, context: filter.context)
+    }
+
+    /// The values of the object colour step (docs/RestorationExperiments.md, A2): made from the frame itself, at
+    /// depth-map size, before the step. `gains` take the water's tint off objects; `redFromGreen` scales the red made
+    /// from the green excess on near pixels; `strength` is the share of the tint taken (0 when objects carry none).
+    struct ObjectColourValues: Equatable {
+        var gains = SIMD3<Float>(repeating: 1)
+        var redFromGreen: Float = 0
+        var strength: Float = 0
+        /// The water's own green excess (linear sRGB, after the gains): the red step starts above it.
+        var waterExcess: Float = 0
+    }
+
+    /// `pixels` are linear Rec.2020 colours of the frame, one per depth value (row 0 on top), `depth` 0 near to 1 far.
+    static func objectColourValues(pixels: [SIMD3<Float>], depth: [Float], redLoss: Float) -> ObjectColourValues {
+        guard pixels.count == depth.count, !pixels.isEmpty else { return ObjectColourValues() }
+        func mean(_ keep: (Float) -> Bool) -> SIMD3<Float>? {
+            var sum = SIMD3<Float>(repeating: 0), n: Float = 0
+            for (p, z) in zip(pixels, depth) where keep(z) && p.x.isFinite && p.y.isFinite && p.z.isFinite { sum += p; n += 1 }
+            return n > 100 ? sum / n : nil
+        }
+        // Both ends need enough pixels to be measured; otherwise there is nothing to compare, so no step.
+        guard let far = mean({ $0 > FinishingMath.objectFar }), let near = mean({ $0 < FinishingMath.objectNear }) else { return ObjectColourValues() }
+        let w = ColorCorrection.oklab(far), n = ColorCorrection.oklab(near)
+        let farChroma = (w.y * w.y + w.z * w.z).squareRoot()
+        var strength: Float = 0
+        if farChroma > 1e-6 {
+            let lean = (n.y * w.y + n.z * w.z) / farChroma
+            strength = min(1, max(0, lean / (0.5 * farChroma)))
+        }
+        // No objects near (the near pixels are water too): no tint step.
+        let distance = simd_length(n - w)
+        let t = min(1, max(0, (distance - FinishingMath.objectDistanceLow) / (FinishingMath.objectDistanceHigh - FinishingMath.objectDistanceLow)))
+        strength *= t * t * (3 - 2 * t)
+        if strength < FinishingMath.objectTintFloor { strength = 0 }
+        let farSRGB = pointwiseMax(FinishingMath.rec2020ToSRGB * far, SIMD3(repeating: 1e-4))
+        let luma = (farSRGB * ColorCorrection.luma).sum()
+        let cap = FinishingMath.objectGainCap
+        var gains = SIMD3<Float>(repeating: 1)
+        if strength > 0 {
+            for i in 0..<3 { gains[i] = min(cap, max(1 / cap, pow(luma / farSRGB[i], strength))) }
+        }
+        let water = FinishingMath.rec2020ToSRGB * far * gains
+        return ObjectColourValues(gains: gains, redFromGreen: FinishingMath.objectRedK * max(0, redLoss), strength: strength,
+                                  waterExcess: max(0, water.y - 0.5 * (water.x + water.z)))
+    }
+
+    /// Object colour step (UnderBlueObjectColour): reads the frame at depth-map size, makes the values, applies them.
+    func objectColour(_ frame: CIImage, plan: RestorationPlan, depth: CIImage, redLoss: Float, context: CIContext) -> CIImage {
+        guard let objectColourKernel else { return frame }
+        let dw = plan.depth.width, dh = plan.depth.height
+        guard dw > 0, dh > 0, frame.extent.width > 0, frame.extent.height > 0 else { return frame }
+        let small = frame.transformed(by: CGAffineTransform(translationX: -frame.extent.minX, y: -frame.extent.minY)
+            .concatenating(CGAffineTransform(scaleX: CGFloat(dw) / frame.extent.width, y: CGFloat(dh) / frame.extent.height)))
+        var raw = [Float](repeating: 0, count: dw * dh * 4)
+        context.render(small, toBitmap: &raw, rowBytes: dw * 16, bounds: CGRect(x: 0, y: 0, width: dw, height: dh),
+                       format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+        let pixels = (0..<(dw * dh)).map { SIMD3(raw[$0 * 4], raw[$0 * 4 + 1], raw[$0 * 4 + 2]) }
+        let values = Self.objectColourValues(pixels: pixels, depth: plan.depth.values, redLoss: redLoss)
+        guard values.strength > 0 || values.redFromGreen > 0 else { return frame }
+        func row(_ m: simd_float3x3, _ i: Int) -> CIVector { CIVector(x: CGFloat(m[0][i]), y: CGFloat(m[1][i]), z: CGFloat(m[2][i]), w: 0) }
+        let to = FinishingMath.rec2020ToSRGB, from = FinishingMath.sRGBToRec2020
+        let output = objectColourKernel.apply(extent: frame.extent, arguments: [frame, depth,
+            row(to, 0), row(to, 1), row(to, 2), row(from, 0), row(from, 1), row(from, 2),
+            CIVector(x: CGFloat(values.gains.x), y: CGFloat(values.gains.y), z: CGFloat(values.gains.z), w: CGFloat(values.redFromGreen)),
+            CIVector(x: CGFloat(FinishingMath.objectNearFull), y: CGFloat(FinishingMath.objectNearNone), z: CGFloat(values.waterExcess), w: 0)])
+        return (output ?? frame).cropped(to: frame.extent)
     }
 
     /// The subject lift, at the one place it may run. Both of combined()'s return points go through here,

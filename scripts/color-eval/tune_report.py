@@ -108,9 +108,13 @@ if all(os.path.exists(f"{O}/{d}/{k}__original.jpg") for d, k, _, _ in BLACK):
 PLANTS = [("guard", "pl1", "sargassum foreground", (0.32, 0.82, 0.52, 0.95)),
           ("guard", "pl1", "sargassum right cluster", (0.63, 0.72, 0.74, 0.84)),
           ("guard", "pl2", "kelp blades", (0.53, 0.14, 0.63, 0.28)),
-          ("guard", "pl2", "kelp stipe", (0.49, 0.33, 0.56, 0.41))]
+          ("guard", "pl2", "kelp stipe", (0.49, 0.33, 0.56, 0.41)),
+          # Seagrass is a green plant: its hue should stay green (about 110 or more), not only inside the band.
+          ("guard", "pl3", "seagrass near", (0.05, 0.60, 0.45, 0.85)), ("guard", "pl3", "seagrass mid", (0.30, 0.40, 0.90, 0.55)),
+          ("guard", "pl4", "seagrass near (olive)", (0.0, 0.75, 1.0, 1.0)), ("guard", "pl5", "seagrass near (green)", (0.0, 0.75, 1.0, 1.0)),
+          ("guard", "pl5", "seagrass mid (green)", (0.0, 0.55, 1.0, 0.70)), ("guard", "pl6", "seagrass near, turtle", (0.0, 0.80, 0.45, 1.0))]
 PLANT_WATER = [("guard", "pl1", "green water", (0.05, 0.30, 0.30, 0.45)),
-               ("guard", "pl2", "teal water", (0.05, 0.10, 0.35, 0.35))]
+               ("guard", "pl2", "teal water", (0.05, 0.10, 0.35, 0.35)), ("guard", "pl3", "shallow teal water", (0.10, 0.05, 0.60, 0.25))]
 def ok_lab_px(a):
     lin = np.where(a <= 0.04045, a / 12.92, ((a + 0.055) / 1.055) ** 2.4)
     l = np.cbrt(lin @ np.array([0.4122214708, 0.5363325363, 0.0514459929]))

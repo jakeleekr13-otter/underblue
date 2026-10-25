@@ -272,9 +272,53 @@ Rule tried (`a2_proto.red_from_green`): red += k0 × redLoss × green excess × 
 - Seen by eye: O4's reef turns brown and its small fish orange; m5 looks the same; O6's green feather coral turns golden (AquaColorFix also shows it orange); the kelp photo's gorgonians get more golden.
 - First fade (full at depth 0.2, none at 0.7): the O4 reef's far left changed less (hue 119 against 82 in the centre), so a green-to-brown change showed across the reef (Jake asked to fix it).
 - Fix: water sits at depth 0.97 or more in every test photo, and the O4 reef spans 0 to 0.96 (left part about 0.5). The fade now runs from 0.6 (full) to 0.9 (none). O4 reef left / centre / right: 0.052/81, 0.057/82, 0.036/149 (was 119, 82, 169). By eye the reef is one brown; O6's far sand is an even beige. Side effects: O4 belly 0.016/85 (a faint warm white), kelp 0.032/89 (olive-brown, inside the band), m6 dE 26.9 (was 26.4), m5 11.3.
-- Not covered: a truly green plant (seagrass) near the camera in a red-poor scene could turn olive. No such photo in the set.
+- Seagrass check (Jake gave `tune/photo/plants/RCA_9472.JPG` and its AquaColorFix output, 25 Oct 2026; now `pl3` in the guard set). Plant pixels, OKLab L / chroma / hue:
+
+| Box | Original | Ours before A2 | Ours with A2 | AquaColorFix |
+|---|---|---|---|---|
+| Seagrass near | 0.63 / 0.061 / 122 | 0.62 / 0.062 / 93 | 0.62 / 0.063 / 88 | 0.51 / 0.026 / 96 |
+| Seagrass mid | 0.64 / 0.063 / 141 | 0.62 / 0.054 / 104 | 0.62 / 0.054 / 99 | 0.51 / 0.019 / 134 |
+| Water | 0.63 / 0.070 / 213 | 0.59 / 0.063 / 233 | 0.59 / 0.063 / 233 | 0.54 / 0.079 / 241 |
+
+  - Our pipeline already turned the green seagrass yellow-olive before A2 (hue 122-141 to 93-104). Taking the teal cast away pushes the hue about 30 degrees toward yellow. A2 adds about 5 more (redLoss is only 0.19 here).
+  - This misses Jake's rule (24 Oct 2026): plants keep their green. The 60-160 band does not catch it; it was set for brown algae. A green plant needs its own check: hue about 110 or more.
+  - AquaColorFix keeps more of the hue (96-134) but drops the chroma to about 0.02 (greyish).
+  - Open: protect green plants. A2 step 2 should not add red to a green plant; the cast step before A2 needs a look too.
 - The O4 water gap (grey, chroma 0.070) is left: Jake said on O6 that water need not be blue.
-- Next: put steps 1 and 2 into the app as named values (ColorCorrection) and a kernel step, then run all guards. Sheets: `a2_proto.py` writes `<k>__proto.png`.
+
+#### A2 in the app (25 Oct 2026): photos only
+- Code: `RestorationEngine.objectColourValues` (named values) and the `UnderBlueObjectColour` kernel. It runs after the violet calm, on the depth path only, so video is unchanged.
+- Gates, so photos without the tint stay as they are:
+  - Step 1 runs only when the near and far means are 0.10 to 0.14 apart in OKLab (smoothstep). Without this, open-water photos (r01, r07, r10-r13) got full strength and grey water.
+  - Step 2 subtracts the far water's own green excess (after the step 1 gains), so the water gets no red.
+  - Both steps skip when the near or far side has 100 pixels or fewer.
+- Water is unchanged on all 15 real photos. O6's far water goes to chroma 0.002 (grey): water need not be blue (Jake, 25 Oct 2026).
+- Guards (tune_eval, aquacolorfix_eval):
+
+| Check | Before A2 | With A2 |
+|---|---|---|
+| m5 dE | 12.2 | 11.0 |
+| m6 dE | 27.2 | 26.5 |
+| O6 chart mean chroma | 0.076 | 0.010 |
+| AquaColorFix mean dE, pairs 1-5 | unmeasured | 10.84 |
+| Grain r14 / r03 / m5 / pl1 | unmeasured | 1.72x / 1.85x / 2.05x / 1.36x |
+| Neutral grey ramp max chroma | unmeasured | 0.01 |
+
+- More seagrass (Jake gave three photos, 25 Oct 2026: `pl4` seagrass-900x500, `pl5` sgg_caro3, `pl6` TOF1). Plant pixels, OKLab hue (chroma):
+
+| Box | Original | Before A2 | With A2 |
+|---|---|---|---|
+| pl3 near | 123 (0.059) | 91 (0.060) | 90 (0.060) |
+| pl3 mid | 141 (0.060) | 104 (0.051) | 101 (0.050) |
+| pl4 near (olive) | 99 (0.027) | 73 (0.035) | 68 (0.036) |
+| pl5 near (green) | 144 (0.077) | 134 (0.059) | 128 (0.053) |
+| pl5 mid (green) | 149 (0.093) | 132 (0.078) | 117 (0.066) |
+| pl6 near, turtle | 133 (0.056) | 110 (0.051) | 104 (0.050) |
+| pl2 kelp blades | 162 (0.061) | 110 (0.031) | 100 (0.030) |
+
+  - The cast step before A2 causes most of the shift toward yellow: 10 to 32 degrees. A2 step 2 adds 1 to 6 more, and 15 on pl5 mid.
+  - Colour alone cannot tell the olive reef (needs red) from green seagrass (keeps green). Their green excess overlaps: seagrass 0.14 to 0.89 relative, O4 reef 0.52.
+  - Open: green plant protection. It needs a rule for the cast step too, not only for A2.
 
 ### A2 — our own estimate rule (only if A1 passes)
 

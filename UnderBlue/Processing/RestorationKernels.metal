@@ -127,3 +127,27 @@ using namespace metal;
     const float f = clamp(dot(t, float3(0.2126f, 0.7152f, 0.0722f)), 0.0f, 1.0f);
     return float4(f, f, f, 1.0f);
 }
+
+// Object colour (RestorationEngine.objectColour, photos; docs/RestorationExperiments.md, A2). Two steps, in linear
+// sRGB (toSRGB0-2 and fromSRGB0-2 are the rows of the Rec.2020 <-> sRGB matrices; the working space is linear Rec.2020):
+// 1. gains.rgb take the water's tint off objects that carry it (one gain set for the frame, no mask, so no seam).
+// 2. Red made from the green excess above the water's own (fade.z), max(0, G - (R + B) / 2 - fade.z), times gains.w
+//    (k x redLoss), on near pixels only: full from fade.x, none from fade.y (depth 0 near, 1 far). Luminance is kept.
+//    A neutral surface has no green excess and the water has none above its own, so both stay. FinishingMath.objectColour
+//    is the CPU mirror.
+[[stitchable]] float4 UnderBlueObjectColour(coreimage::sample_t source, coreimage::sample_t depthSample,
+                                            float4 toSRGB0, float4 toSRGB1, float4 toSRGB2,
+                                            float4 fromSRGB0, float4 fromSRGB1, float4 fromSRGB2,
+                                            float4 gains, float4 fade) {
+    const float3 c = source.rgb;
+    float3 s = float3(dot(toSRGB0.rgb, c), dot(toSRGB1.rgb, c), dot(toSRGB2.rgb, c)) * gains.rgb;
+    const float3 luma = float3(0.2126f, 0.7152f, 0.0722f);
+    const float near = 1.0f - smoothstep(fade.x, fade.y, clamp(depthSample.r, 0.0f, 1.0f));
+    const float excess = max(0.0f, s.g - 0.5f * (s.r + s.b) - fade.z);
+    const float l0 = dot(s, luma);
+    float3 r = s + float3(gains.w * excess * near, 0.0f, 0.0f);
+    const float l1 = dot(r, luma);
+    r = l1 > 1e-6f ? r * (l0 / l1) : s;
+    const float3 out = float3(dot(fromSRGB0.rgb, r), dot(fromSRGB1.rgb, r), dot(fromSRGB2.rgb, r));
+    return all(isfinite(out)) ? float4(out, source.a) : source;
+}

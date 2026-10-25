@@ -174,6 +174,29 @@ Leads for A2 step 1 (from the printed coefficients; not findings yet):
 - The fits to our output differ most in blue. Ours: B←R 0.15 to 2.42, B←B 0.35 to 0.85. References: B←R −0.16 to 0.54, B←B 0.38 to 1.14. B←R is higher in ours on all 7 pairs; B←B is lower on 6 of 7. So our blue follows the red input more and the blue input less.
 - R, G and B are strongly correlated in these photos, so one coefficient alone is unstable. Step 1 should apply the matrices to fixed colours (water, subject), not read single terms.
 
+### A2 target: move our output toward Sea-thru's m6 (Jake, 25 Oct 2026)
+
+Today, m6 (`tune_report.py`, 24 Oct): dE 27.2. Ours against Sea-thru:
+
+| | Ours | Sea-thru |
+|---|---|---|
+| Water OKLab hue | 233 | 252 |
+| Water chroma (Lab, far) | 21.0 | 45.3 |
+| Mean L* | 45.9 | 38.7 |
+| Reef box hue (A1) | 128 (olive) | 64 (brown) |
+| Subject red/green (`nearRG`) | 0.79 | 0.91 |
+
+So three gaps: the water is grey and too cyan, the reef stays olive, and the frame is 7 L* brighter. A1 showed one global 3 × 3 map closes most of it (27.2 to 6.4). But that map saw the reference.
+
+Proposed rule (our own logic, no reference fit): build the 3 × 3 map from two anchors the analysis already has.
+
+1. Water anchor: the estimated water colour maps to a target water: deep clear blue, OKLab hue about 245 to 255, chroma near the source's. This also turns green water cyan or blue (Jake, 24 Oct 2026).
+2. Neutral anchor: the white reference maps to grey.
+3. Red from green, by red survival (the A1 lead: every reference fit takes red from green).
+4. Of all maps that meet the anchors, take the one closest to the current per-channel gains.
+
+Check: m6 dE and the reef hue first, then m5 (vividness), then the guards (plants, black gear, grain, neutral ramp). The brightness gap is a separate tone choice: the target look says "slightly brighter", so Jake decides it.
+
 ### A2 — our own estimate rule (only if A1 passes)
 
 It replaces or extends `redRebuild`. It does not go into the restoration kernel, because the kernel is the optical step.
@@ -329,6 +352,19 @@ At 1:1, our output turns the fine grain of r14's teal sand into grey-white blotc
 - A2 adds red made from green, so it adds green's grain to red. Check this box before and after A2.
 - It is not r14 alone: r03 and m5 show the same rise (see the grain baseline in Stage C).
 - Decision (Jake, 24 Oct 2026): guard it now in Stage C, and fix it as its own item after B1, before A2.
+- Cause (25 Oct 2026, 1920 px, `current` path): two detail stages, both on bright sand.
+
+| Sand grain | r14 | r03 | m5 |
+|---|---|---|---|
+| Original | 4.38 | 4.47 | 4.59 |
+| `current` | 12.63 | 11.98 | 11.76 |
+| Light detail off | 7.66 | 7.16 | 9.44 |
+| Light detail and fine detail off | 4.66 | 4.84 | 5.97 |
+
+  - Light detail (`FinishingMath.lightDetail`, amount 1.3) is for light rays. It acts on gamma luma 0.5 to 0.7, and bright sand is in that range. It has no noise floor.
+  - Fine detail has a floor (`detailFloor` 0.004, full strength from 0.012), but the sand grain is about 0.017. So grain gets the full boost.
+  - The colour stages add little: red rebuild, neutral gains and water tone off change the grain by 0.1 to 1.8.
+  - Fix to test: a noise floor for both detail stages, set from the photo's own grain. Check that light rays (IMG_7400) and the m5 vividness stay.
 
 ### D2 — the video prototype in the full chain
 

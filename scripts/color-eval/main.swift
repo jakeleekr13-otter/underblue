@@ -295,6 +295,12 @@ let ablations: [(String, (inout ColorCorrection) -> Void)] = ProcessInfo.process
     ("tone", { $0.contrast = 1; $0.brightness = 0; $0.toneCurve = 0; $0.midLift = 0 }), ("subject", { $0.subjectTone = SIMD3(repeating: 1) }),
     ("neutral", { $0.neutralGains = SIMD3(repeating: 1) }), ("reference", { $0.referenceStrength = 0 }),
     ("local", { $0.clarity = 0; $0.definition = 0; $0.detail = 0; $0.shadowLift = 0; $0.highlightAmount = 1 }),
+    // Sand grain (docs/RestorationExperiments.md, D1 finding): the colour stages left after "all".
+    ("rebuild", { $0.redRebuild = 0 }), ("subjectred", { $0.subjectRed = 1 }), ("watertone", { $0.waterTone = SIMD3(repeating: 1); $0.waterSaturation = 1 }),
+    ("allrebuild", { $0.clarity = 0; $0.definition = 0; $0.detail = 0; $0.shadowLift = 0; $0.highlightAmount = 1; $0.contrast = 1; $0.brightness = 0
+              $0.toneCurve = 0; $0.midLift = 0; $0.vibrance = 0; $0.saturation = 1; $0.warmth = 0; $0.redRebuild = 0 }),
+    ("allneutral", { $0.clarity = 0; $0.definition = 0; $0.detail = 0; $0.shadowLift = 0; $0.highlightAmount = 1; $0.contrast = 1; $0.brightness = 0
+              $0.toneCurve = 0; $0.midLift = 0; $0.vibrance = 0; $0.saturation = 1; $0.warmth = 0; $0.neutralGains = SIMD3(repeating: 1) }),
     ("all", { $0.clarity = 0; $0.definition = 0; $0.detail = 0; $0.shadowLift = 0; $0.highlightAmount = 1; $0.contrast = 1; $0.brightness = 0
               $0.toneCurve = 0; $0.midLift = 0; $0.vibrance = 0; $0.saturation = 1; $0.warmth = 0 })] : []
 let variants = ["original", "grayworld", "current", "restoration", "combined", "lift", "uniform", "reference", "signal"] + ablations.map { "abl_\($0.0)" } + (ablations.isEmpty ? [] : ["abl_calm", "abl_bare", "abl_combsubject", "abl_combrestored"]) + (videoPath ? ["videopath"] : [])

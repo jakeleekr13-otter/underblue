@@ -87,7 +87,7 @@ Baseline, `main` at 085a6f3 (OKLab L / chroma / hue of the box median):
 
 - No box turns brown. The residual cast is blue (hue 256 to 262) in three boxes.
 - The first-draft rule (chroma below 0.04) failed on two boxes at baseline. These are r12 (0.134, a near-monochrome blue photo) and the DSC03696 BCD (0.044).
-- So the rule now guards against change from this baseline. The report flags only `BROWN` and `LIGHT`. Compare chroma with this table.
+- So the rule now guards against change from this baseline. The report flags only `BROWN` and `LIGHT`. Compare chroma with this table. Jake confirmed this rule on 25 Oct 2026.
 
 Plants baseline, same commit (median of the plant pixels, OKLab L / chroma / hue):
 
@@ -102,7 +102,7 @@ Plants baseline, same commit (median of the plant pixels, OKLab L / chroma / hue
 
 Seen on the sheets and in these numbers:
 
-- Sargassum turns golden-amber (hue 110 to 82) and keeps its chroma. It is a brown alga, so this looks natural. The first-draft band (90 to 160) assumed green plants and flagged it, so the band is now 60 to 160.
+- Sargassum turns golden-amber (hue 110 to 82) and keeps its chroma. It is a brown alga, so this looks natural. The first-draft band (90 to 160) assumed green plants and flagged it, so the band is now 60 to 160 (Jake confirmed, 25 Oct 2026).
 - Kelp turns a dull khaki: chroma halves (0.061 to 0.030), below the 0.6 × flag. Part of the original chroma is the teal cast, so the flag may overstate it, but the sheet agrees: the kelp looks grey-olive.
 - The green water moves to hue 201, short of the 215-265 target in `tune_report.py`, and its chroma falls to 0.035. It looks grey-teal, not clear cyan. This misses Jake's rule of 24 Oct 2026: green water goes cyan or blue.
 - The surface highlights in the sargassum photo lean magenta (hue 315), but only at chroma 0.015. This is the known pale surface pink, at a low level.
@@ -213,6 +213,156 @@ Proposed rule (our own logic, no reference fit): build the 3 × 3 map from two a
 Check: m6 dE and the reef hue first, then m5 (vividness), then the guards (plants, black gear, grain, neutral ramp).
 
 Decision (Jake, 25 Oct 2026): colour moves toward m6; brightness keeps the target look (slightly brighter).
+
+Second check: the colour chart in AquaColorFix pair 6 (`O6.WEBP`, teal-green water; `scripts/color-eval/chart_check.py`, run by `aquacolorfix_eval.sh`). Its top row is a grey step, so every patch should come out colourless. Baseline, 25 Oct 2026 (after the grain fix):
+
+| Grey patch | Original | Ours | Ours (video path) | AquaColorFix |
+|---|---|---|---|---|
+| 1 (white) | 0.91 / 0.136 / 187 | 0.89 / 0.057 / 235 | 0.90 / 0.053 / 233 | 0.87 / 0.044 / 243 |
+| 2 | 0.87 / 0.151 / 181 | 0.85 / 0.084 / 225 | 0.85 / 0.089 / 225 | 0.84 / 0.021 / 239 |
+| 3 | 0.83 / 0.148 / 179 | 0.84 / 0.080 / 224 | 0.84 / 0.083 / 222 | 0.79 / 0.017 / 239 |
+| 4 | 0.78 / 0.141 / 179 | 0.80 / 0.081 / 223 | 0.80 / 0.082 / 222 | 0.74 / 0.016 / 242 |
+| 5 | 0.69 / 0.124 / 180 | 0.71 / 0.079 / 225 | 0.70 / 0.077 / 224 | 0.63 / 0.022 / 239 |
+| Mean chroma | 0.140 | 0.076 | 0.077 | 0.024 |
+
+- Our greys stay light cyan-blue (hue about 225). By eye too: the grey step is sky blue, and the yellow and orange patches lean green. AquaColorFix's greys are neutral.
+- So A2's neutral anchor has a measurable target here: mean chroma toward 0.02 to 0.03.
+
+#### A2 prototype round (25 Oct 2026, Python, 960 px; `scripts/color-eval/a2_proto.py`)
+
+Jake chose A2 before B2 (25 Oct 2026). Every try builds its map from the photo itself; none reads a reference.
+
+What the analysis gives today: O6 has no white reference (neutral (0, 0, 0), share 0: the chart is about 1.5% of the frame and vanishes at the 48 × 48 analysis size). Its grey patches test as water-like (about 0.98), so they get the water tone.
+
+| Try | m5 dE | m6 dE | O6 chart chroma | Green water C / hue | Kelp C / hue | Seen by eye |
+|---|---|---|---|---|---|---|
+| Ours today | 12.6 | 27.4 | 0.076 | 0.035 / 201 | 0.031 / 110 | |
+| 1. Gains on the source (grey world on near pixels, or the water colour as light) | 33 to 41 | 21 to 26 | 0.11 to 0.13 | | down to 0.006 | Fails: one gain cannot replace our veil removal and tone. |
+| 2. On our output: object gains (fixed s 0.7) and water gains, blended by depth | 13.6 | 25.0 | 0.041 | 0.065 / 231 | 0.032 / 147 | m5 sand too warm. |
+| 3. As 2, object strength from the tint (adaptive s) | 11.3 | 23.9 | 0.030 | 0.065 / 231 | 0.033 / 151 | Jake: O6 sand-to-water boundary looks wrong. Far sand gets the water gains. |
+| 4. As 3, water gains only where the colour test says water | 11.1 | 23.6 | 0.123 | 0.065 / 232 | 0.029 / 126 | O6 reads as water almost everywhere; the chart turns blue. |
+| 5. As 3, water gains only on far and smooth pixels | 11.3 | 24.5 | 0.031 | 0.066 / 235 | 0.031 / 110 | Blue islands with hard edges in the hazy background. |
+| 6. Object gains everywhere, then a colour-space shift of water-like colours | 11.6 to 13.1 | 24.4 to 25.6 | 0.05 to 0.11 | 0.06 to 0.09 / 220 to 230 | | O6 reef turns blue: after the neutralisation the reef is as close to the water colour as the water. |
+| 7. Object gains everywhere, the veil added back by depth: out = ours × g + v × (T − W × g) | 11.3 | 23.9 | 0.030 | 0.107 / 236 | 0.020 / 168 | No seam; far O6 sand turns bluish with distance; kelp leans teal (outside the 60-160 band). |
+| 8. Object gains everywhere, no water target; strength below 0.3 counts as 0 (current candidate) | 12.6 | 27.4 | 0.030 | 0.035 / 201 | 0.031 / 110 | O6: sand an even beige, chart grey, reef warm, water a hazy grey-blue. No seam. Other photos unchanged (strength 0). |
+
+- m6's reef stays olive (124 to 130) in every try: these anchors only remove the water's tint. The brown needs red from green (the A1 lead), as a next step.
+- Jake (25 Oct 2026), on O6: the water does not have to be blue. Forcing it blue (tries 2 to 7) is what made the sand-to-water seam. So try 8 drops the water target.
+- Try 8 changes only photos whose near objects carry the water's tint (O6, strength 1.0). m5, m6 and the plant photos get strength 0 or 0.1 (below the 0.3 floor).
+- Still open: m6's olive reef (needs red from green), and the green water of the sargassum photo (201, Jake's 24 Oct rule). Try 8 does not touch either.
+#### A2 step 2: red from green on near subjects (25 Oct 2026)
+
+Jake asked whether O4 can improve. O4 is the m6 scene (the bench maps pair 4 to `market/ref/m6.png`), so it has two independent references: AquaColorFix and Sea-thru. Both agree on three gaps (OKLab L / chroma / hue):
+
+| Box | Ours | AquaColorFix | Sea-thru |
+|---|---|---|---|
+| Reef | 0.46 / 0.061 / 127 | 0.38 / 0.057 / 84 | 0.34 / 0.035 / 66 |
+| Manta belly (white) | 0.71 / 0.049 / 177 | 0.70 / 0.011 / 239 | 0.69 / 0.062 / 229 |
+| Water, right | 0.47 / 0.070 / 232 | 0.46 / 0.091 / 238 | 0.42 / 0.136 / 255 |
+
+Rule tried (`a2_proto.red_from_green`): red += k0 × redLoss × green excess × nearness, with green excess e = max(0, G − (R + B)/2) and luminance kept. Plain G instead of the excess turned m5's sand pink (hue 9 at k0 1.0); the excess leaves neutral surfaces alone.
+
+| Run | m5 dE | m6 dE | O4 reef | O4 belly | O6 chart | Sargassum | Kelp | m5 sand |
+|---|---|---|---|---|---|---|---|---|
+| Ours | 12.6 | 27.4 | 0.061 / 127 | 0.049 / 177 | 0.076 | 0.101 / 83 | 0.031 / 110 | 0.015 / 220 |
+| Step 1 (try 8) | 12.6 | 27.4 | 0.061 / 127 | 0.049 / 177 | 0.030 | 0.101 / 83 | 0.031 / 110 | 0.015 / 220 |
+| Step 2, k0 3 | 11.4 | 26.4 | 0.057 / 82 | 0.018 / 139 | 0.055 | 0.101 / 83 | 0.031 / 110 | 0.007 / 247 |
+| Steps 1 + 2 | 11.4 | 26.4 | 0.057 / 82 | 0.018 / 139 | 0.009 | 0.101 / 83 | 0.031 / 110 | 0.007 / 247 |
+
+- Seen by eye: O4's reef turns brown and its small fish orange; m5 looks the same; O6's green feather coral turns golden (AquaColorFix also shows it orange); the kelp photo's gorgonians get more golden.
+- First fade (full at depth 0.2, none at 0.7): the O4 reef's far left changed less (hue 119 against 82 in the centre), so a green-to-brown change showed across the reef (Jake asked to fix it).
+- Fix: water sits at depth 0.97 or more in every test photo, and the O4 reef spans 0 to 0.96 (left part about 0.5). The fade now runs from 0.6 (full) to 0.9 (none). O4 reef left / centre / right: 0.052/81, 0.057/82, 0.036/149 (was 119, 82, 169). By eye the reef is one brown; O6's far sand is an even beige. Side effects: O4 belly 0.016/85 (a faint warm white), kelp 0.032/89 (olive-brown, inside the band), m6 dE 26.9 (was 26.4), m5 11.3.
+- Seagrass check (Jake gave `tune/photo/plants/RCA_9472.JPG` and its AquaColorFix output, 25 Oct 2026; now `pl3` in the guard set). Plant pixels, OKLab L / chroma / hue:
+
+| Box | Original | Ours before A2 | Ours with A2 | AquaColorFix |
+|---|---|---|---|---|
+| Seagrass near | 0.63 / 0.061 / 122 | 0.62 / 0.062 / 93 | 0.62 / 0.063 / 88 | 0.51 / 0.026 / 96 |
+| Seagrass mid | 0.64 / 0.063 / 141 | 0.62 / 0.054 / 104 | 0.62 / 0.054 / 99 | 0.51 / 0.019 / 134 |
+| Water | 0.63 / 0.070 / 213 | 0.59 / 0.063 / 233 | 0.59 / 0.063 / 233 | 0.54 / 0.079 / 241 |
+
+  - Our pipeline already turned the green seagrass yellow-olive before A2 (hue 122-141 to 93-104). Taking the teal cast away pushes the hue about 30 degrees toward yellow. A2 adds about 5 more (redLoss is only 0.19 here).
+  - This misses Jake's rule (24 Oct 2026): plants keep their green. The 60-160 band does not catch it; it was set for brown algae. A green plant needs its own check: hue about 110 or more.
+  - AquaColorFix keeps more of the hue (96-134) but drops the chroma to about 0.02 (greyish).
+  - Open: protect green plants. A2 step 2 should not add red to a green plant; the cast step before A2 needs a look too.
+- The O4 water gap (grey, chroma 0.070) is left: Jake said on O6 that water need not be blue.
+
+#### A2 in the app (25 Oct 2026): photos only
+- Code: `RestorationEngine.objectColourValues` (named values) and the `UnderBlueObjectColour` kernel. It runs after the violet calm, on the depth path only, so video is unchanged.
+- Gates, so photos without the tint stay as they are:
+  - Step 1 runs only when the near and far means are 0.10 to 0.14 apart in OKLab (smoothstep). Without this, open-water photos (r01, r07, r10-r13) got full strength and grey water.
+  - Step 2 subtracts the far water's own green excess (after the step 1 gains), so the water gets no red.
+  - Both steps skip when the near or far side has 100 pixels or fewer.
+- Water is unchanged on all 15 real photos. O6's far water goes to chroma 0.002 (grey): water need not be blue (Jake, 25 Oct 2026).
+- Guards (tune_eval, aquacolorfix_eval):
+
+| Check | Before A2 | With A2 |
+|---|---|---|
+| m5 dE | 12.2 | 11.0 |
+| m6 dE | 27.2 | 26.5 |
+| O6 chart mean chroma | 0.076 | 0.010 |
+| AquaColorFix mean dE, pairs 1-5 | unmeasured | 10.84 (10.53 after the gate fix below) |
+| Grain r14 / r03 / m5 / pl1 | unmeasured | 1.72x / 1.85x / 2.05x / 1.36x |
+| Neutral grey ramp max chroma | unmeasured | 0.01 |
+
+- More seagrass (Jake gave three photos, 25 Oct 2026: `pl4` seagrass-900x500, `pl5` sgg_caro3, `pl6` TOF1). Plant pixels, OKLab hue (chroma):
+
+| Box | Original | Before A2 | With A2 |
+|---|---|---|---|
+| pl3 near | 123 (0.059) | 91 (0.060) | 90 (0.060) |
+| pl3 mid | 141 (0.060) | 104 (0.051) | 101 (0.050) |
+| pl4 near (olive) | 99 (0.027) | 73 (0.035) | 68 (0.036) |
+| pl5 near (green) | 144 (0.077) | 134 (0.059) | 128 (0.053) |
+| pl5 mid (green) | 149 (0.093) | 132 (0.078) | 117 (0.066) |
+| pl6 near, turtle | 133 (0.056) | 110 (0.051) | 104 (0.050) |
+| pl2 kelp blades | 162 (0.061) | 110 (0.031) | 100 (0.030) |
+
+  - The cast step before A2 causes most of the shift toward yellow: 10 to 32 degrees. A2 step 2 adds 1 to 6 more, and 15 on pl5 mid.
+  - Colour alone cannot tell the olive reef (needs red) from green seagrass (keeps green). Their green excess overlaps: seagrass 0.14 to 0.89 relative, O4 reef 0.52.
+  - Green plant protection: not adopted (Jake, 25 Oct 2026: today's seagrass already looks good). What was found:
+    - Stage check (plant-pixel hue): the physical restoration keeps the green (pl3 mid 141 → 129). The legacy filter's cast step and red rebuild make it yellow (107). With the cast off it is 126; with the red rebuild off, 121. The same two stages turn the O4 reef brown (cast off 143, rebuild off 145, against 127).
+    - Vision scene labels (VNClassifyImageRequest) separate the scenes: the plant/grass/seaweed/foliage score is 0.10-0.24 on seagrass, 0.07 on sargassum, and 0.02 or less on the other 34 images.
+    - A hue floor on green plant pixels in those scenes (Python) moved pl3 92 → 110 and pl6 109 → 118, and left O4 and sargassum as they were.
+    - Cost: one more model call per photo (Mac: 95 ms the first time, then 25-33 ms; iPhone unmeasured). The margin between pl3 (0.10) and sargassum (0.07) is thin.
+
+#### A2 gate fix: open water with the sun (25 Oct 2026)
+- Found with stills from the Tune_25_Oct clips (two per clip, at 30% and 70%), run as photos. Step 1 got full strength on open-water frames:
+  - v1 and v3 (hammerheads, sun above): the pink ring around the sun got stronger, and the sunlit water turned cream.
+  - v2 (green water, manta): the top turned lilac.
+  - v4_70 (dark cave, ray): the ray turned orange.
+  - Mean dE76 against pre-A2: 9 to 13 on these frames.
+- The pink ring itself is older than A2: it shows in the pre-A2 output too.
+- Cause: in these frames the near pixels are darker water. They pass the distance check on brightness alone.
+- Fix: step 1 needs near pixels less saturated than the water (OKLab chroma / L).
+  - The near/far saturation ratio gives full strength below 0.92 and none above 1.02.
+  - Measured: O6 0.84; open-water frames 1.09 to 3.34.
+  - A plain chroma ratio was tried first. It failed because chroma falls with brightness: v2's dark near water read 0.74.
+- The far colour needs a real tint: far chroma 0.03 (none) to 0.04 (full). v4_70's cave reads 0.021.
+- Tint floor 0.3 → 0.5. O1 (strength 0.35) only lost its blue water to teal, and its reef turned pink.
+- Result on 40 images (real set, AquaColorFix O1-O3 and O5, guard set, m5, m6, O4, O6, 10 clip stills):
+  - Under 0.5 mean dE76 from pre-A2: O1, v2, v4 and all 15 real photos except r01, r05, r07, r10, r11, r14 and r15. Those seven change by 0.6 to 4.2, from step 2 (step 1 is 0 on every real photo).
+  - O6, O4, m5 and m6 keep the A2 gains.
+  - The guards above are unchanged. AquaColorFix pair 1 went 10.59 → 9.05.
+
+#### A2 for video (25 Oct 2026): step 2 only, weighted by colour
+- A video frame renders with one constant depth, so step 2 cannot fade by depth.
+- Prototype (`a2_video.py`, on the video-path output of the stills):
+  - A plain excess baseline, with no fade, fails both ways. At the 90th percentile of the far water's excess, red lands on the water (v1_70 water p99 dE76 11). At the 98th, the water is safe, but the O4/m6 reef gets only a third of the red (hue 124; photo rule 106).
+  - A colour weight works: a pixel gets red by its OKLab a,b distance from the scene's water (none at 0.05, full at 0.10). Water p99 dE76 is 1.2 at most, and the reef reaches hue 114. At 0.04 to 0.08, m5's water took red (p99 5.0).
+  - Step 1 on the video path greyed v5_70, a reef-bottom clip, by eye. The photo gate blocks v5 (saturation ratio 1.09), but the video-path output passes it. So step 1 stays off in video.
+- App:
+  - Each scene keeps one keyframe: the middle kept keyframe with a fit, at 320 px, with its depth map at 160 px.
+  - At render time, the keyframe goes through the video path with the current settings. The far pixels' mean gives the water a,b and its excess. These are made from the settings in use, so a slider that moves the water moves the reference too.
+  - The values are cached per scene and settings. They mix across the scene fade like the other values.
+  - Kernel `UnderBlueObjectColourVideo`; CPU mirror `FinishingMath.objectColourVideo`.
+- Harness (`HT_EVAL_VIDEO_A2=1`: `videobase`, `videoa2`; the still is its own keyframe), 40 images:
+  - m6 and O4 reef hue 140 → 133. By eye, the reef turns brown like the photo path, and the water is unchanged.
+  - Open-water stills (v1-v3, r12, r13): mean dE76 0.0, water p99 0.3-0.8.
+  - Some far non-water pixels take red: r11 (p99 16.5), pl5 (9.8), r04 (8.1). Their mean dE76 is 0.2 to 1.6. By eye, r11's fan and r04's anemone look natural; pl5's seagrass gets a little more golden (the open green-plant item).
+- Clips (videosim on the Mac, the five Tune_25_Oct clips, a frame every 2 s, against 09abd02):
+  - v1-v3: mean dE76 0.1 per frame, about the JPEG noise.
+  - v4: up to 0.5. v5: up to 0.6 (p99 5.7).
+  - Largest frame-to-frame jump in the change: 0.4, so no flicker.
+  - No clip has an olive reef like O4, so the strong case is checked on stills only.
 
 ### A2 — our own estimate rule (only if A1 passes)
 

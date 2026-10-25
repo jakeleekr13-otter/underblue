@@ -2,6 +2,24 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## m5 white band at the top (25 Oct 2026, iPhone, `main`)
+
+Jake saw a white band along the top of m5 (`DeveloperMedia/eval/market/raw/m5.png`). He used the iPhone app built from `main`.
+
+The Mac harness does not show it:
+- Sources from `main` (085a6f3) and from `restoration-experiments` (09abd02).
+- At 960 px and at full size (1600 × 1066).
+- Photo path and video path. Mean brightness of rows 0 to 40 is flat (photo 54, video 76).
+
+On the iPhone 17 it does not show either (25 Oct 2026). A device test opened `m5.png` from the app's Documents folder and ran `PhotoProcessor.preview` and `export` (Natural, default intensity, analysis from the photo):
+- `main` (085a6f3) and `restoration-experiments` (6489d23): rows 0 to 64 read 50 to 52 in both the preview and the export, with no rise at the top.
+
+So the band does not come from the photo path with default settings on this file.
+
+Still open:
+- Which file, preset and sliders showed it. The photo in the phone's library may not be the same file as `m5.png`.
+- A screenshot of the band, to see whether it is in the image or in the editor UI.
+
 ## Light detail edge guard (24 Oct 2026, photos only)
 
 Details: [SubjectEmphasis E27](SubjectEmphasis.md). A new kernel `UnderBlueLightEdge` and a blend take the light detail off water beside a strong edge. It removes the dark band around fish (DSC03545). Video passes `edgeGuard: false` and is byte-identical on the Mac.

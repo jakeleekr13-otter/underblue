@@ -10,7 +10,8 @@ enum SubjectChoice: Sendable, Equatable {
     /// Labs on: the lift on the automatic subjects, with every tier piece on.
     case auto
     /// The picked groups as tier one, and the tier pieces the user turned off (SubjectTiers.pieces).
-    case picked(SubjectMask?, tiersOff: Set<Int> = [])
+    /// `strength` is the subject strength slider, 0 to 1.5 (SubjectLift.scaled). Semi-auto and Manual only.
+    case picked(SubjectMask?, tiersOff: Set<Int> = [], strength: Float = 1)
 }
 
 /// Vision instances that are close to each other, shown to the user as one thing.
@@ -166,6 +167,17 @@ struct SubjectCandidates: Sendable {
                                       anchor: Self.top(small, width: dw, height: dh)))
         }
         return SubjectCandidates(width: w, height: h, groups: built, merged: merged)
+    }
+
+    /// No groups: Manual's overlay before the first press.
+    static let empty = SubjectCandidates(width: 1, height: 1, groups: [], merged: false)
+
+    /// Manual mode (docs/ManualSubject.md): one group per press, in press order, all of one size. The same
+    /// drawing and hit test as Semi-auto's groups. Nil for no presses, or masks of different sizes.
+    static func pressed(_ masks: [SubjectMask]) -> SubjectCandidates? {
+        guard let first = masks.first else { return nil }
+        let placeholders = masks.indices.map { SubjectGroup(id: $0, instances: [$0], share: 0, bounds: .zero, mask: [], fill: nil) }
+        return SubjectCandidates(width: first.width, height: first.height, groups: placeholders, merged: false).replacingMasks(masks)
     }
 
     /// The group under a point (0...1, top left origin): one whose mask covers it, else the nearest group

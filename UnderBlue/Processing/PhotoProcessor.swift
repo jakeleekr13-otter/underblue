@@ -117,6 +117,20 @@ actor PhotoProcessor {
         return SubjectCandidates(width: coarse.width, height: coarse.height, groups: kept, merged: coarse.merged)
             .replacingMasks(masks)
     }
+
+    /// Manual mode: the subject under a press at `point` (0...1, top left origin), on the image Vision reads,
+    /// so its grid matches the Semi-auto groups. One request with the seed alone, so the added-points trap does
+    /// not apply (docs/ManualSubject.md). About 0.1-0.25 s on an iPhone 17 (R8). Nil when nothing is found.
+    func pressMask(_ url: URL, at point: CGPoint) async throws -> SubjectMask? {
+        try Task.checkCancellation()
+        guard #available(iOS 27, macOS 27, *) else { return nil }
+        guard case .ready = await SubjectMask.preciseModelStatus() else { throw SubjectModelError.notReady }
+        let seen = try visionImage(url, source: engine.sdr(try open(url)))
+        let seed = NormalizedPoint(x: min(1, max(0, point.x)), y: 1 - min(1, max(0, point.y)))
+        guard let mask = await SubjectMask.precise(seen, point: seed, context: engine.context),
+              mask.values.contains(where: { $0 > 0.5 }) else { return nil }
+        return mask
+    }
     /// Tiers two and three on the candidates' grid: the soft map the lift reads and the picker's outline.
     /// Nil without a plan (no depth fit), or when no region is left. Made once per photo with Natural's
     /// correction, so a preset change does not move the regions. Preview and export make the same map.
@@ -166,7 +180,7 @@ actor PhotoProcessor {
         var plan = Self.applying(subjects, to: base, autoLift: auto)
         if plan?.subjectLift != nil, let tiers = try await subjectTiers(url) {
             var off: Set<Int> = []
-            if case .picked(_, let tiersOff) = subjects { off = tiersOff }
+            if case .picked(_, let tiersOff, _) = subjects { off = tiersOff }
             // The same pieces as the picker: outside every group. Preview and export build them alike.
             var pieces: SubjectTiers.Pieces?
             if !off.isEmpty, let found = try? await subjectCandidates(url) {
@@ -284,7 +298,7 @@ actor PhotoProcessor {
     /// caller's analysis, which `prepare` made with the automatic mask.
     static func settings(_ settings: FilterSettings, for choice: SubjectChoice,
                          analyze: (SubjectMask?) -> WaterAnalysis) -> FilterSettings {
-        guard case .picked(let mask, _) = choice else { return settings }
+        guard case .picked(let mask, _, _) = choice else { return settings }
         var chosen = settings
         chosen.analysis = analyze(mask)
         return chosen
@@ -293,15 +307,16 @@ actor PhotoProcessor {
     /// The one place a subject choice meets the plan, so preview and export get the same mask.
     /// A photo with no mask is not routed differently (liftDark is for video only).
     /// The lift is a Labs feature for 27 (Jake, 24 Oct 2026). Off: no lift, and the veil keeps the automatic
-    /// mask, as main ships. Auto: the lift on `autoLift`, all the groups. Picked: the picks for the veil and the lift.
+    /// mask, as main ships. Auto: the lift on `autoLift`, all the groups. Picked: the picks for the veil and the lift,
+    /// at the user's strength. Strength 0 keeps the picks for the veil and drops the lift.
     static func applying(_ choice: SubjectChoice, to plan: RestorationPlan?, autoLift: SubjectMask? = nil) -> RestorationPlan? {
         guard var plan else { return nil }
         switch choice {
         case .off: plan.subjectLift = nil
         case .auto: plan.subjectLift = autoLift.map { SubjectLift(mask: $0) }
-        case .picked(let mask, _):
+        case .picked(let mask, _, let strength):
             plan.subjectMask = mask
-            plan.subjectLift = mask.map { SubjectLift(mask: $0) }
+            plan.subjectLift = mask.flatMap { SubjectLift(mask: $0).scaled(strength) }
         }
         return plan
     }

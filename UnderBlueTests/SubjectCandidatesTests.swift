@@ -167,12 +167,12 @@ final class SubjectCandidatesTests: XCTestCase {
         selection.startDetecting()
         selection.finishDetecting(nil)
         XCTAssertEqual(selection.status, .none)
-        XCTAssertFalse(selection.isManual)
+        XCTAssertFalse(selection.isSemiAuto)
         XCTAssertEqual(selection.choice, .auto)
         XCTAssertFalse(selection.showsOverlay)
     }
 
-    func testManualStartsAsAutoThenFollowsTapsAndResetRestoresAuto() {
+    func testSemiAutoStartsAsAutoThenFollowsTapsAndResetRestoresAuto() {
         var selection = SubjectSelection()
         let a = group(0, bounds: CGRect(x: 0, y: 0, width: 0.3, height: 0.3), share: 0.09)
         let b = group(1, bounds: CGRect(x: 0.6, y: 0.6, width: 0.3, height: 0.3), share: 0.09)
@@ -181,16 +181,16 @@ final class SubjectCandidatesTests: XCTestCase {
         XCTAssertTrue(selection.showsOverlay)
         selection.toggle(1)
         XCTAssertEqual(selection.picks, [0])
-        guard case .picked(let one?, _) = selection.choice else { return XCTFail("expected a mask") }
+        guard case .picked(let one?, _, _) = selection.choice else { return XCTFail("expected a mask") }
         XCTAssertEqual(one.values.reduce(0, +), 36)
         selection.toggle(0)
         XCTAssertEqual(selection.choice, .picked(nil), "None selected: no subject")
         selection.done()
         XCTAssertFalse(selection.showsOverlay)
-        XCTAssertTrue(selection.isManual, "Done keeps Manual")
+        XCTAssertTrue(selection.isSemiAuto, "Done keeps Semi-auto")
         selection.useAuto()
         XCTAssertEqual(selection.choice, .auto)
-        selection.resumeManual()
+        selection.resumeSemiAuto()
         XCTAssertTrue(selection.picks.isEmpty, "the picks stayed in memory")
         selection.reset()
         XCTAssertEqual(selection.picks, [0, 1])

@@ -1,5 +1,7 @@
 # Subject picker — plan
 
+**Renamed (Jake, 25 Oct 2026):** this picker is now "Semi-auto". "Manual" is the press-and-hold mode in [ManualSubject.md](ManualSubject.md).
+
 **DONE (Jake, 24 Oct 2026).** The picker shipped as a Labs feature: single photo, iOS 27 and macOS 27. Earlier status, kept for the record: **ON HOLD (Jake, 22 Oct 2026).** The picker is paused. First find a way to make subjects bright, vivid and natural. That plan is [SubjectEmphasis.md](SubjectEmphasis.md). The mask alone only reduces the halo beside a subject. It does not change the subject.
 
 Status (22 Oct 2026): code written on branch `subject-picker`, not committed. Not checked on a real photo or a device yet. See "Progress" below.

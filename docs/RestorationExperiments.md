@@ -318,7 +318,11 @@ Rule tried (`a2_proto.red_from_green`): red += k0 × redLoss × green excess × 
 
   - The cast step before A2 causes most of the shift toward yellow: 10 to 32 degrees. A2 step 2 adds 1 to 6 more, and 15 on pl5 mid.
   - Colour alone cannot tell the olive reef (needs red) from green seagrass (keeps green). Their green excess overlaps: seagrass 0.14 to 0.89 relative, O4 reef 0.52.
-  - Open: green plant protection. It needs a rule for the cast step too, not only for A2.
+  - Green plant protection: not adopted (Jake, 25 Oct 2026: today's seagrass already looks good). What was found:
+    - Stage check (plant-pixel hue): the physical restoration keeps the green (pl3 mid 141 → 129). The legacy filter's cast step and red rebuild make it yellow (107). With the cast off it is 126; with the red rebuild off, 121. The same two stages turn the O4 reef brown (cast off 143, rebuild off 145, against 127).
+    - Vision scene labels (VNClassifyImageRequest) separate the scenes: the plant/grass/seaweed/foliage score is 0.10-0.24 on seagrass, 0.07 on sargassum, and 0.02 or less on the other 34 images.
+    - A hue floor on green plant pixels in those scenes (Python) moved pl3 92 → 110 and pl6 109 → 118, and left O4 and sargassum as they were.
+    - Cost: one more model call per photo (Mac: 95 ms the first time, then 25-33 ms; iPhone unmeasured). The margin between pl3 (0.10) and sargassum (0.07) is thin.
 
 #### A2 gate fix: open water with the sun (25 Oct 2026)
 - Found with stills from the Tune_25_Oct clips (two per clip, at 30% and 70%), run as photos. Step 1 got full strength on open-water frames:

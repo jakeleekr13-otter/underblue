@@ -11,11 +11,14 @@ The Mac harness does not show it:
 - At 960 px and at full size (1600 × 1066).
 - Photo path and video path. Mean brightness of rows 0 to 40 is flat (photo 54, video 76).
 
-So the cause is in a path the harness does not run: the iPhone render, preview or export, or other settings.
+On the iPhone 17 it does not show either (25 Oct 2026). A device test opened `m5.png` from the app's Documents folder and ran `PhotoProcessor.preview` and `export` (Natural, default intensity, analysis from the photo):
+- `main` (085a6f3) and `restoration-experiments` (6489d23): rows 0 to 64 read 50 to 52 in both the preview and the export, with no rise at the top.
+
+So the band does not come from the photo path with default settings on this file.
 
 Still open:
-- On the phone: open m5 with the `restoration-experiments` build. Check the preview and an export for the band.
-- If it shows, note the preset and the sliders. Then compare a Mac render with the same settings.
+- Which file, preset and sliders showed it. The photo in the phone's library may not be the same file as `m5.png`.
+- A screenshot of the band, to see whether it is in the image or in the editor UI.
 
 ## Light detail edge guard (24 Oct 2026, photos only)
 

@@ -541,6 +541,41 @@ for name in selected {
         csv += fields.joined(separator: ",") + "\n"
         if let sheetDir, sheetNames?.contains(name) ?? true { save(img, sheetDir.appendingPathComponent("\(name.split(separator: ".")[0])__\(v).jpg")) }
     }
+    // HT_EVAL_MATTES=1 (Stage B1, docs/RestorationExperiments.md) writes the water and subject maps as grey PNGs next to the
+    // sheet files: depth, t (contrastTransmission), matte = (1 - t) outside the Vision mask, the mask, calmWeight r/g/b and
+    // the waterShare share. Values are read raw (SubjectTiers.channel) and written 0...1 as 0...255. No CSV row changes.
+    if ProcessInfo.processInfo.environment["HT_EVAL_MATTES"] == "1", let sheetDir, sheetNames?.contains(name) ?? true {
+        let stem = name.split(separator: ".")[0]
+        func put(_ key: String, _ v: [Float]?) {
+            guard let v else { print("\(name): no \(key) map"); return }
+            var bytes = v.map { UInt8(max(0, min(1, $0)) * 255 + 0.5) }
+            let url = sheetDir.appendingPathComponent("\(stem)__map_\(key).png")
+            guard let ctx = CGContext(data: &bytes, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w, space: CGColorSpaceCreateDeviceGray(),
+                                      bitmapInfo: CGImageAlphaInfo.none.rawValue), let cg = ctx.makeImage(),
+                  let dest = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil) else { print("\(name): \(key) not written"); return }
+            CGImageDestinationAddImage(dest, cg, nil)
+            if !CGImageDestinationFinalize(dest) { print("\(name): \(key) not written") }
+        }
+        func upsample(width dw: Int, height dh: Int, _ values: [Float]) -> [Float] {
+            (0..<(w * h)).map { i in values[((i / w) * dh / h) * dw + ((i % w) * dw / w)] }
+        }
+        let mask = subjects.map { upsample(width: $0.width, height: $0.height, $0.values) }
+        put("subject", mask)
+        if let plan {
+            put("depth", upsample(width: plan.depth.width, height: plan.depth.height, plan.depth.values))
+            let t = restoration.contrastTransmission(source, plan: plan).map { SubjectTiers.channel($0, 0, width: w, height: h, context: engine.context) }
+            put("t", t)
+            put("matte", t.map { t in (0..<(w * h)).map { (1 - t[$0]) * (1 - (mask?[$0] ?? 0)) } })
+            let cv = restoration.corrections(settings: settings, plan: plan).current
+            let calm = engine.waterCalmWeight(source, correction: cv)
+            for (i, key) in ["calm_r", "calm_g", "calm_b"].enumerated() {
+                put(key, calm.map { SubjectTiers.channel($0, i, width: w, height: h, context: engine.context) })
+            }
+            put("share", engine.waterShare(source, correction: cv).map { SubjectTiers.channel($0, 3, width: w, height: h, context: engine.context) })
+        } else {
+            print("\(name): no plan, no depth maps")
+        }
+    }
     done += 1
     if done % 50 == 0 { print("\(done) images, \(Int(Date().timeIntervalSince(started)))s"); try csv.write(toFile: outCSV, atomically: true, encoding: .utf8) }
 }

@@ -189,57 +189,75 @@ Cost on iPhone: about 9 multiply-adds per pixel in an existing kernel. No new pa
 
 Risk: shadow colour noise. An estimate that takes red from green also takes green's noise. Check the O3 noise masks (`hydrotone-eval-tools/noise`).
 
-## Stage B — one water matte from transmission
+## Stage B — one water matte from depth (photos)
 
-Kind: optics on photos. The matte is `1 - t`, with `t = exp(-betaDirect x depth)` from the plan. Video has one constant depth per scene, so it has no optical matte.
+Kind: a depth-based estimate on photos. Re-scoped on 25 Oct 2026 after a code check (see "What we know").
 
 ### What we know
 
 Several parts decide "water or subject" on their own, per pixel:
 
-| Part | Where | Known failure |
-|---|---|---|
-| `waterLike`, `neutralWeight` | `FinishingMath`, `UnderBlueFinishColor` | A pale body lit by blue water reads as water. |
-| `calmWeight`, `openWaterRed` | `FilterEngine` | Grey ring around fish, fixed by a 3% blur (2c55acc). |
-| `SubjectMask` (Vision) | `RestorationEngine`, photos only | Returns nil above 25% of the frame. Video has none. |
-| `liftDark` | `RestorationEngine`, video only | Built for the hammerhead halo. Flicker is unmeasured. |
-| `subjectTone` | finishing | Pale ring around fish (E18 in [SubjectEmphasis](SubjectEmphasis.md)). Colour cannot tell a glow from a white belly. |
+| Part | Where | Runs on | Known failure |
+|---|---|---|---|
+| `waterLike`, `neutralWeight` | `FinishingMath`, `UnderBlueFinishColor` | photo and video | A pale body lit by blue water reads as water. |
+| `calmWeight` | `FilterEngine.waterCalmWeight` | photo and video | Grey ring around fish (2c55acc, video). |
+| `openWaterRed` | `FilterEngine` | video only | Grey top layer over blue water. |
+| `SubjectMask` (Vision) | `RestorationEngine` | photo only | Returns nil above 25% of the frame. |
+| `liftDark` | `RestorationEngine` | video only | Built for the hammerhead halo. |
+| `subjectTone` weight (1 − `waterLike`) | finishing | photo and video | Pale ring around fish (E18, DSC03545). |
 
-All five parts above test colour. None reads transmission.
+Checked in code on 25 Oct 2026:
 
-What exists for `t`:
+- `combined()` passes `openWaterRed: video` and `liftDark: video` (`RestorationEngine.swift:286-289`). So these two act on video only.
+- Depth is relative. Each photo's depth is cut at its 5th and 95th percentile and scaled to 0...1 (`DepthEstimator.swift:100-111`). 0 is near, 1 is far.
+- So `1 - t = 1 - exp(-betaDirect × z)` only redraws the depth map. It ranks pixels exactly as depth does. Its top value is about 0.64 (computed from the clamps), not 1.
+- Every photo has a farthest 5% at z = 1, even a photo with no open water.
+- Video holds one depth value per scene (`RestorationPlan.swift:144-149`). It has no depth map, so no matte.
+- `t` already exists on `main`: `UnderBlueContrastTransmission` and `RestorationEngine.contrastTransmission`. It weights the three channels by BT.709 (green 72%). The harness writes it as variant `signal` with `HT_EVAL_SIGNAL=1`.
 
-- `main`: the plan holds `depth` and `betaDirect`. Nothing computes `t` as an image yet.
-- `subject-picker`: `UnderBlueContrastTransmission` computes `luma x exp(-betaDirect x depth)` for the lift tiers (E17 in [SubjectEmphasis](SubjectEmphasis.md)). B needs `t` without the `luma` term.
-- The same branch has a colour-based share (`FilterEngine.waterShare`). B uses it only as a fallback where depth is missing.
+What this changes:
+
+- B is for photos only. The video halos (hammerhead, thresher, whale shark) need another approach. They are out of this stage.
+- B's real question: does the depth map separate subject from water better than the colour tests, on the photos where they fail?
+- The whale shark clip in `DeveloperMedia` is an UnderBlue export, not the original. It is not a valid input for any video test.
 
 ### B1 — build the matte, change nothing
 
-1. Compute `1 - t` at depth-map resolution. Upsample it to the image. Depth edges follow the depth model, so feather with a small blur.
-2. Where the Vision mask exists, set the matte to 0 inside it. The mask fixes depth errors on a subject.
-3. Write it out as an image. Compare it with each part in the table above on the same frames.
-4. Video: write out the colour share on the same clips. This shows how far the video path stays from the photo matte.
+1. Add `HT_EVAL_MATTES=1` to the harness. It writes grey PNGs next to the outputs: depth, `1 - t`, the Vision mask, `calmWeight` (r, g, b) and the `waterShare` share. No CSV row or report changes.
+2. Photos: DSC03545 (E18 pale ring, E27 band), r13 (shark in bright open water), DSC03687 and DSC03656 (E17: bright surface water), r15 (hose rim).
+3. Compare the maps on one sheet per photo, by eye.
 
-Go rule: on the halo and ring frames, the matte separates subject from water where the colour tests disagree. Judge by eye on the sheets.
+Go rule: on DSC03545 and r15, depth separates the subject from the water where the colour tests do not. On DSC03687 and DSC03656, depth does not read the bright surface water as subject.
 
-Known risk: E17 found that the plan's veil can sit between bright surface water and a dark diver (DSC03687, DSC03656). Check that `1 - t` does not read surface water as subject on those photos.
+#### B1 result (25 Oct 2026, `main` at 085a6f3): partial go
 
-### B2 — switch one rule at a time
+Run: `HT_EVAL_MATTES=1`, 1280 px. Sheets checked by eye: original, ours, depth, `1 - t`, Vision mask, `calm` r and b, `waterShare`.
 
-Order: `openWaterRed`, then the water tone, then the white reference weight, then the local veil.
+| Photo | Depth | Colour tests | Better |
+|---|---|---|---|
+| r15 diver, teal water | Diver near, water far. Clean. | `waterShare` reads the diver as mostly water (light grey). `calm b` marks it weakly. | Depth |
+| DSC03687 reef, surface at top | Surface water reads far, like the water. | The top band partly reads as not water. | Depth |
+| DSC03656 reef, sun glare at top | Glare area reads far, like the water. | All three read the glare area as not water: a large dark blob. | Depth |
+| DSC03545 white fish (E18) | Fish nearer (about 0.7 against 1.0), but blocky at 518 × 392. | `calm b` follows the fish edge closely. `share` and `calm r` spread wide around it (blurred). | Colour (`calm b`) |
+| r13 shark, open water only | Invents a gradient: water near the bottom edge reads near, a bright blob reads far. | Water everywhere except the shark. Correct. | Colour |
 
-1. Switch one rule to the matte. Run the guards and the three test frames.
+- Depth wins where colour fails: a dark subject in teal water, and bright surface water or glare.
+- Depth fails in open water with no structure (r13). The 5-95 percentile scaling stretches tiny depth steps to the full 0...1 range.
+- `depthConfidence` is 0.694 on four of five photos, r13 included. It does not warn about this case.
+- B1 does not show whether depth removes the E18 ring. The ring sits in the glow next to the fish; B2 tests it directly.
+
+So B2 needs a trust rule before any switch: use the depth matte only where depth and colour can disagree for a reason. A first rule to test: when the colour share calls almost the whole frame water (r13: `waterShare` above 0.9 nearly everywhere), keep the colour test.
+
+### B2 — switch one rule at a time (photos)
+
+Order: the `subjectTone` weight (E18), then the water tone, then the white reference weight, then the local veil.
+
+1. Switch one rule to the depth matte. Run the guards and the B1 photos.
 2. Keep the switch only when it passes. Then go to the next rule.
 
-Test frames:
+Go rule: no new halo or ring. The neutral surfaces, the plant, black gear and grain guards and the AquaColorFix gate stay inside tolerance.
 
-- The hammerhead clip and the thresher clip (`DeveloperMedia/tune/video/Tune_22_Oct/`, the two `instagram-media` files).
-- The whale shark clip. Always include an open-water clip; the 22 Oct grey ring showed only there. Its folder is not checked yet.
-- Photo r13 (shark in bright open water) and an E18 pale-ring fish.
-
-Go rule: no new halo or ring. The neutral surfaces and the AquaColorFix gate stay inside tolerance.
-
-Cost on iPhone: one map at depth-map resolution and one small blur. The depth map and the Vision mask already exist, so there is no new model call. Video keeps its colour tests unless B finds a cheap per-frame substitute; that cost is unmeasured.
+Cost on iPhone: one map at depth-map size and one small blur. Depth and the Vision mask already exist, so there is no new model call.
 
 ## Stage D — floating particles
 
@@ -306,7 +324,8 @@ At 1:1, our output turns the fine grain of r14's teal sand into grey-white blotc
 | `current`, `detail` off | 8.43 | Largest single cause. |
 | `current`, all local and tone stages off | 8.83 | The rest comes from the colour stages. Which one is not located. |
 
-- This is not a particle. It is a quality defect in the current output. It was seen in the harness at 1920 px. The app at full size is unchecked.
+- This is not a particle. It is a quality defect in the current output.
+- It holds at full export size on the Mac harness: r14 2.85× and r03 2.82× with the same 4 px blur (3140 and 3264 px wide). The iPhone is unchecked.
 - A2 adds red made from green, so it adds green's grain to red. Check this box before and after A2.
 - It is not r14 alone: r03 and m5 show the same rise (see the grain baseline in Stage C).
 - Decision (Jake, 24 Oct 2026): guard it now in Stage C, and fix it as its own item after B1, before A2.

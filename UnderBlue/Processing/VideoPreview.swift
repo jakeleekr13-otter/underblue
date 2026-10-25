@@ -126,8 +126,7 @@ struct VideoPreview {
     func comparisonPreviews(analysis: VideoRestorationAnalysis, settings: FilterSettings) throws
         -> [VideoDebugVariant: CGImage] {
         let source = CIImage(cgImage: analysis.representativeFrame)
-        let ratio = min(1, 1200 / max(source.extent.width, source.extent.height))
-        let small = source.transformed(by: CGAffineTransform(scaleX: ratio, y: ratio))
+        let small = FilterEngine.downscaled(source, maxPixel: 1200)
         let current = engine.apply(small, settings: settings, edgeGuard: false)
         var images: [VideoDebugVariant: CIImage] = [.original: small, .current: current]
         if let moment = analysis.moment(at: analysis.representativeTime), let plan = try? moment.plan(),

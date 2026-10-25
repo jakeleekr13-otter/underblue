@@ -26,6 +26,18 @@ final class FilterEngine: Sendable {
     func calmKernelForTesting(_ name: String) -> CIColorKernel? { calmKernels[name] }
     static let workingSpace = CGColorSpace(name: CGColorSpace.extendedLinearITUR_2020)!
     static let photoSpace = CGColorSpace(name: CGColorSpace.displayP3)!
+    /// `image` scaled down so its longer side is at most `maxPixel`, to a whole number of pixels on both sides.
+    /// One ratio for both sides left a partial pixel row: a 6192 x 4128 photo at 1600 px is 1066.67 rows high. The
+    /// stages that blur and clamp at the edge read that row, and the preview's top edge turned bright (m5 on the
+    /// iPhone, 25 Oct 2026). The aspect changes by less than one pixel. Exports run at full size and never had it.
+    static func downscaled(_ image: CIImage, maxPixel: CGFloat) -> CIImage {
+        let extent = image.extent
+        let ratio = min(1, maxPixel / max(extent.width, extent.height))
+        guard ratio < 1, extent.width > 0, extent.height > 0 else { return image }
+        let width = max(1, (extent.width * ratio).rounded()), height = max(1, (extent.height * ratio).rounded())
+        return image.transformed(by: CGAffineTransform(translationX: -extent.minX, y: -extent.minY)
+            .concatenating(CGAffineTransform(scaleX: width / extent.width, y: height / extent.height)))
+    }
     /// `memoryLimitMB` sets the most memory Core Image may use for one render. The default (256 MB) is
     /// too small for 4K video: it ran 3 times slower and used twice the memory (Mac, 22 Oct 2026,
     /// docs/PerformanceMeasurement.md). Nil keeps the system default.

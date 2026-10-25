@@ -23,3 +23,5 @@ sips -s format png $DATA/O6.WEBP --out $RAW/p6.png > /dev/null && sips -s format
 ( cd $O && HT_EVAL_MAXDIM=960 HT_EVAL_LOG=1 ./eval $RAW $REF aqua.csv all sheet > aqua.log 2>&1 )
 python3 $HERE/aquacolorfix_benchmark.py --underblue-files "$O/sheet/p{n}__combined.jpg" --label "$1" --pairs 1,2,3,4,5,6 --output $O/bench | grep "^$1:"
 python3 $HERE/aquacolorfix_benchmark.py --underblue-files "$O/sheet/p{n}__uniform.jpg" --label "$1-uniform" --pairs 1,2,3,4,5,6 --output $O/bench-uniform | grep "^$1-uniform:"
+# Pair 6's colour chart: grey patches that must come out colourless (chart_check.py).
+python3 $HERE/chart_check.py $O

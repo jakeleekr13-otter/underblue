@@ -87,7 +87,7 @@ Baseline, `main` at 085a6f3 (OKLab L / chroma / hue of the box median):
 
 - No box turns brown. The residual cast is blue (hue 256 to 262) in three boxes.
 - The first-draft rule (chroma below 0.04) failed on two boxes at baseline. These are r12 (0.134, a near-monochrome blue photo) and the DSC03696 BCD (0.044).
-- So the rule now guards against change from this baseline. The report flags only `BROWN` and `LIGHT`. Compare chroma with this table.
+- So the rule now guards against change from this baseline. The report flags only `BROWN` and `LIGHT`. Compare chroma with this table. Jake confirmed this rule on 25 Oct 2026.
 
 Plants baseline, same commit (median of the plant pixels, OKLab L / chroma / hue):
 
@@ -102,7 +102,7 @@ Plants baseline, same commit (median of the plant pixels, OKLab L / chroma / hue
 
 Seen on the sheets and in these numbers:
 
-- Sargassum turns golden-amber (hue 110 to 82) and keeps its chroma. It is a brown alga, so this looks natural. The first-draft band (90 to 160) assumed green plants and flagged it, so the band is now 60 to 160.
+- Sargassum turns golden-amber (hue 110 to 82) and keeps its chroma. It is a brown alga, so this looks natural. The first-draft band (90 to 160) assumed green plants and flagged it, so the band is now 60 to 160 (Jake confirmed, 25 Oct 2026).
 - Kelp turns a dull khaki: chroma halves (0.061 to 0.030), below the 0.6 × flag. Part of the original chroma is the teal cast, so the flag may overstate it, but the sheet agrees: the kelp looks grey-olive.
 - The green water moves to hue 201, short of the 215-265 target in `tune_report.py`, and its chroma falls to 0.035. It looks grey-teal, not clear cyan. This misses Jake's rule of 24 Oct 2026: green water goes cyan or blue.
 - The surface highlights in the sargassum photo lean magenta (hue 315), but only at chroma 0.015. This is the known pale surface pink, at a low level.
@@ -213,6 +213,20 @@ Proposed rule (our own logic, no reference fit): build the 3 × 3 map from two a
 Check: m6 dE and the reef hue first, then m5 (vividness), then the guards (plants, black gear, grain, neutral ramp).
 
 Decision (Jake, 25 Oct 2026): colour moves toward m6; brightness keeps the target look (slightly brighter).
+
+Second check: the colour chart in AquaColorFix pair 6 (`O6.WEBP`, teal-green water; `scripts/color-eval/chart_check.py`, run by `aquacolorfix_eval.sh`). Its top row is a grey step, so every patch should come out colourless. Baseline, 25 Oct 2026 (after the grain fix):
+
+| Grey patch | Original | Ours | Ours (video path) | AquaColorFix |
+|---|---|---|---|---|
+| 1 (white) | 0.91 / 0.136 / 187 | 0.89 / 0.057 / 235 | 0.90 / 0.053 / 233 | 0.87 / 0.044 / 243 |
+| 2 | 0.87 / 0.151 / 181 | 0.85 / 0.084 / 225 | 0.85 / 0.089 / 225 | 0.84 / 0.021 / 239 |
+| 3 | 0.83 / 0.148 / 179 | 0.84 / 0.080 / 224 | 0.84 / 0.083 / 222 | 0.79 / 0.017 / 239 |
+| 4 | 0.78 / 0.141 / 179 | 0.80 / 0.081 / 223 | 0.80 / 0.082 / 222 | 0.74 / 0.016 / 242 |
+| 5 | 0.69 / 0.124 / 180 | 0.71 / 0.079 / 225 | 0.70 / 0.077 / 224 | 0.63 / 0.022 / 239 |
+| Mean chroma | 0.140 | 0.076 | 0.077 | 0.024 |
+
+- Our greys stay light cyan-blue (hue about 225). By eye too: the grey step is sky blue, and the yellow and orange patches lean green. AquaColorFix's greys are neutral.
+- So A2's neutral anchor has a measurable target here: mean chroma toward 0.02 to 0.03.
 
 ### A2 — our own estimate rule (only if A1 passes)
 

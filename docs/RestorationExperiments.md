@@ -243,10 +243,14 @@ What the analysis gives today: O6 has no white reference (neutral (0, 0, 0), sha
 | 4. As 3, water gains only where the colour test says water | 11.1 | 23.6 | 0.123 | 0.065 / 232 | 0.029 / 126 | O6 reads as water almost everywhere; the chart turns blue. |
 | 5. As 3, water gains only on far and smooth pixels | 11.3 | 24.5 | 0.031 | 0.066 / 235 | 0.031 / 110 | Blue islands with hard edges in the hazy background. |
 | 6. Object gains everywhere, then a colour-space shift of water-like colours | 11.6 to 13.1 | 24.4 to 25.6 | 0.05 to 0.11 | 0.06 to 0.09 / 220 to 230 | | O6 reef turns blue: after the neutralisation the reef is as close to the water colour as the water. |
-| 7. Object gains everywhere, the veil added back by depth: out = ours × g + v × (T − W × g) (current candidate) | 11.3 | 23.9 | 0.030 | 0.107 / 236 | 0.020 / 168 | No seam; far O6 sand turns bluish with distance; kelp leans teal (outside the 60-160 band). |
+| 7. Object gains everywhere, the veil added back by depth: out = ours × g + v × (T − W × g) | 11.3 | 23.9 | 0.030 | 0.107 / 236 | 0.020 / 168 | No seam; far O6 sand turns bluish with distance; kelp leans teal (outside the 60-160 band). |
+| 8. Object gains everywhere, no water target; strength below 0.3 counts as 0 (current candidate) | 12.6 | 27.4 | 0.030 | 0.035 / 201 | 0.031 / 110 | O6: sand an even beige, chart grey, reef warm, water a hazy grey-blue. No seam. Other photos unchanged (strength 0). |
 
 - m6's reef stays olive (124 to 130) in every try: these anchors only remove the water's tint. The brown needs red from green (the A1 lead), as a next step.
-- Open: try 7 still needs Jake's eye on O6, and the kelp flag. Sheets: `a2_proto.py` writes `<k>__proto.png`.
+- Jake (25 Oct 2026), on O6: the water does not have to be blue. Forcing it blue (tries 2 to 7) is what made the sand-to-water seam. So try 8 drops the water target.
+- Try 8 changes only photos whose near objects carry the water's tint (O6, strength 1.0). m5, m6 and the plant photos get strength 0 or 0.1 (below the 0.3 floor).
+- Still open: m6's olive reef (needs red from green), and the green water of the sargassum photo (201, Jake's 24 Oct rule). Try 8 does not touch either.
+- Next: put try 8 into the app as named values (ColorCorrection) and a kernel step, then run the guards. Sheets: `a2_proto.py` writes `<k>__proto.png`.
 
 ### A2 — our own estimate rule (only if A1 passes)
 

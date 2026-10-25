@@ -49,30 +49,23 @@ def proto(src_lin, depth, light="near", strength=1.0, cap=4.0):
     return src_lin * (o * g_obj + (1 - o) * g_wat), W, E, g_obj, g_wat
 
 
-def post(src_lin, ours_lin, depth, keep=0.85, cap=1.6, z0=0.3):
-    """Current candidate (25 Oct 2026): a correction on top of our own output, not on the source.
-    - W: our output's water colour (mean of the far pixels). Its chroma floor is keep x the source's far-water chroma;
-      water out of the blue band (hue below 215) moves to hue 235. That is the target water T.
-    - Near objects carry W's tint in our output (O6's grey chart reads hue 225). Object gains g take it away with
-      strength s = how far the near mean leans toward W (projection on W's a,b over half W's chroma), for all pixels.
-    - The veil is added back, not multiplied: out = ours x g + v x (T - W x g), with v the veil share from depth
-      (0 below z0, 1 at the far end). Far water becomes T; near objects keep g; seabed in between gets part of the veil.
-    Tried and dropped (docs/RestorationExperiments.md): gains blended by a depth mask (seam on O6's sand), by the
-    colour water share (O6 reads all water), by a texture mask (blotches), and a colour-space water shift (reef blue)."""
-    fo, fs, d = ours_lin.reshape(-1, 3), src_lin.reshape(-1, 3), depth.ravel()
-    far = d > FAR
-    W = fo[far].mean(axis=0) if np.count_nonzero(far) > 100 else fo.mean(axis=0)
-    Ws = fs[far].mean(axis=0) if np.count_nonzero(far) > 100 else fs.mean(axis=0)
+def post(src_lin, ours_lin, depth, cap=1.6, s_min=0.3):
+    """Current candidate (25 Oct 2026): object gains on top of our own output, for the whole frame.
+    - W: our output's water colour (mean of the far pixels); N: the mean of the near pixels.
+    - Near objects can carry W's tint (O6's grey chart reads hue 225). The strength s is how far N leans toward W
+      (projection on W's a,b over half W's chroma), 0 to 1; below s_min it is 0, so photos without the tint stay as they are.
+    - The gains (luma(W) / W) ^ s apply to every pixel. The water keeps what the gains give it: it does not have
+      to be blue (Jake, 25 Oct 2026, on O6). No depth mask, so no seam between near and far.
+    Tried and dropped (docs/RestorationExperiments.md, A2 prototype round): gains on the source; water gains toward
+    blue blended by depth, colour share, or texture; a colour-space water shift; the veil added back by depth."""
+    fo, d = ours_lin.reshape(-1, 3), depth.ravel()
+    W = fo[d > FAR].mean(axis=0) if np.count_nonzero(d > FAR) > 100 else fo.mean(axis=0)
     N = fo[d < NEAR].mean(axis=0) if np.count_nonzero(d < NEAR) > 100 else fo.mean(axis=0)
     _, wa, wb = oklab(W); _, na, nb = oklab(N); cw = math.hypot(wa, wb)
     s = float(np.clip(((na * wa + nb * wb) / max(cw, 1e-6)) / (0.5 * max(cw, 1e-6)), 0, 1))
+    s = s if s >= s_min else 0.0
     g = np.clip((luma(W) / np.maximum(W, 1e-4)) ** s, 1 / cap, cap)
-    L, C, hw = lch(W)
-    h = math.radians(hw if hw >= 215 else 235)
-    Ct = max(C, keep * lch(Ws)[1])
-    T = from_oklab(np.array([L, Ct * math.cos(h), Ct * math.sin(h)]))
-    v = np.clip((depth - z0) / (1 - z0), 0, 1)[..., None]
-    return np.clip(ours_lin * g + v * (T - W * g), 0, None), s
+    return ours_lin * g, s
 
 
 def box(img, b):

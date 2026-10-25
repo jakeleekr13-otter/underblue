@@ -54,6 +54,7 @@ struct PreviewPane: View {
                                           size: size, zoom: zoom.scale, onToggleTier: { model.toggleTier($0) }) { model.toggleSubject($0) }
                         }
                     }
+                    .overlay(alignment: .bottomTrailing) { PreviewRenderingIndicator(active: model.previewRendering) }
                 } else {
                     ProgressView()
                 }

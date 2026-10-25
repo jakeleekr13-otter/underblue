@@ -382,6 +382,20 @@ Choices made while building (not asked):
 - Intensity 0 used to skip the lift too, so the strength slider did nothing there (Jake, iPhone, 25 Oct 2026). Now Intensity 0 leaves the photo untouched but still applies the lift to the picked subjects. This holds in Auto too. Original stays untouched. Test: `testSubjectLiftWorksAtIntensityZero`.
 - A press that would push the picks over half the frame is refused with the Semi-auto messages. A press that finds nothing says "No subject found there. Try another spot."
 
+Fixes after Jake's iPhone check, 25 Oct 2026:
+
+- Pan did not work while the picker showed (Semi-auto and Manual). The overlay's gestures took the touch before the preview's `.gesture`. Pinch and pan are now simultaneous gestures. The Manual press and hold moved from the overlay into `ZoomablePreview` (`onHold`): in the overlay's space the image moves with a pan, so a panning finger looked still. Test: `testAHoldInTheFrameMapsToTheImageAtAnyZoom`. Not checked on the device yet.
+- The strength slider felt slow (Jake: about 3 s). Measured on the iPhone 17 (`PressProbeTests.testPreviewTimeWithSubjectStrength`), one preview render at 1600 px:
+
+| Photo | No lift | Picked, 0 % | Picked, 100 % | Picked, 120 % |
+|---|---|---|---|---|
+| DSC03545 (20 MP) | 103-139 ms | 164-184 ms | 235-338 ms | 214-219 ms |
+| r15 (8 MP) | 69-94 ms | 87-93 ms | 91-183 ms | 95-99 ms |
+
+  One render is far below 3 s on these photos. Jake then said the delay shows while the slider keeps moving: each step starts a new render, and a render that has started runs to its end. Not measured: the photo Jake used, a zoomed preview (3200 px), 48 MP or HEIC sources.
+- A spinner now shows over the preview while a render runs (`PreviewRenderingIndicator`), after 0.3 s, on the iPhone and the Mac (Jake's request).
+- Next: make dragging cheaper, for example a smaller preview while the finger is on the slider and the full one on release. Not designed yet.
+
 Tools in `scripts/manual-subject/`: `probe.swift` (R2-R5, Vision only), and `run.sh`, `specs.sh`, `spill.py`, `foreign.py`, `sheet.py` (R6). The R6 tools expect the harness binary in `bin/` and write to `out/` beside themselves; build it with `build_eval` from `scripts/color-eval/common.sh`.
 
 `UnderBlueTests/PressProbeTests.swift` repeats R8 on a device. It is skipped unless `Documents/press-in` exists in the app container.

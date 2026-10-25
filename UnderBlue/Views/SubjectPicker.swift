@@ -67,22 +67,15 @@ struct SubjectPicker: View {
     /// Fitted size of the photo on screen, at zoom 1.
     let size: CGSize
     let zoom: CGFloat
-    /// Manual mode (docs/ManualSubject.md): `candidates` are the presses, all picked. A press and hold (a click on
-    /// the Mac) calls `onPress` with the point, 0...1 from the top left. A single tap does nothing there.
+    /// Manual mode (docs/ManualSubject.md): `candidates` are the presses, all picked. On the Mac a click calls
+    /// `onPress` with the point, 0...1 from the top left. On the iPhone the press and hold is ZoomablePreview's
+    /// `onHold`, so this view takes no touch there, and a single tap does nothing.
     var pressMode = false
     /// Where a press is being segmented, 0...1. A ring shows there.
     var pressing: CGPoint? = nil
     var onPress: (CGPoint) -> Void = { _ in }
     var onToggleTier: (Int) -> Void = { _ in }
     let onToggle: (Int) -> Void
-
-    /// How long a press is held, and how far the finger may move on screen meanwhile.
-    static let holdDuration: Duration = .milliseconds(500)
-    static let holdSlop: CGFloat = 10
-    @State private var holdStart: CGPoint?
-    @State private var holdFired = false
-    @State private var holdTask: Task<Void, Never>?
-    @State private var holds = 0
 
     var body: some View {
         // Lines and badges keep their size on screen while the image zooms.
@@ -94,9 +87,6 @@ struct SubjectPicker: View {
                     .onTapGesture(count: 1, coordinateSpace: .local) { location in
                         if let point = SubjectPickerGeometry.normalized(location, in: size) { onPress(point) }
                     }
-                #else
-                // Simultaneous, so the preview's pinch and pan still work. A finger that moves cancels the hold.
-                Color.clear.contentShape(Rectangle()).simultaneousGesture(holdGesture)
                 #endif
             } else {
                 Color.clear.contentShape(Rectangle())
@@ -126,30 +116,6 @@ struct SubjectPicker: View {
                 .allowsHitTesting(false).accessibilityHidden(true)
             }
         }
-        .sensoryFeedback(.impact(weight: .medium), trigger: holds)
-    }
-
-    /// A press and hold: a drag of any length that the finger keeps still for `holdDuration`.
-    private var holdGesture: some Gesture {
-        DragGesture(minimumDistance: 0, coordinateSpace: .local)
-            .onChanged { value in
-                guard !holdFired else { return }
-                guard let start = holdStart else {
-                    let start = value.startLocation
-                    holdStart = start
-                    holdTask = Task { @MainActor in
-                        try? await Task.sleep(for: Self.holdDuration)
-                        guard !Task.isCancelled, holdStart == start, !holdFired else { return }
-                        holdFired = true; holds += 1
-                        if let point = SubjectPickerGeometry.normalized(start, in: size) { onPress(point) }
-                    }
-                    return
-                }
-                // The overlay zooms with the image, so a distance here is `zoom` times larger on screen.
-                let dx = value.location.x - start.x, dy = value.location.y - start.y
-                if (dx * dx + dy * dy).squareRoot() * max(1, zoom) > Self.holdSlop { holdTask?.cancel(); holdStart = nil; holdFired = true }
-            }
-            .onEnded { _ in holdTask?.cancel(); holdTask = nil; holdStart = nil; holdFired = false }
     }
 
     /// Selected: mint fill, thick mint line along the subject's edge, a check. Not selected: a thin white line and an empty circle.

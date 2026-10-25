@@ -85,18 +85,21 @@ struct EditorView: View {
                 // Compare swaps the image but keeps the zoom, so the same detail can be checked both ways.
                 // The picker shows over the corrected image only. Compare hides it.
                 let picking = model.subjects.showsOverlay && !model.comparing
-                ZoomablePreview(image: preview, zoom: $zoom, overlayActive: picking, onZoomIn: { model.requestDetailPreview() }) { size in
+                let holding: ((CGPoint) -> Void)? = picking && model.subjects.isManual
+                    ? { point in Task { await model.pressSubject(at: point) } } : nil
+                ZoomablePreview(image: preview, zoom: $zoom, overlayActive: picking, onZoomIn: { model.requestDetailPreview() },
+                                onHold: holding) { size in
                     if picking, model.subjects.isManual {
                         let pressed = model.subjects.pressed ?? .empty
                         SubjectPicker(candidates: pressed, picks: Set(pressed.groups.map(\.id)), size: size, zoom: zoom.scale,
-                                      pressMode: true, pressing: model.subjects.pressing,
-                                      onPress: { point in Task { await model.pressSubject(at: point) } }) { model.removeSubjectPress($0) }
+                                      pressMode: true, pressing: model.subjects.pressing) { model.removeSubjectPress($0) }
                     } else if picking, let candidates = model.subjects.candidates {
                         SubjectPicker(candidates: candidates, picks: model.subjects.picks, tiers: model.subjects.tiers, tierPieces: model.subjects.tierPieces,
                                           tierDrawing: model.subjects.tierDrawing, tiersOff: model.subjects.tiersOff,
                                           size: size, zoom: zoom.scale, onToggleTier: { model.toggleTier($0) }) { model.toggleSubject($0) }
                     }
                 }
+                .overlay(alignment: .topTrailing) { PreviewRenderingIndicator(active: model.previewRendering) }
             }
             if model.loading {
                 if model.analyzing { VStack(spacing: 12) { longVideoNotice; ProgressView("Analyzing…") } }

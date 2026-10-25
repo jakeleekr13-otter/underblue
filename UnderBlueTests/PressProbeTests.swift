@@ -39,6 +39,34 @@ final class PressProbeTests: XCTestCase {
         return (ms, Double(Int64(peak.pointee) - Int64(start)) / 1_048_576, mask)
     }
 
+    /// The preview render behind the subject strength slider: no lift, picks without the lift (strength 0),
+    /// and picks with the lift. Three rounds each, in this order.
+    func testPreviewTimeWithSubjectStrength() async throws {
+        guard #available(iOS 27.0, macOS 27.0, *) else { throw XCTSkip("needs iOS 27") }
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let input = documents.appendingPathComponent("press-in")
+        try XCTSkipUnless(FileManager.default.fileExists(atPath: input.path), "no press-in folder")
+        let usable = await SubjectMask.preciseModelUsable()
+        try XCTSkipUnless(usable, "model not ready")
+        for (name, list) in presses.sorted(by: { $0.key < $1.key }) {
+            let url = input.appendingPathComponent(name)
+            guard FileManager.default.fileExists(atPath: url.path), let first = list.first else { continue }
+            let processor = PhotoProcessor()
+            var settings = FilterSettings()
+            settings.analysis = try await processor.analyze(url)
+            let mask = try await processor.pressMask(url, at: first.1)
+            let choices: [(String, SubjectChoice)] = [("off", .off), ("picked 0%", .picked(mask, strength: 0)),
+                                                      ("picked 100%", .picked(mask)), ("picked 120%", .picked(mask, strength: 1.2))]
+            for (label, choice) in choices {
+                for round in 1...3 {
+                    let t = Date()
+                    _ = try await processor.preview(url, settings: settings, original: false, maxPixel: 1600, subjects: choice)
+                    print(String(format: "PREVIEW %@ %@ round %d: %.0f ms", name, label, round, Date().timeIntervalSince(t) * 1000))
+                }
+            }
+        }
+    }
+
     func testPressTimeAndMemory() async throws {
         guard #available(iOS 27.0, macOS 27.0, *) else { throw XCTSkip("needs iOS 27") }
         let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]

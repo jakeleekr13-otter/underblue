@@ -289,6 +289,9 @@ func fullReference(_ a: [UInt8], _ b: [UInt8], _ w: Int, _ h: Int, into m: inout
 // HT_EVAL_ABLATE=1 (E27) adds `abl_<stage>` outputs: the current path with one finishing stage off.
 // HT_EVAL_VIDEO_PATH=1 adds `videopath`: combined() as video calls it (video: true), to check a photo-only change leaves it.
 let videoPath = ProcessInfo.processInfo.environment["HT_EVAL_VIDEO_PATH"] == "1"
+// HT_EVAL_VIDEO_A2=1 adds `videobase` (combined() as video calls it, one constant depth) and `videoa2` (videobase plus the
+// object colour step for video). The still plays the scene keyframe: the values come from videobase and the still's depth map.
+let videoA2 = ProcessInfo.processInfo.environment["HT_EVAL_VIDEO_A2"] == "1"
 let ablations: [(String, (inout ColorCorrection) -> Void)] = ProcessInfo.processInfo.environment["HT_EVAL_ABLATE"] == "1" ? [
     ("none", { _ in }), ("clarity", { $0.clarity = 0 }), ("definition", { $0.definition = 0 }), ("detail", { $0.detail = 0 }),
     ("shadows", { $0.shadowLift = 0; $0.highlightAmount = 1 }), ("vibrance", { $0.vibrance = 0 }), ("saturation", { $0.saturation = 1 }),
@@ -303,7 +306,7 @@ let ablations: [(String, (inout ColorCorrection) -> Void)] = ProcessInfo.process
               $0.toneCurve = 0; $0.midLift = 0; $0.vibrance = 0; $0.saturation = 1; $0.warmth = 0; $0.neutralGains = SIMD3(repeating: 1) }),
     ("all", { $0.clarity = 0; $0.definition = 0; $0.detail = 0; $0.shadowLift = 0; $0.highlightAmount = 1; $0.contrast = 1; $0.brightness = 0
               $0.toneCurve = 0; $0.midLift = 0; $0.vibrance = 0; $0.saturation = 1; $0.warmth = 0 })] : []
-let variants = ["original", "grayworld", "current", "restoration", "combined", "lift", "uniform", "reference", "signal"] + ablations.map { "abl_\($0.0)" } + (ablations.isEmpty ? [] : ["abl_calm", "abl_bare", "abl_combsubject", "abl_combrestored"]) + (videoPath ? ["videopath"] : [])
+let variants = ["original", "grayworld", "current", "restoration", "combined", "lift", "uniform", "reference", "signal"] + ablations.map { "abl_\($0.0)" } + (ablations.isEmpty ? [] : ["abl_calm", "abl_bare", "abl_combsubject", "abl_combrestored"]) + (videoPath ? ["videopath"] : []) + (videoA2 ? ["videobase", "videoa2"] : [])
 var csv = "image,variant,psnr,ssim,deltaE,farHue,farChroma,nearA,nearRG,contrastL,meanL,localContrast,farLocalContrast,farHueOK,farChromaOK,fallback,confidence,depthConf,waterConf,betaDR,betaDG,betaDB,binfR,binfG,binfB,floorPct,gainPct,recR,subjectShare,subjectL,outsideL,subjectChroma,subjectViolet,clipped,subjectClipped,outsideChroma,subjectLocalContrast,subjectOvershoot\n"
 let files = try FileManager.default.contentsOfDirectory(atPath: rawDir.path).filter { [".png", ".jpg", ".jpeg", ".arw"].contains(where: $0.lowercased().hasSuffix) }.sorted()
 let started = Date()
@@ -523,9 +526,18 @@ for name in selected {
             // The video entry point (correction values passed in), as video frames are rendered.
             outputs["uniform"] = (try? restoration.combined(source, plan: uniform, values: restoration.corrections(settings: settings, plan: uniform),
                                                             settings: settings, filter: engine)) ?? current
+            if videoA2, let base = try? restoration.combined(source, plan: uniform, values: restoration.corrections(settings: settings, plan: uniform),
+                                                              settings: settings, filter: engine, video: true) {
+                outputs["videobase"] = base
+                let pixels = RestorationEngine.workingPixels(base, width: plan.depth.width, height: plan.depth.height, context: engine.context)
+                let v = RestorationEngine.videoObjectColourValues(pixels: pixels, depth: plan.depth.values, redLoss: settings.analysis.redLoss)
+                if ProcessInfo.processInfo.environment["HT_EVAL_LOG"] != nil { print("\(name) video object colour: \(v.map { "\($0)" } ?? "nil")") }
+                outputs["videoa2"] = v.map { restoration.videoObjectColour(base, values: $0) } ?? base
+            }
         }
     } else {
         outputs["restoration"] = source; outputs["combined"] = current; outputs["uniform"] = current
+        if videoA2 { outputs["videobase"] = current; outputs["videoa2"] = current }
         outputs["lift"] = current
     }
     var refPx: [UInt8]?

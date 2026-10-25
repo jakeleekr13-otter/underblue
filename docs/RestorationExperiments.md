@@ -339,10 +339,26 @@ Rule tried (`a2_proto.red_from_green`): red += k0 × redLoss × green excess × 
   - O6, O4, m5 and m6 keep the A2 gains.
   - The guards above are unchanged. AquaColorFix pair 1 went 10.59 → 9.05.
 
-#### A2 for video (in progress)
-- Video renders with one constant depth, so step 2 cannot fade by depth. Keyframe analysis has a depth map, so the values can be made per scene there.
-- Prototype: `a2_video.py`. It makes the values on the video-path output and tries step 2 with no depth fade. The red starts above a percentile of the far water's green excess.
-- First run (before the gate fix): on o6 and the clips, a 90th-percentile baseline lands within 0.7 dE76 of the photo rule. On v2_70, near hue was 151 against the photo rule's 111. Re-run after the gate fix: unmeasured.
+#### A2 for video (25 Oct 2026): step 2 only, weighted by colour
+- A video frame renders with one constant depth, so step 2 cannot fade by depth.
+- Prototype (`a2_video.py`, on the video-path output of the stills):
+  - A plain excess baseline, with no fade, fails both ways. At the 90th percentile of the far water's excess, red lands on the water (v1_70 water p99 dE76 11). At the 98th, the water is safe, but the O4/m6 reef gets only a third of the red (hue 124; photo rule 106).
+  - A colour weight works: a pixel gets red by its OKLab a,b distance from the scene's water (none at 0.05, full at 0.10). Water p99 dE76 is 1.2 at most, and the reef reaches hue 114. At 0.04 to 0.08, m5's water took red (p99 5.0).
+  - Step 1 on the video path greyed v5_70, a reef-bottom clip, by eye. The photo gate blocks v5 (saturation ratio 1.09), but the video-path output passes it. So step 1 stays off in video.
+- App:
+  - Each scene keeps one keyframe: the middle kept keyframe with a fit, at 320 px, with its depth map at 160 px.
+  - At render time, the keyframe goes through the video path with the current settings. The far pixels' mean gives the water a,b and its excess. These are made from the settings in use, so a slider that moves the water moves the reference too.
+  - The values are cached per scene and settings. They mix across the scene fade like the other values.
+  - Kernel `UnderBlueObjectColourVideo`; CPU mirror `FinishingMath.objectColourVideo`.
+- Harness (`HT_EVAL_VIDEO_A2=1`: `videobase`, `videoa2`; the still is its own keyframe), 40 images:
+  - m6 and O4 reef hue 140 → 133. By eye, the reef turns brown like the photo path, and the water is unchanged.
+  - Open-water stills (v1-v3, r12, r13): mean dE76 0.0, water p99 0.3-0.8.
+  - Some far non-water pixels take red: r11 (p99 16.5), pl5 (9.8), r04 (8.1). Their mean dE76 is 0.2 to 1.6. By eye, r11's fan and r04's anemone look natural; pl5's seagrass gets a little more golden (the open green-plant item).
+- Clips (videosim on the Mac, the five Tune_25_Oct clips, a frame every 2 s, against 09abd02):
+  - v1-v3: mean dE76 0.1 per frame, about the JPEG noise.
+  - v4: up to 0.5. v5: up to 0.6 (p99 5.7).
+  - Largest frame-to-frame jump in the change: 0.4, so no flicker.
+  - No clip has an olive reef like O4, so the strong case is checked on stills only.
 
 ### A2 — our own estimate rule (only if A1 passes)
 

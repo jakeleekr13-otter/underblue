@@ -151,3 +151,30 @@ using namespace metal;
     const float3 out = float3(dot(fromSRGB0.rgb, r), dot(fromSRGB1.rgb, r), dot(fromSRGB2.rgb, r));
     return all(isfinite(out)) ? float4(out, source.a) : source;
 }
+
+/// Object colour for video (docs/RestorationExperiments.md, A2 for video): step 2 only, red from the green excess.
+/// A video frame has no depth map, so a pixel's weight is how far its colour is from the scene's water (OKLab a,b
+/// distance, none at water.z, full at water.w). water.xy is the water's a,b; extra.x the water's own green excess;
+/// extra.y is k x redLoss. Works in linear sRGB; luminance is kept. FinishingMath.objectColourVideo is the CPU mirror.
+[[stitchable]] float4 UnderBlueObjectColourVideo(coreimage::sample_t source,
+                                                 float4 toSRGB0, float4 toSRGB1, float4 toSRGB2,
+                                                 float4 fromSRGB0, float4 fromSRGB1, float4 fromSRGB2,
+                                                 float4 water, float4 extra) {
+    const float3 c = source.rgb;
+    const float3 s = float3(dot(toSRGB0.rgb, c), dot(toSRGB1.rgb, c), dot(toSRGB2.rgb, c));
+    const float3 lms = float3(dot(float3(0.4122214708f, 0.5363325363f, 0.0514459929f), s),
+                              dot(float3(0.2119034982f, 0.6806995451f, 0.1073969566f), s),
+                              dot(float3(0.0883024619f, 0.2817188376f, 0.6299787005f), s));
+    const float3 q = pow(max(lms, float3(0.0f)), float3(1.0f / 3.0f));
+    const float a = 1.9779984951f * q.x - 2.4285922050f * q.y + 0.4505937099f * q.z;
+    const float b = 0.0259040371f * q.x + 0.7827717662f * q.y - 0.8086757660f * q.z;
+    const float weight = smoothstep(water.z, water.w, length(float2(a, b) - water.xy));
+    const float excess = max(0.0f, s.g - 0.5f * (s.r + s.b) - extra.x);
+    const float3 luma = float3(0.2126f, 0.7152f, 0.0722f);
+    const float l0 = dot(s, luma);
+    float3 r = s + float3(extra.y * excess * weight, 0.0f, 0.0f);
+    const float l1 = dot(r, luma);
+    r = l1 > 1e-6f ? r * (l0 / l1) : s;
+    const float3 out = float3(dot(fromSRGB0.rgb, r), dot(fromSRGB1.rgb, r), dot(fromSRGB2.rgb, r));
+    return all(isfinite(out)) ? float4(out, source.a) : source;
+}

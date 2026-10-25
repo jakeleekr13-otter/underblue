@@ -68,6 +68,18 @@ def post(src_lin, ours_lin, depth, cap=1.6, s_min=0.3):
     return ours_lin * g, s
 
 
+def red_from_green(ours_lin, depth, red_loss, k0=3.0, near_end=0.7, span=0.5):
+    """Step 2 (25 Oct 2026): red made from green on near subjects (the A1 lead), on top of our output.
+    Only the green excess counts: e = max(0, G - (R + B) / 2). A neutral surface has none, so m5's sand stays grey;
+    an olive reef (O4, m6) has a lot. Red += k0 x redLoss x e x nearness, luminance kept. redLoss is the analysis
+    value (0 when the scene lost no red). Nearness fades from depth near_end - span (full) to near_end (none)."""
+    w = np.clip((near_end - depth) / span, 0, 1); w = (w * w * (3 - 2 * w))[..., None]
+    e = np.maximum(0, ours_lin[..., 1:2] - 0.5 * (ours_lin[..., 0:1] + ours_lin[..., 2:3]))
+    out = ours_lin.copy(); out[..., 0:1] += k0 * red_loss * e * w
+    lum0 = ours_lin @ np.array([0.2126, 0.7152, 0.0722]); lum1 = out @ np.array([0.2126, 0.7152, 0.0722])
+    return out * (lum0 / np.maximum(lum1, 1e-6))[..., None]
+
+
 def box(img, b):
     h, w = img.shape[:2]; return img[int(b[1] * h):int(b[3] * h), int(b[0] * w):int(b[2] * w)].reshape(-1, 3)
 

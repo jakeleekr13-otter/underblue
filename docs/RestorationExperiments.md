@@ -250,7 +250,30 @@ What the analysis gives today: O6 has no white reference (neutral (0, 0, 0), sha
 - Jake (25 Oct 2026), on O6: the water does not have to be blue. Forcing it blue (tries 2 to 7) is what made the sand-to-water seam. So try 8 drops the water target.
 - Try 8 changes only photos whose near objects carry the water's tint (O6, strength 1.0). m5, m6 and the plant photos get strength 0 or 0.1 (below the 0.3 floor).
 - Still open: m6's olive reef (needs red from green), and the green water of the sargassum photo (201, Jake's 24 Oct rule). Try 8 does not touch either.
-- Next: put try 8 into the app as named values (ColorCorrection) and a kernel step, then run the guards. Sheets: `a2_proto.py` writes `<k>__proto.png`.
+#### A2 step 2: red from green on near subjects (25 Oct 2026)
+
+Jake asked whether O4 can improve. O4 is the m6 scene (the bench maps pair 4 to `market/ref/m6.png`), so it has two independent references: AquaColorFix and Sea-thru. Both agree on three gaps (OKLab L / chroma / hue):
+
+| Box | Ours | AquaColorFix | Sea-thru |
+|---|---|---|---|
+| Reef | 0.46 / 0.061 / 127 | 0.38 / 0.057 / 84 | 0.34 / 0.035 / 66 |
+| Manta belly (white) | 0.71 / 0.049 / 177 | 0.70 / 0.011 / 239 | 0.69 / 0.062 / 229 |
+| Water, right | 0.47 / 0.070 / 232 | 0.46 / 0.091 / 238 | 0.42 / 0.136 / 255 |
+
+Rule tried (`a2_proto.red_from_green`): red += k0 × redLoss × green excess × nearness, with green excess e = max(0, G − (R + B)/2) and luminance kept. Plain G instead of the excess turned m5's sand pink (hue 9 at k0 1.0); the excess leaves neutral surfaces alone.
+
+| Run | m5 dE | m6 dE | O4 reef | O4 belly | O6 chart | Sargassum | Kelp | m5 sand |
+|---|---|---|---|---|---|---|---|---|
+| Ours | 12.6 | 27.4 | 0.061 / 127 | 0.049 / 177 | 0.076 | 0.101 / 83 | 0.031 / 110 | 0.015 / 220 |
+| Step 1 (try 8) | 12.6 | 27.4 | 0.061 / 127 | 0.049 / 177 | 0.030 | 0.101 / 83 | 0.031 / 110 | 0.015 / 220 |
+| Step 2, k0 3 | 11.4 | 26.4 | 0.057 / 82 | 0.018 / 139 | 0.055 | 0.101 / 83 | 0.031 / 110 | 0.007 / 247 |
+| Steps 1 + 2 | 11.4 | 26.4 | 0.057 / 82 | 0.018 / 139 | 0.009 | 0.101 / 83 | 0.031 / 110 | 0.007 / 247 |
+
+- Seen by eye: O4's reef turns brown and its small fish orange; m5 looks the same; O6's green feather coral turns golden (AquaColorFix also shows it orange); the kelp photo's gorgonians get more golden.
+- The O4 reef's far left changes less (the nearness fade), so a mild green-to-brown change across the reef shows.
+- Not covered: a truly green plant (seagrass) near the camera in a red-poor scene could turn olive. No such photo in the set.
+- The O4 water gap (grey, chroma 0.070) is left: Jake said on O6 that water need not be blue.
+- Next: put steps 1 and 2 into the app as named values (ColorCorrection) and a kernel step, then run all guards. Sheets: `a2_proto.py` writes `<k>__proto.png`.
 
 ### A2 — our own estimate rule (only if A1 passes)
 

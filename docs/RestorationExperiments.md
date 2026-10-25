@@ -490,6 +490,26 @@ Measure: median OKLab a (x1000; negative = green, toward 0 = less green, then pi
 - Neither path alone makes it. The legacy filter with any one stage switched off stays at -68 to -70. So the shift comes from the combination: most likely the finishing step on the physically restored image (`filter.finishing(physicallyRestored, …)`), which no variant shows on its own. Not checked yet.
 - Next: render that finished restored path as its own variant, and switch its stages off one at a time.
 
+### Too-bright sunlit areas in clips (Jake, 25 Oct 2026: "the bright parts are too bright and do not blend naturally")
+
+Measured on the same stills, 960 px. OKLab L median by distance from the sun (share of width); clipped = any channel at 250 or more.
+
+| frame | variant | clipped | L at 0-0.05 | 0.05-0.1 | 0.1-0.15 | 0.15-0.2 | 0.2-0.3 | 0.3-0.4 | largest drop |
+|---|---|---|---|---|---|---|---|---|---|
+| v1_30 | original | 9.0% | 0.74 | 0.74 | 0.72 | 0.69 | 0.71 | 0.70 | 0.04 |
+| v1_30 | video path | 0.0% | 0.84 | 0.83 | 0.82 | 0.77 | 0.80 | 0.79 | 0.05 |
+| v1_70 | original | 15.0% | 0.76 | 0.76 | 0.75 | 0.75 | 0.74 | 0.72 | 0.02 |
+| v1_70 | video path | 0.0% | 0.85 | 0.85 | 0.85 | 0.84 | 0.83 | 0.81 | 0.02 |
+| v3_30 | original | 17.5% | 0.90 | 0.90 | 0.90 | 0.90 | 0.86 | 0.77 | 0.09 |
+| v3_30 | video path | 17.8% | 0.92 | 0.92 | 0.92 | 0.92 | 0.87 | 0.78 | 0.09 |
+| v3_70 | original | 21.5% | 0.90 | 0.90 | 0.90 | 0.90 | 0.86 | 0.79 | 0.07 |
+| v3_70 | video path | 12.8% | 0.92 | 0.92 | 0.92 | 0.92 | 0.88 | 0.80 | 0.09 |
+
+- v1: we lift the sunlit water by about 0.10 L, so the area near the sun turns flat and whitish.
+- v3: the source is already blown out (17.5-21.5% clipped). We keep the flat plateau, and it ends in a 0.09 drop instead of a soft fall-off.
+- The photo path (`combined`) matches the video path within 0.02 here.
+- Cause not checked. Look at it together with the pink ring: both sit in the same sunlit area. Candidates: the tone curve and mid lift on bright water, the highlight shoulder, and the shadow/highlight filter.
+
 ## Stage D — floating particles
 
 Kind: measurement. No new removal step is planned yet. Jake asked for this check on 24 Oct 2026.

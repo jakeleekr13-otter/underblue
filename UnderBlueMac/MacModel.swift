@@ -61,6 +61,9 @@ final class MacModel {
     private(set) var correctedImage: CGImage?
     private(set) var player: AVPlayer?
     private(set) var previewBusy = false
+    /// True while a redraw after a look or subject change runs. The newest redraw owns it.
+    private(set) var previewRendering = false
+    private var renderToken = 0
     private(set) var previewError: String?
 
     var selectedItem: BatchEngine.Item? { engine.items.first { $0.id == selection } }
@@ -440,7 +443,11 @@ final class MacModel {
     private func refreshPreview() {
         guard let item = selectedItem else { return }
         previewTask?.cancel()
+        renderToken += 1
+        let token = renderToken
+        previewRendering = true
         previewTask = Task {
+            defer { if token == renderToken { previewRendering = false } }
             do {
                 try await Task.sleep(for: .milliseconds(60))
                 switch item.kind {

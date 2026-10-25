@@ -1,3 +1,4 @@
+import SwiftUI
 import XCTest
 @testable import UnderBlue
 
@@ -68,6 +69,18 @@ final class ManualSubjectTests: XCTestCase {
         settings.preset = .original
         XCTAssertEqual(luma(try restoration.combined(image, plan: plan, settings: settings, filter: engine, subjectLift: lift)), untouched,
                        accuracy: 1e-5, "Original stays untouched")
+    }
+
+    func testAHoldInTheFrameMapsToTheImageAtAnyZoom() {
+        let content = CGSize(width: 100, height: 50), container = CGSize(width: 100, height: 100)
+        func point(_ x: CGFloat, _ y: CGFloat, _ zoom: PreviewZoom) -> CGPoint? {
+            ZoomablePreview<EmptyView>.imagePoint(CGPoint(x: x, y: y), zoom: zoom, content: content, container: container)
+        }
+        XCTAssertEqual(point(50, 50, PreviewZoom()), CGPoint(x: 0.5, y: 0.5))
+        XCTAssertEqual(point(0, 25, PreviewZoom()), CGPoint(x: 0, y: 0), "the image starts 25 pt down in the frame")
+        XCTAssertNil(point(50, 10, PreviewZoom()), "above the image")
+        let zoomed = PreviewZoom(scale: 2, offset: CGSize(width: 10, height: 0))
+        XCTAssertEqual(point(50, 50, zoomed), CGPoint(x: 0.45, y: 0.5), "panned right by 10 pt at 2x: the centre shows x 0.45")
     }
 
     func testPressedMasksBecomeGroupsInPressOrder() throws {

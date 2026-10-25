@@ -407,7 +407,7 @@ for name in selected {
     let current = engine.apply(source, settings: settings)
     if ProcessInfo.processInfo.environment["HT_EVAL_LOG"] != nil {
         let a = analysis
-        print("\(name) analysis: redLoss=\(a.redLoss) contrast=\(a.contrast) sat=\(a.saturation) mean=(\(a.meanRed),\(a.meanGreen),\(a.meanBlue)) mid=\(a.midLuminance) water=(\(a.waterRed),\(a.waterGreen),\(a.waterBlue)) neutral=(\(a.neutralRed),\(a.neutralGreen),\(a.neutralBlue)) share=\(a.neutralShare) high=\(a.highShare)")
+        print("\(name) analysis: redLoss=\(a.redLoss) contrast=\(a.contrast) sat=\(a.saturation) mean=(\(a.meanRed),\(a.meanGreen),\(a.meanBlue)) mid=\(a.midLuminance) water=(\(a.waterRed),\(a.waterGreen),\(a.waterBlue)) neutral=(\(a.neutralRed),\(a.neutralGreen),\(a.neutralBlue)) share=\(a.neutralShare) high=\(a.highShare) light=\(a.lightShare)")
         for (label, c) in [("current", ColorCorrection.make(analysis: analysis, preset: settings.preset)),
                            ("restored", plan.map { ColorCorrection.make(analysis: analysis, preset: settings.preset, plan: $0) })] {
             guard let c else { continue }
@@ -578,6 +578,8 @@ for name in selected {
                 put(key, calm.map { SubjectTiers.channel($0, i, width: w, height: h, context: engine.context) })
             }
             put("share", engine.waterShare(source, correction: cv).map { SubjectTiers.channel($0, 3, width: w, height: h, context: engine.context) })
+            // The grain level (FilterEngine.grainMap) of the current output, x10 so it shows (0.1 = white).
+            put("grain10", outputs["current"].flatMap { engine.grainMap($0, short: Float(min(w, h))) }.map { SubjectTiers.channel($0, 0, width: w, height: h, context: engine.context).map { $0 * 10 } })
         } else {
             print("\(name): no plan, no depth maps")
         }

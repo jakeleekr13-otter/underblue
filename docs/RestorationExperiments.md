@@ -107,6 +107,20 @@ Seen on the sheets and in these numbers:
 - The green water moves to hue 201, short of the 215-265 target in `tune_report.py`, and its chroma falls to 0.035. It looks grey-teal, not clear cyan. This misses Jake's rule of 24 Oct 2026: green water goes cyan or blue.
 - The surface highlights in the sargassum photo lean magenta (hue 315), but only at chroma 0.015. This is the known pale surface pink, at a low level.
 
+AquaColorFix on the same two photos (Jake gave its outputs on 25 Oct 2026; not the target, for reference only), median of the same pixels:
+
+| Box | Ours | AquaColorFix |
+|---|---|---|
+| Sargassum foreground | 0.49 / 0.099 / 82 | 0.42 / 0.038 / 78 |
+| Sargassum right cluster | 0.55 / 0.113 / 79 | 0.49 / 0.052 / 70 |
+| Green water | 0.48 / 0.035 / 201 | 0.53 / 0.046 / 239 |
+| Kelp blades | 0.57 / 0.031 / 110 | 0.51 / 0.025 / 101 |
+| Kelp stipe | 0.48 / 0.028 / 107 | 0.43 / 0.018 / 94 |
+| Teal water | 0.79 / 0.085 / 234 | 0.77 / 0.052 / 238 |
+
+- Our plants keep two to three times the chroma. AquaColorFix turns the sargassum a dull pink-tan.
+- AquaColorFix moves the green water to blue (239); ours stops at grey-teal (201). A2's water anchor should close this.
+
 Grain baseline, same commit (1920 px; std of luma minus a 4 px blur; ratio over the original):
 
 | Sand | Original | Ours | Ours (video path) | Sea-thru |
@@ -119,6 +133,7 @@ Grain baseline, same commit (1920 px; std of luma minus a 4 px blur; ratio over 
 - The grain rises on three of four sand areas by 2.5 to 2.8 times. Sea-thru adds 1.43 times on m5.
 - The 1:1 crops agree: our m5 sand gets a coarse salt-and-pepper grain, while Sea-thru's stays smooth. r03 turns white with grey blotches, like r14.
 - The measure cannot tell wanted detail from noise by itself. So it runs only on flat sand, and the crops are checked by eye.
+- New baseline after the grain fix (25 Oct 2026): r14 1.72×, r03 1.85×, m5 2.07×, sargassum sand 1.36× (video path 1.59×, 1.86×, 1.87×, 1.37×). The guard compares with these.
 
 ## Stage A — cross-channel red estimate
 
@@ -195,7 +210,9 @@ Proposed rule (our own logic, no reference fit): build the 3 × 3 map from two a
 3. Red from green, by red survival (the A1 lead: every reference fit takes red from green).
 4. Of all maps that meet the anchors, take the one closest to the current per-channel gains.
 
-Check: m6 dE and the reef hue first, then m5 (vividness), then the guards (plants, black gear, grain, neutral ramp). The brightness gap is a separate tone choice: the target look says "slightly brighter", so Jake decides it.
+Check: m6 dE and the reef hue first, then m5 (vividness), then the guards (plants, black gear, grain, neutral ramp).
+
+Decision (Jake, 25 Oct 2026): colour moves toward m6; brightness keeps the target look (slightly brighter).
 
 ### A2 — our own estimate rule (only if A1 passes)
 
@@ -365,6 +382,24 @@ At 1:1, our output turns the fine grain of r14's teal sand into grey-white blotc
   - Fine detail has a floor (`detailFloor` 0.004, full strength from 0.012), but the sand grain is about 0.017. So grain gets the full boost.
   - The colour stages add little: red rebuild, neutral gains and water tone off change the grain by 0.1 to 1.8.
   - Fix to test: a noise floor for both detail stages, set from the photo's own grain. Check that light rays (IMG_7400) and the m5 vividness stay.
+
+#### Sand grain fix result (25 Oct 2026): adopted
+
+Change: a grain map (`UnderBlueGrain`, `FilterEngine.grainMap`): each pixel against a 1 px blur, spread over 1% of the short side. The light detail fades where the grain runs from 0.0022 to 0.0032 (`FinishingMath.lightDetailGrainLow/High`). Grain at the light detail's input (1920 px): IMG_7400 rays 0.0018, DSC03656 surface 0.0011, sand 0.0035 (r03) to 0.0084 (m5).
+
+| Try | Sand grain r14 / r03 / m5 | IMG_7400 rays kept | m5 local contrast | p4 subject detail |
+|---|---|---|---|---|
+| Before | 2.82× / 2.65× / 2.52× | 100% | 8.73 | 7.36 |
+| Grain floor on both stages (k 2 and 1.5) | 11.05 / 11.85 / 9.61 (std) | 100% | not run | not run |
+| Light detail on water only (`1 - calm.b`) | 7.12 / 7.63 / 8.12 (std) | 14% | not run | not run |
+| Smooth gate 0.0022-0.0032 + fine-detail floor 1.5 | 1.63× / 1.84× / 1.76× | 87% | 8.23 | 5.77 |
+| **Smooth gate 0.0022-0.0032 only (adopted)** | **1.72× / 1.85× / 2.07×** | 87% | 8.64 | 7.31 |
+
+- The water-only gate killed the rays: the colour test reads bright ray water as subject.
+- The fine-detail grain floor took 20% of the subject detail and 6% of the m5 local contrast. Dropped: m5 vividness is a goal.
+- Seen at 1:1: the r03 blotches are gone; the IMG_7400 rays stay, a little softer; the DSC03656 top is near white either way.
+- Guards: AquaColorFix gate 11.22 (was 11.23); black gear and neutral surfaces unchanged; plants inside tolerance. `RestorationTests` pass on the iOS simulator (80 tests, 1 skipped), with a new kernel-versus-mirror check for the gate.
+- Left: m5 sand is still 2.07× (Sea-thru 1.43×). The rest is the fine detail.
 
 ### D2 — the video prototype in the full chain
 

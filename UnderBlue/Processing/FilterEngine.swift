@@ -13,6 +13,7 @@ final class FilterEngine: Sendable {
     private let offsetKernel: CIColorKernel?
     private let lightDetailKernel: CIColorKernel?
     private let lightEdgeKernel: CIColorKernel?
+    private let grainKernel: CIColorKernel?
     private let subjectLiftKernel: CIColorKernel?
     private let calmKernels: [String: CIColorKernel]
     /// False when the finishing kernel failed to load. Output then uses the weaker colour-matrix
@@ -40,6 +41,7 @@ final class FilterEngine: Sendable {
         offsetKernel = MetalKernels.color("UnderBlueBlackOffset")
         lightDetailKernel = MetalKernels.color("UnderBlueLightDetail")
         lightEdgeKernel = MetalKernels.color("UnderBlueLightEdge")
+        grainKernel = MetalKernels.color("UnderBlueGrain")
         subjectLiftKernel = MetalKernels.color("UnderBlueSubjectLift")
         var calm: [String: CIColorKernel] = [:]
         for name in ["UnderBlueCalmShare", "UnderBlueCalmSpread", "UnderBlueCalmWeight", "UnderBlueCalmPremultiply",
@@ -206,6 +208,9 @@ final class FilterEngine: Sendable {
         }
 
         let sharpened = corrected
+        // The local grain level (FinishingMath.grainRadius, grainSpread): the light detail fades on grainy texture
+        // such as bright sand. Black (no fade) when the kernel is missing.
+        let grain = grainMap(corrected, short: short) ?? CIImage(color: .black).cropped(to: image.extent)
         // Light rays inside bright light keep their contrast (FinishingMath.lightDetail). The kernel
         // gets the blur back from an unsharp mask (sharp = pixel + (pixel - blur)), as clarity does.
         // It runs here, before the fine detail. Placed last (after vibrance), with a blur or an unsharp
@@ -219,10 +224,10 @@ final class FilterEngine: Sendable {
             mask.radius = max(2, FinishingMath.lightDetailRadius * short)
             mask.intensity = 1
             let sharp = (mask.outputImage ?? corrected).cropped(to: image.extent)
-            corrected = lightDetailKernel.apply(extent: image.extent, arguments: [corrected, sharp,
+            corrected = lightDetailKernel.apply(extent: image.extent, arguments: [corrected, sharp, grain,
                 CIVector(x: CGFloat(FinishingMath.lightDetailAmount), y: CGFloat(FinishingMath.lightDetailLow),
                          z: CGFloat(FinishingMath.lightDetailHigh), w: 0),
-                CIVector(x: CGFloat(FinishingMath.lightDetailEdgeLow), y: CGFloat(FinishingMath.lightDetailEdgeHigh), z: 0, w: 0)
+                CIVector(x: CGFloat(FinishingMath.lightDetailEdgeLow), y: CGFloat(FinishingMath.lightDetailEdgeHigh), z: CGFloat(FinishingMath.lightDetailGrainLow), w: CGFloat(FinishingMath.lightDetailGrainHigh))
             ]) ?? corrected
             // The kernel skips a strong edge itself, but not the water around it. Beside a bright fish the blur
             // takes in the fish, so the water reads darker than its broad light and the detail made it darker
@@ -316,6 +321,20 @@ final class FilterEngine: Sendable {
     }
     /// The water calm weight (r) and water share (g) of `basis`, read with its values `v`. Nil when a
     /// kernel failed to load; the finishing then runs without the calm. See FinishingMath.calmShare.
+    /// The local grain level (red, gamma luminance): each pixel against its small blur (FinishingMath.grainRadius px),
+    /// spread over FinishingMath.grainSpread of the short side. Nil without the kernel.
+    func grainMap(_ image: CIImage, short: Float) -> CIImage? {
+        guard let grainKernel else { return nil }
+        let small = CIFilter.gaussianBlur()
+        small.inputImage = image.clampedToExtent()
+        small.radius = FinishingMath.grainRadius
+        guard let difference = grainKernel.apply(extent: image.extent, arguments: [image, (small.outputImage ?? image).cropped(to: image.extent)]) else { return nil }
+        let wide = CIFilter.gaussianBlur()
+        wide.inputImage = difference.clampedToExtent()
+        wide.radius = max(1, FinishingMath.grainSpread * short)
+        return wide.outputImage?.cropped(to: image.extent)
+    }
+
     func waterCalmWeight(_ basis: CIImage, correction v: ColorCorrection) -> CIImage? {
         guard v != .identity, let shareKernel = calmKernels["UnderBlueCalmShare"],
               let spreadKernel = calmKernels["UnderBlueCalmSpread"], let weightKernel = calmKernels["UnderBlueCalmWeight"] else { return nil }

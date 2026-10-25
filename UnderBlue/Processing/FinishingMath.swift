@@ -203,7 +203,8 @@ enum FinishingMath {
     /// the pixel's difference from it grows by lightDetailAmount, on gamma luminance. A large
     /// difference is an edge (a dark wing against the light). It gets none, so no rim appears.
     /// The kernel mirrors it.
-    static func lightDetail(_ c: SIMD3<Float>, base: SIMD3<Float>) -> SIMD3<Float> {
+    /// `grain` is the local grain level (FilterEngine.grainMap): the detail fades from lightDetailGrainLow to lightDetailGrainHigh.
+    static func lightDetail(_ c: SIMD3<Float>, base: SIMD3<Float>, grain: Float = 0) -> SIMD3<Float> {
         func smoothstep(_ low: Float, _ high: Float, _ x: Float) -> Float {
             let t = min(1, max(0, (x - low) / max(1e-5, high - low)))
             return t * t * (3 - 2 * t)
@@ -211,7 +212,8 @@ enum FinishingMath {
         let l = (c * ColorCorrection.luma).sum(), lb = (base * ColorCorrection.luma).sum()
         guard l > 1e-5, lb > 0, l.isFinite, lb.isFinite else { return c }
         let y = pow(l, 1 / 2.2), b = pow(lb, 1 / 2.2), d = y - b
-        let w = smoothstep(lightDetailLow, lightDetailHigh, b) * (1 - smoothstep(lightDetailEdgeLow, lightDetailEdgeHigh, abs(d)))
+        let smooth = 1 - smoothstep(lightDetailGrainLow, lightDetailGrainHigh, max(grain, 0))
+        let w = smoothstep(lightDetailLow, lightDetailHigh, b) * (1 - smoothstep(lightDetailEdgeLow, lightDetailEdgeHigh, abs(d))) * smooth
         let shaped = min(max(y + d * lightDetailAmount * w, 0), max(1, y))
         let out = c * (pow(shaped, 2.2) / l)
         return out.x.isFinite && out.y.isFinite && out.z.isFinite ? out : c
@@ -219,6 +221,13 @@ enum FinishingMath {
     static let lightDetailAmount: Float = 1.3, lightDetailRadius: Float = 0.018
     static let lightDetailLow: Float = 0.5, lightDetailHigh: Float = 0.7
     static let lightDetailEdgeLow: Float = 0.06, lightDetailEdgeHigh: Float = 0.15
+    /// Grain gate of the light detail (25 Oct 2026, docs/RestorationExperiments.md). grainRadius is the small blur in
+    /// pixels (grain is a pixel-scale thing); grainSpread the wide blur that makes it a local level (share of the short
+    /// side). The detail fades from lightDetailGrainLow to lightDetailGrainHigh. Grain at the light detail's input,
+    /// 1920 px: IMG_7400 rays 0.0018, DSC03656 surface 0.0011, sand 0.0035 (r03) to 0.0084 (m5).
+    /// A grain floor for the fine detail was tried too: it took 20% of the subject detail, so it was dropped.
+    static let grainRadius: Float = 1, grainSpread: Float = 0.01
+    static let lightDetailGrainLow: Float = 0.0022, lightDetailGrainHigh: Float = 0.0032
     /// Edge guard (photos, FilterEngine.finishing): the size of the light detail's difference, blurred over
     /// lightEdgeSpread of its radius. From lightEdgeLow to lightEdgeHigh the pixel goes back to its value
     /// before the light detail. Mac harness, 24 Oct 2026 (E27): 0.02 to 0.04 removed the DSC03545 band but kept only

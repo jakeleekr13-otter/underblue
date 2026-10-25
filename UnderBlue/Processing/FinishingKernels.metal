@@ -215,15 +215,29 @@ using namespace metal;
 // grows, so light rays stay apart. Large differences (edges) get none. FinishingMath.lightDetail
 // mirrors it. sharp = the unsharp mask at intensity 1 (pixel + (pixel - blur)), so the blur is
 // 2 * pixel - sharp. shape = (amount, bright low, bright high, unused), edge = (edge low, edge high).
-[[stitchable]] float4 UnderBlueLightDetail(coreimage::sample_t source, coreimage::sample_t sharp, float4 shape, float4 edge) {
+[[stitchable]] float4 UnderBlueLightDetail(coreimage::sample_t source, coreimage::sample_t sharp, coreimage::sample_t grain, float4 shape, float4 edge) {
     const float3 luma = float3(0.2126f, 0.7152f, 0.0722f);
     const float l = dot(source.rgb, luma), lb = dot(2.0f * source.rgb - sharp.rgb, luma);
     if (!(l > 1e-5f) || !(lb > 0.0f)) { return source; }
     const float y = pow(l, 1.0f / 2.2f), b = pow(lb, 1.0f / 2.2f), d = y - b;
-    const float w = smoothstep(shape.y, shape.z, b) * (1.0f - smoothstep(edge.x, edge.y, fabs(d)));
+    // Light rays sit in smooth water; bright sand also passes the brightness test, and its texture turned into
+    // blotches (r03, r14). So the detail fades where the local grain (UnderBlueGrain) runs from edge.z to edge.w.
+    // Grain level, 1920 px, 25 Oct 2026: IMG_7400 rays 0.003, sand 0.013 to 0.015.
+    const float smooth = 1.0f - smoothstep(edge.z, edge.w, max(grain.r, 0.0f));
+    const float w = smoothstep(shape.y, shape.z, b) * (1.0f - smoothstep(edge.x, edge.y, fabs(d))) * smooth;
     const float shaped = min(max(y + d * shape.x * w, 0.0f), max(1.0f, y));
     const float3 out = source.rgb * (pow(shaped, 2.2f) / l);
     return all(isfinite(out)) ? float4(out, source.a) : source;
+}
+
+// Grain (FilterEngine.finishing, before the light detail): the gamma-luminance difference between a pixel and its
+// small blur. Blurred wide, it is the local grain level. The light detail fades where it is high (bright sand;
+// docs/RestorationExperiments.md, 25 Oct 2026).
+[[stitchable]] float4 UnderBlueGrain(coreimage::sample_t source, coreimage::sample_t blurred) {
+    const float3 luma = float3(0.2126f, 0.7152f, 0.0722f);
+    const float l = dot(max(source.rgb, float3(0.0f)), luma), lb = dot(max(blurred.rgb, float3(0.0f)), luma);
+    const float d = fabs(pow(l, 1.0f / 2.2f) - pow(lb, 1.0f / 2.2f));
+    return float4(isfinite(d) ? d : 0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 // The size of the light detail's difference (gamma luminance), the input of its edge guard in

@@ -1090,9 +1090,9 @@ final class RestorationTests: XCTestCase {
         var outputs: [SIMD3<Float>] = []
         for (pixel, base) in cases {
             // The kernel takes an unsharp mask at intensity 1: pixel + (pixel - blur).
-            let output = try XCTUnwrap(kernel.apply(extent: CGRect(x: 0, y: 0, width: 4, height: 4), arguments: [solid(pixel), solid(2 * pixel - base),
+            let output = try XCTUnwrap(kernel.apply(extent: CGRect(x: 0, y: 0, width: 4, height: 4), arguments: [solid(pixel), solid(2 * pixel - base), solid(.zero),
                 CIVector(x: CGFloat(FinishingMath.lightDetailAmount), y: CGFloat(FinishingMath.lightDetailLow), z: CGFloat(FinishingMath.lightDetailHigh), w: 0),
-                CIVector(x: CGFloat(FinishingMath.lightDetailEdgeLow), y: CGFloat(FinishingMath.lightDetailEdgeHigh), z: 0, w: 0)]))
+                CIVector(x: CGFloat(FinishingMath.lightDetailEdgeLow), y: CGFloat(FinishingMath.lightDetailEdgeHigh), z: CGFloat(FinishingMath.lightDetailGrainLow), w: CGFloat(FinishingMath.lightDetailGrainHigh))]))
             var px = [Float](repeating: 0, count: 4)
             engine.context.render(output, toBitmap: &px, rowBytes: 16, bounds: CGRect(x: 1, y: 1, width: 1, height: 1),
                                   format: .RGBAf, colorSpace: FilterEngine.workingSpace)
@@ -1106,6 +1106,17 @@ final class RestorationTests: XCTestCase {
         // Dark areas and edges keep their value.
         assertEqual(outputs[2], cases[2].pixel, accuracy: 1e-5)
         assertEqual(outputs[3], cases[3].pixel, accuracy: 1e-5)
+        // Grainy texture (bright sand, grain at lightDetailGrainHigh) keeps its value; the kernel agrees.
+        let (ray, base) = cases[0]
+        let grain = FinishingMath.lightDetailGrainHigh
+        assertEqual(FinishingMath.lightDetail(ray, base: base, grain: grain), ray, accuracy: 1e-6)
+        let grainy = try XCTUnwrap(kernel.apply(extent: CGRect(x: 0, y: 0, width: 4, height: 4), arguments: [solid(ray), solid(2 * ray - base), solid(SIMD3(repeating: grain)),
+            CIVector(x: CGFloat(FinishingMath.lightDetailAmount), y: CGFloat(FinishingMath.lightDetailLow), z: CGFloat(FinishingMath.lightDetailHigh), w: 0),
+            CIVector(x: CGFloat(FinishingMath.lightDetailEdgeLow), y: CGFloat(FinishingMath.lightDetailEdgeHigh), z: CGFloat(FinishingMath.lightDetailGrainLow), w: CGFloat(FinishingMath.lightDetailGrainHigh))]))
+        var px = [Float](repeating: 0, count: 4)
+        engine.context.render(grainy, toBitmap: &px, rowBytes: 16, bounds: CGRect(x: 1, y: 1, width: 1, height: 1),
+                              format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+        assertEqual(SIMD3(px[0], px[1], px[2]), ray, accuracy: 0.003)
     }
 
     func testFinishingKernelMatchesCPUMirrorWithWhiteReference() {

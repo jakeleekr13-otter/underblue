@@ -228,6 +228,26 @@ Second check: the colour chart in AquaColorFix pair 6 (`O6.WEBP`, teal-green wat
 - Our greys stay light cyan-blue (hue about 225). By eye too: the grey step is sky blue, and the yellow and orange patches lean green. AquaColorFix's greys are neutral.
 - So A2's neutral anchor has a measurable target here: mean chroma toward 0.02 to 0.03.
 
+#### A2 prototype round (25 Oct 2026, Python, 960 px; `scripts/color-eval/a2_proto.py`)
+
+Jake chose A2 before B2 (25 Oct 2026). Every try builds its map from the photo itself; none reads a reference.
+
+What the analysis gives today: O6 has no white reference (neutral (0, 0, 0), share 0: the chart is about 1.5% of the frame and vanishes at the 48 × 48 analysis size). Its grey patches test as water-like (about 0.98), so they get the water tone.
+
+| Try | m5 dE | m6 dE | O6 chart chroma | Green water C / hue | Kelp C / hue | Seen by eye |
+|---|---|---|---|---|---|---|
+| Ours today | 12.6 | 27.4 | 0.076 | 0.035 / 201 | 0.031 / 110 | |
+| 1. Gains on the source (grey world on near pixels, or the water colour as light) | 33 to 41 | 21 to 26 | 0.11 to 0.13 | | down to 0.006 | Fails: one gain cannot replace our veil removal and tone. |
+| 2. On our output: object gains (fixed s 0.7) and water gains, blended by depth | 13.6 | 25.0 | 0.041 | 0.065 / 231 | 0.032 / 147 | m5 sand too warm. |
+| 3. As 2, object strength from the tint (adaptive s) | 11.3 | 23.9 | 0.030 | 0.065 / 231 | 0.033 / 151 | Jake: O6 sand-to-water boundary looks wrong. Far sand gets the water gains. |
+| 4. As 3, water gains only where the colour test says water | 11.1 | 23.6 | 0.123 | 0.065 / 232 | 0.029 / 126 | O6 reads as water almost everywhere; the chart turns blue. |
+| 5. As 3, water gains only on far and smooth pixels | 11.3 | 24.5 | 0.031 | 0.066 / 235 | 0.031 / 110 | Blue islands with hard edges in the hazy background. |
+| 6. Object gains everywhere, then a colour-space shift of water-like colours | 11.6 to 13.1 | 24.4 to 25.6 | 0.05 to 0.11 | 0.06 to 0.09 / 220 to 230 | | O6 reef turns blue: after the neutralisation the reef is as close to the water colour as the water. |
+| 7. Object gains everywhere, the veil added back by depth: out = ours × g + v × (T − W × g) (current candidate) | 11.3 | 23.9 | 0.030 | 0.107 / 236 | 0.020 / 168 | No seam; far O6 sand turns bluish with distance; kelp leans teal (outside the 60-160 band). |
+
+- m6's reef stays olive (124 to 130) in every try: these anchors only remove the water's tint. The brown needs red from green (the A1 lead), as a next step.
+- Open: try 7 still needs Jake's eye on O6, and the kelp flag. Sheets: `a2_proto.py` writes `<k>__proto.png`.
+
 ### A2 — our own estimate rule (only if A1 passes)
 
 It replaces or extends `redRebuild`. It does not go into the restoration kernel, because the kernel is the optical step.

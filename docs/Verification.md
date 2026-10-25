@@ -16,9 +16,15 @@ On the iPhone 17 it does not show either (25 Oct 2026). A device test opened `m5
 
 So the band does not come from the photo path with default settings on this file.
 
+Found and fixed (25 Oct 2026, `fix/preview-whole-pixels` 9917bd6, from `main`; also on `restoration-experiments`):
+- The phone's photo is the 24 MP original (6192 × 4128), not the 1600 px `m5.png`. With it the device test shows the band: at 0.5% height (0, 64, 133), at 10% (0, 3, 104).
+- Only the 1600 px preview has it. A 1548 px preview (exactly a quarter, 1032 rows), the full-size preview and the export do not.
+- Cause: the preview scaled both sides by one ratio, so it was 1066.67 rows high. The edge stages read the partial top row.
+- Fix: `FilterEngine.downscaled` scales to whole pixels on both sides. After the fix the top reads (0, 13, 108), the same as the full-size render.
+
 Still open:
-- Which file, preset and sliders showed it. The photo in the phone's library may not be the same file as `m5.png`.
-- A screenshot of the band, to see whether it is in the image or in the editor UI.
+- Jake checks m5 in the editor on the phone with the fixed build.
+- The fix branch is not merged into `main` and not pushed.
 
 ## Light detail edge guard (24 Oct 2026, photos only)
 

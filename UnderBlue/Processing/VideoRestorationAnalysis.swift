@@ -32,10 +32,9 @@ struct ObjectKeyframe: Sendable, Equatable {
 
     static func make(image: CIImage, depth: DepthEstimate, context: CIContext) -> ObjectKeyframe? {
         guard !image.extent.isEmpty, let map = try? depth.resampled(maxDimension: depthDimension).map else { return nil }
-        let scale = min(1, maximumDimension / max(image.extent.width, image.extent.height))
-        let small = image.transformed(by: CGAffineTransform(translationX: -image.extent.minX, y: -image.extent.minY)
-            .concatenating(CGAffineTransform(scaleX: scale, y: scale)))
-        guard let cg = context.createCGImage(small, from: small.extent.integral, format: .RGBA8,
+        // Whole pixels on both sides (FilterEngine.downscaled): a partial edge row would enter the far-pixel means.
+        let small = FilterEngine.downscaled(image, maxPixel: maximumDimension)
+        guard let cg = context.createCGImage(small, from: small.extent, format: .RGBA8,
                                              colorSpace: CGColorSpace(name: CGColorSpace.sRGB)) else { return nil }
         return ObjectKeyframe(image: cg, depth: map)
     }

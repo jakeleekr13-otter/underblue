@@ -181,8 +181,7 @@ actor PhotoProcessor {
         try Task.checkCancellation()
         let source = engine.sdr(try open(url))
         let plan = original ? nil : try await plan(for: url, source: source, subjects: subjects)
-        let ratio = min(1, maxPixel / max(source.extent.width, source.extent.height))
-        let small = source.transformed(by: CGAffineTransform(scaleX: ratio, y: ratio))
+        let small = FilterEngine.downscaled(source, maxPixel: maxPixel)
         let chosen = Self.settings(settings, for: subjects) { engine.analyze(source, subjects: $0) }
         let result = original ? small : processed(small, settings: chosen, plan: plan)
         guard let rendered = engine.context.createCGImage(result, from: result.extent, format: .RGBA8, colorSpace: FilterEngine.photoSpace) else { throw UnderBlueError.unreadable }
@@ -262,8 +261,7 @@ actor PhotoProcessor {
     func comparisonPreviews(_ url: URL, settings: FilterSettings) async throws -> [PhotoPipelineVariant: CGImage] {
         let source = engine.sdr(try open(url))
         let plan = try await prepare(url: url, source: source).plan
-        let ratio = min(1, 1600 / max(source.extent.width, source.extent.height))
-        let small = source.transformed(by: CGAffineTransform(scaleX: ratio, y: ratio))
+        let small = FilterEngine.downscaled(source, maxPixel: 1600)
         var result: [PhotoPipelineVariant: CGImage] = [:]
         for variant in PhotoPipelineVariant.allCases {
             let image = processed(small, settings: settings, plan: plan, debugVariant: variant)

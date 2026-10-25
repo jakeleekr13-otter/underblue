@@ -108,4 +108,26 @@ final class PhotoTests: XCTestCase {
         XCTAssertEqual(result.width, 40); XCTAssertEqual(result.height, 80)
         XCTAssertEqual(result.colorSpace?.name, CGColorSpace.displayP3)
     }
+
+    /// The preview of a 6192 x 4128 photo at 1600 px had 1066.67 rows. The partial top row made the edge stages
+    /// brighten the top of the preview (m5, 25 Oct 2026). Both sides must be whole pixels.
+    func testDownscaledPreviewHasWholePixelSidesAndAFlatTopEdge() throws {
+        let extent = CGRect(x: 0, y: 0, width: 6192, height: 4128)
+        let small = FilterEngine.downscaled(CIImage(color: CIColor(red: 0, green: 0.2, blue: 0.5)).cropped(to: extent), maxPixel: 1600)
+        XCTAssertEqual(small.extent, CGRect(x: 0, y: 0, width: 1600, height: 1067))
+        // Smaller than the limit: unchanged.
+        let tiny = CIImage(color: .gray).cropped(to: CGRect(x: 0, y: 0, width: 800, height: 600))
+        XCTAssertEqual(FilterEngine.downscaled(tiny, maxPixel: 1600).extent, tiny.extent)
+        // A flat image stays flat up to its top row after an edge-clamped blur.
+        let engine = FilterEngine()
+        let blurred = small.clampedToExtent().applyingGaussianBlur(sigma: 20).cropped(to: small.extent)
+        func row(_ y: CGFloat) -> SIMD3<Float> {
+            var px = [Float](repeating: 0, count: 4)
+            engine.context.render(blurred, toBitmap: &px, rowBytes: 16, bounds: CGRect(x: 800, y: y, width: 1, height: 1),
+                                  format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+            return SIMD3(px[0], px[1], px[2])
+        }
+        let top = row(small.extent.maxY - 1), middle = row(500)
+        for i in 0..<3 { XCTAssertEqual(top[i], middle[i], accuracy: 1e-3) }
+    }
 }

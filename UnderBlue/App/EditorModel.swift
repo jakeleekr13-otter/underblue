@@ -359,10 +359,10 @@ final class EditorModel {
     private func updateProgress(_ value: Double) { progress = value }
     // MARK: Subjects
 
-    /// Manual: finds the subject groups once, then shows the picker. A photo with none stays in Auto.
-    func chooseManualSubjects() async {
+    /// Semi-auto: finds the subject groups once, then shows the picker. A photo with none stays in Auto.
+    func chooseSemiAutoSubjects() async {
         guard media.kind == .photo, !subjects.isDetecting else { return }
-        if subjects.candidates != nil { subjects.resumeManual(); return }
+        if subjects.candidates != nil { subjects.resumeSemiAuto(); return }
         subjects.startDetecting()
         do {
             let found = try await photos.subjectCandidates(media.url)
@@ -384,10 +384,33 @@ final class EditorModel {
     func preciseModelReady() async {
         saveWithoutEmphasis = false
         guard media.kind == .photo, subjectPickerEnabled, !loading else { return }
-        if subjects.status == .waitingForModel { await chooseManualSubjects() }
+        if subjects.status == .waitingForModel { await chooseSemiAutoSubjects() }
         await refreshPreview()
     }
     func chooseAutoSubjects() { subjects.useAuto() }
+    /// Manual: no detection. The user presses and holds on a subject (docs/ManualSubject.md).
+    func chooseManualSubjects() {
+        guard media.kind == .photo else { return }
+        subjects.useManual()
+    }
+    /// A press and hold in Manual: on a picked subject it removes that subject, elsewhere it adds the subject
+    /// under the point. One press at a time.
+    func pressSubject(at point: CGPoint) async {
+        guard media.kind == .photo, subjects.isManual, subjects.pressing == nil else { return }
+        if let index = subjects.press(at: point) { subjects.removePress(index); return }
+        subjects.startPress(at: point)
+        do {
+            subjects.finishPress(try await photos.pressMask(media.url, at: point))
+        } catch SubjectModelError.notReady {
+            subjects.cancelPress()
+            PreciseModelLoader.shared.recheck()
+        } catch {
+            subjects.cancelPress()
+            if !(error is CancellationError) { report(error, operation: .preview) }
+        }
+    }
+    func setSubjectStrength(_ value: Float) { subjects.setStrength(value) }
+    func removeSubjectPress(_ index: Int) { subjects.removePress(index) }
     func toggleSubject(_ id: Int) { subjects.toggle(id) }
     func toggleTier(_ id: Int) { subjects.toggleTier(id) }
     func finishSubjectPicking() { subjects.done() }

@@ -203,7 +203,8 @@ enum FinishingMath {
     /// the pixel's difference from it grows by lightDetailAmount, on gamma luminance. A large
     /// difference is an edge (a dark wing against the light). It gets none, so no rim appears.
     /// The kernel mirrors it.
-    static func lightDetail(_ c: SIMD3<Float>, base: SIMD3<Float>) -> SIMD3<Float> {
+    /// `grain` is the local grain level (FilterEngine.grainMap): the detail fades from lightDetailGrainLow to lightDetailGrainHigh.
+    static func lightDetail(_ c: SIMD3<Float>, base: SIMD3<Float>, grain: Float = 0) -> SIMD3<Float> {
         func smoothstep(_ low: Float, _ high: Float, _ x: Float) -> Float {
             let t = min(1, max(0, (x - low) / max(1e-5, high - low)))
             return t * t * (3 - 2 * t)
@@ -211,14 +212,86 @@ enum FinishingMath {
         let l = (c * ColorCorrection.luma).sum(), lb = (base * ColorCorrection.luma).sum()
         guard l > 1e-5, lb > 0, l.isFinite, lb.isFinite else { return c }
         let y = pow(l, 1 / 2.2), b = pow(lb, 1 / 2.2), d = y - b
-        let w = smoothstep(lightDetailLow, lightDetailHigh, b) * (1 - smoothstep(lightDetailEdgeLow, lightDetailEdgeHigh, abs(d)))
+        let smooth = 1 - smoothstep(lightDetailGrainLow, lightDetailGrainHigh, max(grain, 0))
+        let w = smoothstep(lightDetailLow, lightDetailHigh, b) * (1 - smoothstep(lightDetailEdgeLow, lightDetailEdgeHigh, abs(d))) * smooth
         let shaped = min(max(y + d * lightDetailAmount * w, 0), max(1, y))
         let out = c * (pow(shaped, 2.2) / l)
         return out.x.isFinite && out.y.isFinite && out.z.isFinite ? out : c
     }
+    /// Object colour (UnderBlueObjectColour, photos): CPU mirror. `c` is linear Rec.2020 (the working space);
+    /// the steps run in linear sRGB. `gains` take the water's tint off objects; `redFromGreen` (k x redLoss) adds red
+    /// from the green excess on near pixels (`depth` below objectNearFull full, above objectNearNone none).
+    /// `waterExcess` is the water's own green excess: only the excess above it gets red, so water never does.
+    static func objectColour(_ c: SIMD3<Float>, depth: Float, gains: SIMD3<Float>, redFromGreen: Float, waterExcess: Float = 0) -> SIMD3<Float> {
+        func smoothstep(_ low: Float, _ high: Float, _ x: Float) -> Float {
+            let t = min(1, max(0, (x - low) / max(1e-5, high - low)))
+            return t * t * (3 - 2 * t)
+        }
+        let s = rec2020ToSRGB * c * gains
+        let near = 1 - smoothstep(objectNearFull, objectNearNone, min(1, max(0, depth)))
+        let excess = max(0, s.y - 0.5 * (s.x + s.z) - waterExcess)
+        let l0 = (s * ColorCorrection.luma).sum()
+        var r = s + SIMD3(redFromGreen * excess * near, 0, 0)
+        let l1 = (r * ColorCorrection.luma).sum()
+        r = l1 > 1e-6 ? r * (l0 / l1) : s
+        let out = sRGBToRec2020 * r
+        return out.x.isFinite && out.y.isFinite && out.z.isFinite ? out : c
+    }
+    /// Object colour for video (UnderBlueObjectColourVideo): CPU mirror. Step 2 only; a pixel's weight is how far its
+    /// colour is from the scene's water (OKLab a,b distance from `waterAB`, objectWaterDistanceLow none, High full).
+    static func objectColourVideo(_ c: SIMD3<Float>, waterAB: SIMD2<Float>, waterExcess: Float, redFromGreen: Float) -> SIMD3<Float> {
+        let s = rec2020ToSRGB * c
+        let lms = SIMD3<Float>((SIMD3<Float>(0.4122214708, 0.5363325363, 0.0514459929) * s).sum(),
+                               (SIMD3<Float>(0.2119034982, 0.6806995451, 0.1073969566) * s).sum(),
+                               (SIMD3<Float>(0.0883024619, 0.2817188376, 0.6299787005) * s).sum())
+        let q = SIMD3<Float>(cbrt(max(lms.x, 0)), cbrt(max(lms.y, 0)), cbrt(max(lms.z, 0)))
+        let ab = SIMD2<Float>(1.9779984951 * q.x - 2.4285922050 * q.y + 0.4505937099 * q.z,
+                              0.0259040371 * q.x + 0.7827717662 * q.y - 0.8086757660 * q.z)
+        let t = min(1, max(0, (simd_length(ab - waterAB) - objectWaterDistanceLow) / (objectWaterDistanceHigh - objectWaterDistanceLow)))
+        let weight = t * t * (3 - 2 * t)
+        let excess = max(0, s.y - 0.5 * (s.x + s.z) - waterExcess)
+        let l0 = (s * ColorCorrection.luma).sum()
+        var r = s + SIMD3(redFromGreen * excess * weight, 0, 0)
+        let l1 = (r * ColorCorrection.luma).sum()
+        r = l1 > 1e-6 ? r * (l0 / l1) : s
+        let out = sRGBToRec2020 * r
+        return out.x.isFinite && out.y.isFinite && out.z.isFinite ? out : c
+    }
+    /// Video weight: OKLab a,b distance from the scene's water. 0.04 to 0.08 still put red on m5's water; at 0.05 to 0.10
+    /// the water's 99th-percentile change is 1.2 dE76 at most on the test stills, and the O4/m6 reef keeps most of the
+    /// photo rule's red (hue 114 against 108). Step 1 stays off in video: on the video path it greyed v5_70.
+    static let objectWaterDistanceLow: Float = 0.05, objectWaterDistanceHigh: Float = 0.10
+    /// Object colour constants (docs/RestorationExperiments.md, A2, 25 Oct 2026). Water sits at depth 0.97 or more in
+    /// every test photo; the O4 reef spans 0 to 0.96. objectRedK x redLoss is the red from green.
+    static let objectNearFull: Float = 0.6, objectNearNone: Float = 0.9, objectRedK: Float = 3
+    /// The water's tint: strength = how far the near mean leans toward the far mean (OKLab a,b projection over half
+    /// the far chroma); below objectTintFloor it is 0. Gains are capped at objectGainCap and its inverse.
+    /// The floor was 0.3; O1 (0.35) only lost its blue water to teal and turned its reef pink, so it is 0.5 (25 Oct 2026).
+    static let objectTintFloor: Float = 0.5, objectGainCap: Float = 1.6, objectNear: Float = 0.4, objectFar: Float = 0.8
+    /// The tint step needs objects: the near mean must differ from the far water (OKLab distance, full from the high
+    /// end). In open-water photos the near pixels are water too (r01, r07, r10-r13: 0.004 to 0.089); O6's reef is 0.161.
+    static let objectDistanceLow: Float = 0.10, objectDistanceHigh: Float = 0.14
+    /// Objects under the tint are less saturated than the water. Near saturation (OKLab chroma / L) over far
+    /// saturation: full below the low end, none above the high end. Chroma alone falls with brightness, so it read dark
+    /// near water as objects. Open-water frames whose near pixels are darker water pass the distance check on
+    /// brightness alone (25 Oct clips: 1.09 to 3.34) and turned the sunlit water pink; O6's reef is 0.84.
+    static let objectSaturationRatioLow: Float = 0.92, objectSaturationRatioHigh: Float = 1.02
+    /// The far water needs a real tint to measure (far chroma, none below the low end): a dark cave read as far
+    /// (chroma 0.021) gave noise gains and an orange ray. O6's water is 0.056.
+    static let objectFarChromaLow: Float = 0.03, objectFarChromaHigh: Float = 0.04
+    /// Linear Rec.2020 <-> linear sRGB (D65). Columns are the source primaries.
+    static let rec2020ToSRGB = simd_float3x3(rows: [SIMD3(1.6605, -0.5876, -0.0728), SIMD3(-0.1246, 1.1329, -0.0083), SIMD3(-0.0182, -0.1006, 1.1187)])
+    static let sRGBToRec2020 = simd_float3x3(rows: [SIMD3(0.6274, 0.3293, 0.0433), SIMD3(0.0691, 0.9195, 0.0114), SIMD3(0.0164, 0.0880, 0.8956)])
     static let lightDetailAmount: Float = 1.3, lightDetailRadius: Float = 0.018
     static let lightDetailLow: Float = 0.5, lightDetailHigh: Float = 0.7
     static let lightDetailEdgeLow: Float = 0.06, lightDetailEdgeHigh: Float = 0.15
+    /// Grain gate of the light detail (25 Oct 2026, docs/RestorationExperiments.md). grainRadius is the small blur in
+    /// pixels (grain is a pixel-scale thing); grainSpread the wide blur that makes it a local level (share of the short
+    /// side). The detail fades from lightDetailGrainLow to lightDetailGrainHigh. Grain at the light detail's input,
+    /// 1920 px: IMG_7400 rays 0.0018, DSC03656 surface 0.0011, sand 0.0035 (r03) to 0.0084 (m5).
+    /// A grain floor for the fine detail was tried too: it took 20% of the subject detail, so it was dropped.
+    static let grainRadius: Float = 1, grainSpread: Float = 0.01
+    static let lightDetailGrainLow: Float = 0.0022, lightDetailGrainHigh: Float = 0.0032
     /// Edge guard (photos, FilterEngine.finishing): the size of the light detail's difference, blurred over
     /// lightEdgeSpread of its radius. From lightEdgeLow to lightEdgeHigh the pixel goes back to its value
     /// before the light detail. Mac harness, 24 Oct 2026 (E27): 0.02 to 0.04 removed the DSC03545 band but kept only

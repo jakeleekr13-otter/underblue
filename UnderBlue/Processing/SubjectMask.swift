@@ -60,6 +60,20 @@ struct SubjectLift: Sendable, Equatable {
     /// Tiers two and three as the picker outlines them. Nil: the kernel splits them from the water share
     /// and the contrast transmission itself, with no depth or texture test.
     var tiers: SubjectTierMap?
+
+    /// The user's subject strength (docs/ManualSubject.md, R6): `k` scales the whole recipe, way B. 1 is the
+    /// recipe above, 0 is no lift (nil). Jake picked B over a brightness-only scale and over a lower contrast
+    /// pivot (25 Oct 2026). The chroma cap and the highlight pulls are limits, so they do not scale.
+    func scaled(_ k: Float) -> SubjectLift? {
+        guard k > 0 else { return nil }
+        guard k != 1 else { return self }
+        var lift = self
+        lift.strength = min(0.9, strength * k)
+        lift.contrast = contrast * k
+        lift.detail = detail * k
+        lift.clarity = clarity * k
+        return lift
+    }
 }
 
 /// Soft weights for tiers two and three on a grid, row 0 on top: the picker's outline before its 0.5 cut
@@ -179,8 +193,30 @@ struct SubjectMask: Sendable, Equatable {
     /// on the `preciseSide` grid, with no share test. The picker calls it once per group box.
     @available(iOS 27.0, macOS 27.0, *)
     static func precise(_ image: CIImage, box: NormalizedRect, context: CIContext) async -> SubjectMask? {
+        await precise(image, request: GenerateIterativeSegmentationRequest(seedBox: box), context: context)
+    }
+
+    /// The iterative segmentation seeded with a press (docs/ManualSubject.md). Points are in Vision's normalized
+    /// space, origin at the bottom left. `included` adds parts the first mask missed; the model takes 13 points
+    /// at most, the seed included. Excluded points are left out: they also removed nearby parts (R4).
+    @available(iOS 27.0, macOS 27.0, *)
+    static func precise(_ image: CIImage, point: NormalizedPoint, included: [NormalizedPoint] = [], context: CIContext) async -> SubjectMask? {
+        // A request with added points reuses the image of the request before it, in the whole process. After
+        // another image it returned a wrong mask (DSC03545: 1.0 and 0.79 of the frame, not 0.025). So the seed
+        // alone runs on this image first (docs/ManualSubject.md, R6).
+        if !included.isEmpty, let input = visionInput(image) {
+            let seed = GenerateIterativeSegmentationRequest(seedPoint: point)
+            seed.qualityLevel = .accurate
+            guard case .ready = await seed.assetStatus, (try? await seed.perform(on: input)) != nil else { return nil }
+        }
+        let request = GenerateIterativeSegmentationRequest(seedPoint: point)
+        for p in included.prefix(12) { guard (try? request.addIncludedPoint(p)) != nil else { return nil } }
+        return await precise(image, request: request, context: context)
+    }
+
+    @available(iOS 27.0, macOS 27.0, *)
+    private static func precise(_ image: CIImage, request: GenerateIterativeSegmentationRequest, context: CIContext) async -> SubjectMask? {
         guard let input = visionInput(image) else { return nil }
-        let request = GenerateIterativeSegmentationRequest(seedBox: box)
         request.qualityLevel = .accurate
         // Never download here: a preview would wait on the network, and fail without one. The UI starts the
         // download (downloadPreciseModel) when the user turns Labs on; until it is ready this returns nil

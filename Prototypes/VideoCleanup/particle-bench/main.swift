@@ -21,5 +21,7 @@ case "leak": try await leakTest(args[1])
 case "peek": try await peek(args[1], Double(args[2])!, Int(args[3])!, Int(args[4])!, Int(args[5])!, Int(args[6])!, args[7])
 case "edges": try await edgeTest()
 case "viz": try await vizFrame(args[1], Double(args[2])!, Int(args[3])!, Int(args[4])!)
+case "photo": photoSpecks(Array(args.dropFirst()))
+case "pair": photoPairs(Array(args.dropFirst()))
 default: print("modes: scan, noise")
 }

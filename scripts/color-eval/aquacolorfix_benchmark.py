@@ -188,7 +188,7 @@ def fit_size(path: Path, maximum: int) -> tuple[int, int]:
 
 
 def find_export(folder: Path, prefix: str, number: int) -> Path:
-    matches = sorted(path for path in folder.glob(f"{prefix}{number}.*") if path.suffix.lower() in {".jpg", ".jpeg"})
+    matches = sorted(path for path in folder.glob(f"{prefix}{number}.*") if path.suffix.lower() in {".jpg", ".jpeg", ".webp", ".png"})
     if len(matches) != 1:
         raise RuntimeError(f"Expected one {prefix}{number} export, found: {matches}")
     return matches[0]
@@ -246,6 +246,8 @@ def main() -> None:
                         help="Score these files instead of the H exports. A pattern with {n} for the pair number, "
                              "for example a harness sheet folder: /out/sheet/p{n}__combined.jpg")
     parser.add_argument("--label", default="UnderBlue", help="Name of the candidate in the report")
+    # Pair 6 (O6 WEBP, A6, a colour chart; added 25 Oct 2026) has no H export, so the default stays 1-5.
+    parser.add_argument("--pairs", type=lambda s: [int(x) for x in s.split(",")], default=[1, 2, 3, 4, 5])
     args = parser.parse_args()
     repo = Path(__file__).resolve().parents[2]
     data = (repo / args.data).resolve() if not args.data.is_absolute() else args.data
@@ -254,7 +256,7 @@ def main() -> None:
 
     records: list[dict[str, object]] = []
     sheet_rows: list[tuple[int, Path | None, Path, Path, Image.Image]] = []
-    for number in range(1, 6):
+    for number in args.pairs:
         underblue_path = Path(args.underblue_files.format(n=number)) if args.underblue_files else find_export(data, "H", number)
         if not underblue_path.exists():
             raise RuntimeError(f"Candidate for pair {number} not found: {underblue_path}")
@@ -353,7 +355,8 @@ def main() -> None:
     report.append("")
     (output / "report.md").write_text("\n".join(report), encoding="utf-8")
     gate = [r for r in records if r["pair"] in (2, 4, 5)]
-    print(f"{args.label}: mean dE H->A {np.mean([r['mean_delta_e_h_to_a'] for r in records]):.2f} | "
+    # The headline mean stays over pairs 1-5, so it compares with earlier runs.
+    print(f"{args.label}: mean dE H->A (pairs 1-5) {np.mean([r['mean_delta_e_h_to_a'] for r in records if r['pair'] <= 5]):.2f} | "
           f"gate pairs 2,4,5 {np.mean([r['mean_delta_e_h_to_a'] for r in gate]):.2f} | "
           + " ".join(f"p{r['pair']}={r['mean_delta_e_h_to_a']:.2f}" for r in records) + " | "
           f"neutral C {mean('underblue', 'neutral_chroma'):.3f} vs A {mean('aqua', 'neutral_chroma'):.3f} | "

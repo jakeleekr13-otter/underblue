@@ -86,7 +86,12 @@ struct EditorView: View {
                 // The picker shows over the corrected image only. Compare hides it.
                 let picking = model.subjects.showsOverlay && !model.comparing
                 ZoomablePreview(image: preview, zoom: $zoom, overlayActive: picking, onZoomIn: { model.requestDetailPreview() }) { size in
-                    if picking, let candidates = model.subjects.candidates {
+                    if picking, model.subjects.isManual {
+                        let pressed = model.subjects.pressed ?? .empty
+                        SubjectPicker(candidates: pressed, picks: Set(pressed.groups.map(\.id)), size: size, zoom: zoom.scale,
+                                      pressMode: true, pressing: model.subjects.pressing,
+                                      onPress: { point in Task { await model.pressSubject(at: point) } }) { model.removeSubjectPress($0) }
+                    } else if picking, let candidates = model.subjects.candidates {
                         SubjectPicker(candidates: candidates, picks: model.subjects.picks, tiers: model.subjects.tiers, tierPieces: model.subjects.tierPieces,
                                           tierDrawing: model.subjects.tierDrawing, tiersOff: model.subjects.tiersOff,
                                           size: size, zoom: zoom.scale, onToggleTier: { model.toggleTier($0) }) { model.toggleSubject($0) }
@@ -161,8 +166,9 @@ struct EditorView: View {
                 .buttonStyle(.borderedProminent).frame(minHeight: 44).disabled(!model.ready || model.exporting || model.analyzing)
         }.padding(.bottom, 8)
     }
-    /// Shown only when the Labs switch in Help is on (SubjectPickerStore): the Auto or Manual bar,
-    /// then Done and Reset while picking. Manual says so when Vision finds nothing.
+    /// Shown only when the Labs switch in Help is on (SubjectPickerStore): the Auto, Semi-auto or Manual bar,
+    /// then Done and Reset while picking, and the subject strength once something is picked.
+    /// Semi-auto says so when Vision finds nothing.
     private var subjectsRow: some View {
         subjectsBar(model.subjects).padding(.horizontal)
     }
@@ -172,14 +178,21 @@ struct EditorView: View {
                 Text("Subjects").font(.subheadline)
                 Spacer(minLength: 8)
                 Picker("Subjects", selection: Binding(
-                    get: { subjects.isManual },
-                    set: { manual in if manual { Task { await model.chooseManualSubjects() } } else { model.chooseAutoSubjects() } })) {
-                    Text("Auto").tag(false)
-                    Text("Manual").tag(true)
-                }.pickerStyle(.segmented).labelsHidden().frame(maxWidth: 180).disabled(subjects.isDetecting)
+                    get: { subjects.mode },
+                    set: { mode in
+                        switch mode {
+                        case .auto: model.chooseAutoSubjects()
+                        case .semiAuto: Task { await model.chooseSemiAutoSubjects() }
+                        case .manual: model.chooseManualSubjects()
+                        }
+                    })) {
+                    Text("Auto").tag(SubjectSelection.Mode.auto)
+                    Text("Semi-auto").tag(SubjectSelection.Mode.semiAuto)
+                    Text("Manual").tag(SubjectSelection.Mode.manual)
+                }.pickerStyle(.segmented).labelsHidden().frame(maxWidth: 260).disabled(subjects.isDetecting || subjects.pressing != nil)
                     .accessibilityLabel("Subjects")
             }
-            if subjects.isManual {
+            if subjects.mode != .auto {
                 HStack {
                     if subjects.showsOverlay {
                         Button("Done") { model.finishSubjectPicking() }
@@ -189,10 +202,23 @@ struct EditorView: View {
                     Button("Reset") { model.resetSubjects() }
                 }.buttonStyle(.bordered).frame(minHeight: 44)
             }
+            if subjects.showsStrength { subjectStrength(subjects) }
             Text(SubjectPickerText.summary(subjects)).font(.footnote).foregroundStyle(.secondary)
             if let legend = SubjectPickerText.legend(subjects) { Text(legend).font(.footnote).foregroundStyle(.secondary) }
             if let notice = SubjectPickerText.notice(subjects) { Text(notice).font(.footnote).foregroundStyle(.orange) }
         }.animation(.default, value: subjects.status)
+    }
+    /// The subject strength, 0 to 150%. It scales only the lift on the picked subjects; Intensity stays the base.
+    private func subjectStrength(_ subjects: SubjectSelection) -> some View {
+        VStack {
+            HStack {
+                Text("Subject strength"); Spacer()
+                Text(Double(subjects.strength), format: .percent.precision(.fractionLength(0))).monospacedDigit()
+            }
+            Slider(value: Binding(get: { Double(subjects.strength) }, set: { model.setSubjectStrength(Float($0)) }),
+                   in: 0...Double(SubjectSelection.maximumStrength), step: 0.05)
+                .accessibilityLabel("Subject strength")
+        }
     }
     /// One row that scrolls sideways, or a two-column grid when the pane is narrow and tall.
     @ViewBuilder private func presetPicker(grid: Bool) -> some View {

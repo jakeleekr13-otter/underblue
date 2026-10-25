@@ -23,18 +23,22 @@ struct SubjectPickerStore {
 }
 
 /// The subject picker state of one photo: iPhone keeps one in `EditorModel`, Mac one per queue item.
-/// Nothing is saved between photos. A new photo starts in Auto.
+/// Nothing is saved between photos. A new photo starts in Auto, at subject strength 100%.
 ///
 /// - Auto: the automatic mask applies. The overlay is hidden and the picks stay in memory.
-/// - Manual: the picks apply. The first time, the picks are what Auto would use, so the picture does not change
-///   until the user taps. Reset is the only action that clears the picks.
+/// - Semi-auto: the picks among the groups Vision found apply. The first time, the picks are what Auto would
+///   use, so the picture does not change until the user taps. Reset is the only action that clears the picks.
+/// - Manual: the user presses and holds on any subject (docs/ManualSubject.md). Each press adds one precise
+///   mask; a press on a picked subject removes it. Reset clears the presses.
+///
+/// Semi-auto and Manual have a subject strength (Jake, 25 Oct 2026). Auto stays at 100%.
 struct SubjectSelection {
-    enum Mode: Equatable, Sendable { case auto, manual }
+    enum Mode: Equatable, Sendable { case auto, semiAuto, manual }
     /// `none` means Vision found no usable subject for this photo. `waitingForModel` means the precise
     /// model is still downloading; the picker opens by itself when it is ready.
     enum Status: Equatable, Sendable { case idle, detecting, waitingForModel, none, ready }
     /// Why the last tap did nothing, for a message next to the picker.
-    enum Notice: Equatable, Sendable { case tooMuch, tooLarge }
+    enum Notice: Equatable, Sendable { case tooMuch, tooLarge, nothingFound }
 
     private(set) var mode = Mode.auto
     private(set) var status = Status.idle
@@ -51,16 +55,44 @@ struct SubjectSelection {
     /// The tappable tier pieces, outside every group. Rebuilt when the groups or the tiers change.
     private(set) var tierPieces: SubjectTiers.Pieces?
     private(set) var notice: Notice?
+    /// Manual's presses, one precise mask each, in press order.
+    private(set) var presses: [SubjectMask] = []
+    /// The presses as groups, for the outline and the hit test. Nil with no press.
+    private(set) var pressed: SubjectCandidates?
+    /// Where a press is being segmented, 0...1 from the top left. The picker draws a ring there.
+    private(set) var pressing: CGPoint?
+    /// Counts press changes, so `key` changes when a press is added or removed.
+    private var pressVersion = 0
+    /// The subject strength slider, 0 to `maximumStrength`. 1 is the lift as Auto applies it.
+    private(set) var strength: Float = 1
+    static let maximumStrength: Float = 1.5
     /// What preview and export receive. Rebuilt on every change, not on every read.
     private(set) var choice = SubjectChoice.auto
 
     /// Changes whenever the rendered result can change. A view task can wait on it.
-    struct Key: Hashable, Sendable { let manual: Bool; let picks: Set<Int>; let tiersOff: Set<Int> }
-    var key: Key { Key(manual: mode == .manual, picks: picks, tiersOff: tiersOff) }
+    struct Key: Hashable, Sendable {
+        let mode: Mode; let picks: Set<Int>; let tiersOff: Set<Int>; let presses: Int; let strength: Float
+    }
+    var key: Key { Key(mode: mode, picks: picks, tiersOff: tiersOff, presses: pressVersion, strength: strength) }
 
+    var isSemiAuto: Bool { mode == .semiAuto }
     var isManual: Bool { mode == .manual }
-    /// The overlay shows in Manual mode, until the user presses Done.
-    var showsOverlay: Bool { mode == .manual && overlayVisible && candidates != nil }
+    /// Semi-auto shows the groups, Manual the presses, until the user presses Done.
+    var showsOverlay: Bool {
+        switch mode {
+        case .auto: false
+        case .semiAuto: overlayVisible && candidates != nil
+        case .manual: overlayVisible
+        }
+    }
+    /// The strength slider shows in Semi-auto and Manual once something is picked.
+    var showsStrength: Bool {
+        switch mode {
+        case .auto: false
+        case .semiAuto: !picks.isEmpty
+        case .manual: !presses.isEmpty
+        }
+    }
     var isDetecting: Bool { status == .detecting }
 
     // MARK: Changes
@@ -76,7 +108,7 @@ struct SubjectSelection {
         if candidates == nil { picks = Self.autoPicks(found) }
         candidates = found
         status = .ready
-        mode = .manual
+        mode = .semiAuto
         overlayVisible = true
         notice = nil
         rebuild()
@@ -91,10 +123,55 @@ struct SubjectSelection {
         if status == .detecting { status = candidates == nil ? .idle : .ready }
     }
 
-    /// Manual again with the candidates already known. Needs no detection.
-    mutating func resumeManual() {
+    /// Semi-auto again with the candidates already known. Needs no detection.
+    mutating func resumeSemiAuto() {
         guard candidates != nil else { return }
+        mode = .semiAuto; overlayVisible = true; notice = nil; rebuild()
+    }
+
+    /// Manual: the presses so far apply, and the overlay waits for the next press. Needs no detection.
+    mutating func useManual() {
+        if status == .detecting || status == .waitingForModel { status = candidates == nil ? .idle : .ready }
         mode = .manual; overlayVisible = true; notice = nil; rebuild()
+    }
+
+    // MARK: Manual presses
+
+    /// The press that covers a point, to remove it. Nil when the point is on no picked subject.
+    func press(at point: CGPoint) -> Int? { pressed?.groupMask(at: point) }
+
+    mutating func startPress(at point: CGPoint) { pressing = point; notice = nil }
+
+    /// A press finished. Nil means the model found nothing there. A mask that would push the picks past
+    /// `SubjectCandidates.maximumPickedShare` is refused, as a Semi-auto tap is.
+    mutating func finishPress(_ mask: SubjectMask?) {
+        pressing = nil
+        guard mode == .manual else { return }
+        guard let mask else { notice = .nothingFound; return }
+        if let first = presses.first, first.width != mask.width || first.height != mask.height { return }
+        let share = mask.values.reduce(0, +) / Float(mask.values.count)
+        let union = Self.union(presses + [mask])
+        let total = union.map { $0.values.reduce(0, +) / Float($0.values.count) } ?? share
+        guard total <= SubjectCandidates.maximumPickedShare else {
+            notice = share > SubjectCandidates.maximumPickedShare ? .tooLarge : .tooMuch
+            return
+        }
+        presses.append(mask); pressVersion += 1; notice = nil
+        rebuild()
+    }
+
+    /// The press stopped with no result: cancelled, or the model is not ready.
+    mutating func cancelPress() { pressing = nil }
+
+    mutating func removePress(_ index: Int) {
+        guard mode == .manual, presses.indices.contains(index) else { return }
+        presses.remove(at: index); pressVersion += 1; notice = nil
+        rebuild()
+    }
+
+    mutating func setStrength(_ value: Float) {
+        strength = min(Self.maximumStrength, max(0, value))
+        rebuild()
     }
 
     mutating func setTiers(_ found: SubjectTiers?) {
@@ -105,16 +182,24 @@ struct SubjectSelection {
     }
 
     mutating func done() { overlayVisible = false }
-    mutating func edit() { if mode == .manual { overlayVisible = true } }
+    mutating func edit() { if mode != .auto { overlayVisible = true } }
 
+    /// Semi-auto: back to the automatic picks, every tier piece on. Manual: no presses. Both: strength 100%.
     mutating func reset() {
-        guard let candidates else { return }
-        picks = Self.autoPicks(candidates); tiersOff = []; notice = nil; rebuild()
+        switch mode {
+        case .auto: return
+        case .semiAuto:
+            guard let candidates else { return }
+            picks = Self.autoPicks(candidates); tiersOff = []
+        case .manual:
+            presses = []; pressVersion += 1
+        }
+        strength = 1; notice = nil; rebuild()
     }
 
     /// A tap on a group. Adding a group is refused when the picks would cover too much of the frame.
     mutating func toggle(_ id: Int) {
-        guard mode == .manual, let candidates, let group = candidates.group(id) else { return }
+        guard mode == .semiAuto, let candidates, let group = candidates.group(id) else { return }
         if picks.contains(id) {
             picks.remove(id); notice = nil
         } else if candidates.accepts(id, adding: picks) {
@@ -127,7 +212,7 @@ struct SubjectSelection {
 
     /// A tap on a tier piece: on or off. A tier piece has no share cap, because it adds no subject.
     mutating func toggleTier(_ id: Int) {
-        guard mode == .manual, tierPieces?.items.contains(where: { $0.id == id }) == true else { return }
+        guard mode == .semiAuto, tierPieces?.items.contains(where: { $0.id == id }) == true else { return }
         if tiersOff.contains(id) { tiersOff.remove(id) } else { tiersOff.insert(id) }
         notice = nil
         rebuild()
@@ -146,10 +231,28 @@ struct SubjectSelection {
         return Set(candidates.groups.map(\.id))
     }
 
+    /// The masks as one: the largest value at each cell. Nil for none.
+    static func union(_ masks: [SubjectMask]) -> SubjectMask? {
+        guard let first = masks.first else { return nil }
+        var values = first.values
+        for mask in masks.dropFirst() where mask.values.count == values.count {
+            for i in values.indices { values[i] = max(values[i], mask.values[i]) }
+        }
+        return SubjectMask(width: first.width, height: first.height, values: values)
+    }
+
     private mutating func rebuild() {
+        pressed = SubjectCandidates.pressed(presses)
         redraw()
-        guard mode == .manual, let candidates else { choice = .auto; return }
-        choice = .picked(candidates.mask(picking: picks), tiersOff: tiersOff)
+        switch mode {
+        case .auto: choice = .auto
+        case .semiAuto:
+            guard let candidates else { choice = .auto; return }
+            choice = .picked(candidates.mask(picking: picks), tiersOff: tiersOff, strength: strength)
+        case .manual:
+            // Every tier piece stays on, as in Auto: Manual draws no tier lines to turn them off.
+            choice = .picked(Self.union(presses), strength: strength)
+        }
     }
 
     private mutating func redraw() {

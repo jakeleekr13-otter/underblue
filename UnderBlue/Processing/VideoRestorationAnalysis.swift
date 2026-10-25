@@ -12,10 +12,32 @@ struct VideoScene: Sendable, Equatable {
     let plan: RestorationPlan
     /// Keyframes the scene was measured on. Zero means unknown; such a scene always holds its values.
     var keyframes: Int = 0
+    /// One of the scene's keyframes, small, with its own depth map. The object colour step for video makes its
+    /// values from it at render time (RestorationEngine.videoObjectColour). Nil: no such step for this scene.
+    var objectKeyframe: ObjectKeyframe? = nil
 
     func limiting(maximumOutput: Float) -> VideoScene {
         VideoScene(start: start, end: end, analysis: analysis, plan: plan.limiting(maximumOutput: maximumOutput),
-                   keyframes: keyframes)
+                   keyframes: keyframes, objectKeyframe: objectKeyframe)
+    }
+}
+
+/// A keyframe kept for the object colour step: the SDR source at most `maximumDimension` px and its depth map
+/// at most `depthDimension` px. The step needs only the means of the far pixels, so small is enough.
+struct ObjectKeyframe: Sendable, Equatable {
+    let image: CGImage
+    let depth: NormalizedDepthMap
+    static let maximumDimension: CGFloat = 320
+    static let depthDimension = 160
+
+    static func make(image: CIImage, depth: DepthEstimate, context: CIContext) -> ObjectKeyframe? {
+        guard !image.extent.isEmpty, let map = try? depth.resampled(maxDimension: depthDimension).map else { return nil }
+        let scale = min(1, maximumDimension / max(image.extent.width, image.extent.height))
+        let small = image.transformed(by: CGAffineTransform(translationX: -image.extent.minX, y: -image.extent.minY)
+            .concatenating(CGAffineTransform(scaleX: scale, y: scale)))
+        guard let cg = context.createCGImage(small, from: small.extent.integral, format: .RGBA8,
+                                             colorSpace: CGColorSpace(name: CGColorSpace.sRGB)) else { return nil }
+        return ObjectKeyframe(image: cg, depth: map)
     }
 }
 
@@ -269,6 +291,7 @@ actor VideoRestorationAnalyzer {
         let ranges = zip(starts, starts.dropFirst() + [samples.count]).map { $0..<$1 }
 
         var plans: [Int: RestorationPlan] = [:]
+        var objectKeyframes: [Int: ObjectKeyframe] = [:]
         var restorationFailures = 0
         for range in ranges {
             for index in Self.spread(range, count: Self.maximumFitsPerScene) {
@@ -282,6 +305,7 @@ actor VideoRestorationAnalyzer {
                         .resampled(maxDimension: previewPolicy.depthMapMaxDimension)
                     plans[index] = try waterEstimator.estimate(image: image, depth: depth, legacy: samples[index],
                                                                context: engine.context)
+                    objectKeyframes[index] = ObjectKeyframe.make(image: image, depth: depth, context: engine.context)
                 } catch is CancellationError { throw CancellationError() }
                 catch {
                     restorationFailures += 1
@@ -304,11 +328,14 @@ actor VideoRestorationAnalyzer {
             return try? RestorationPlan.sceneAverage(chosen, keeping: Array(chosen.indices)).sceneLevel()
         }
         let clipKept = WaterAnalysis.sceneInliers(samples)
-        var sceneValues: [(range: Range<Int>, analysis: WaterAnalysis, plan: RestorationPlan?)] = []
+        var sceneValues: [(range: Range<Int>, analysis: WaterAnalysis, plan: RestorationPlan?, keyframe: ObjectKeyframe?)] = []
         for range in ranges {
             let members = Array(range)
             let kept = WaterAnalysis.sceneInliers(members.map { samples[$0] }).map { members[$0] }
-            sceneValues.append((range, WaterAnalysis.sceneMean(samples, keeping: kept), scenePlan(kept)))
+            // The middle kept keyframe that has a fit (and so a depth map).
+            let withKeyframe = kept.filter { plans[$0] != nil && objectKeyframes[$0] != nil }
+            let keyframe = withKeyframe.isEmpty ? nil : objectKeyframes[withKeyframe[withKeyframe.count / 2]]
+            sceneValues.append((range, WaterAnalysis.sceneMean(samples, keeping: kept), scenePlan(kept), keyframe))
         }
         // A scene whose fits all failed borrows the whole clip's plan. If every fit failed, no scene
         // has a plan and video keeps only the legacy correction.
@@ -316,7 +343,8 @@ actor VideoRestorationAnalyzer {
         if let fallback = scenePlan(clipKept) ?? sceneValues.lazy.compactMap({ $0.plan }).first {
             scenes = sceneValues.map {
                 VideoScene(start: times[$0.range.lowerBound], end: times[$0.range.upperBound - 1],
-                           analysis: $0.analysis, plan: $0.plan ?? fallback, keyframes: $0.range.count)
+                           analysis: $0.analysis, plan: $0.plan ?? fallback, keyframes: $0.range.count,
+                           objectKeyframe: $0.keyframe)
             }
         }
         let environment = aggregate(clipKept.compactMap { plans[$0] })
@@ -368,8 +396,41 @@ extension RestorationEngine {
     func combined(_ image: CIImage, moment: VideoSceneMoment, settings: FilterSettings,
                   filter: FilterEngine, preservesHDR: Bool = false) throws -> CIImage {
         let moment = preservesHDR ? moment.limiting(maximumOutput: 8) : moment
-        return try combined(image, plan: moment.plan(), values: moment.corrections(settings: settings, engine: self),
-                            settings: settings, filter: filter, video: true)
+        let frame = try combined(image, plan: moment.plan(), values: moment.corrections(settings: settings, engine: self),
+                                 settings: settings, filter: filter, video: true)
+        guard let values = videoObjectColourValues(moment, settings: settings, filter: filter, preservesHDR: preservesHDR) else { return frame }
+        return videoObjectColour(frame, values: values)
+    }
+
+    /// One scene's values with the current settings: its keyframe through the video path, then the far pixels'
+    /// mean. Made from the settings in use, not the analysis', so a slider that moves the water moves the reference too.
+    func videoObjectColourValues(_ scene: VideoScene, settings: FilterSettings, filter: FilterEngine,
+                                 preservesHDR: Bool) -> VideoObjectColourValues? {
+        guard let keyframe = scene.objectKeyframe else { return nil }
+        let key = VideoObjectCacheEntry.Key(start: scene.start, end: scene.end, settings: settings, preservesHDR: preservesHDR)
+        if let hit = videoObjectCache.withLock({ $0.first { $0.key == key } }) { return hit.values }
+        let source = CIImage(cgImage: keyframe.image)
+        let held = VideoSceneMoment(from: scene, to: scene, amount: 0)
+        let values = (try? combined(source, plan: held.plan(), values: held.corrections(settings: settings, engine: self),
+                                    settings: settings, filter: filter, video: true)).flatMap {
+            Self.videoObjectColourValues(pixels: Self.workingPixels($0, width: keyframe.depth.width, height: keyframe.depth.height,
+                                                                    context: filter.context),
+                                         depth: keyframe.depth.values, redLoss: scene.analysis.redLoss)
+        }
+        videoObjectCache.withLock { entries in
+            entries.removeAll { $0.key == key }
+            entries.append(VideoObjectCacheEntry(key: key, values: values))
+            if entries.count > VideoObjectCacheEntry.capacity { entries.removeFirst(entries.count - VideoObjectCacheEntry.capacity) }
+        }
+        return values
+    }
+
+    func videoObjectColourValues(_ moment: VideoSceneMoment, settings: FilterSettings, filter: FilterEngine,
+                                 preservesHDR: Bool) -> VideoObjectColourValues? {
+        let a = videoObjectColourValues(moment.from, settings: settings, filter: filter, preservesHDR: preservesHDR)
+        guard moment.amount > 0 else { return a }
+        let b = videoObjectColourValues(moment.to, settings: settings, filter: filter, preservesHDR: preservesHDR)
+        return VideoObjectColourValues.mixed(a, b, amount: moment.amount)
     }
 }
 

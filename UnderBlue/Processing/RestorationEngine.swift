@@ -1,4 +1,6 @@
 import CoreImage
+import os
+import simd
 import CoreImage.CIFilterBuiltins
 
 struct RestorationPixelResult: Sendable, Equatable {
@@ -163,6 +165,11 @@ final class RestorationEngine: Sendable {
     private let subjectFreeLightKernel: CIColorKernel?
     private let liftKernel: CIColorKernel?
     private let signalKernel: CIColorKernel?
+    private let objectColourKernel: CIColorKernel?
+    private let objectColourVideoKernel: CIColorKernel?
+    /// Video object colour values per scene and settings (videoObjectColourValues). Few entries: one per scene the
+    /// preview or export is on, and the settings change only when a slider moves.
+    let videoObjectCache = OSAllocatedUnfairLock(initialState: [VideoObjectCacheEntry]())
     /// Depth (normalized) from which a pixel takes the full restored result. See combined().
     static let nearDepth: Float = 0.25
 
@@ -174,6 +181,8 @@ final class RestorationEngine: Sendable {
         subjectFreeLightKernel = MetalKernels.color("UnderBlueSubjectFreeLight")
         liftKernel = MetalKernels.color("UnderBlueLiftToWide")
         signalKernel = MetalKernels.color("UnderBlueContrastTransmission")
+        objectColourKernel = MetalKernels.color("UnderBlueObjectColour")
+        objectColourVideoKernel = MetalKernels.color("UnderBlueObjectColourVideo")
     }
 
     /// The blur (share of the short side, at least 1.5 px) that splits the source into the part
@@ -306,7 +315,134 @@ final class RestorationEngine: Sendable {
         let mixed = depthBlendKernel.apply(extent: image.extent, arguments: [current, depthAware, depth,
             CIVector(x: CGFloat(weight), y: CGFloat(Self.nearDepth), z: 0, w: 0)])
         let blended = (mixed ?? filter.blend(current, depthAware, amount: weight)).cropped(to: image.extent)
-        return filter.violetCalm(lifted(blended, subjectLift, filter, share, liftSignal), source: image, calmWeight: calm)
+        let finishedFrame = filter.violetCalm(lifted(blended, subjectLift, filter, share, liftSignal), source: image, calmWeight: calm)
+        // Photos only: video holds one depth per scene, so it never reaches this path, and the flag keeps it out too.
+        guard !video else { return finishedFrame }
+        return objectColour(finishedFrame, plan: plan, depth: depth, redLoss: settings.analysis.redLoss, context: filter.context)
+    }
+
+    /// The values of the object colour step (docs/RestorationExperiments.md, A2): made from the frame itself, at
+    /// depth-map size, before the step. `gains` take the water's tint off objects; `redFromGreen` scales the red made
+    /// from the green excess on near pixels; `strength` is the share of the tint taken (0 when objects carry none).
+    struct ObjectColourValues: Equatable {
+        var gains = SIMD3<Float>(repeating: 1)
+        var redFromGreen: Float = 0
+        var strength: Float = 0
+        /// The water's own green excess (linear sRGB, after the gains): the red step starts above it.
+        var waterExcess: Float = 0
+    }
+
+    /// `pixels` are linear Rec.2020 colours of the frame, one per depth value (row 0 on top), `depth` 0 near to 1 far.
+    static func objectColourValues(pixels: [SIMD3<Float>], depth: [Float], redLoss: Float) -> ObjectColourValues {
+        guard pixels.count == depth.count, !pixels.isEmpty else { return ObjectColourValues() }
+        func mean(_ keep: (Float) -> Bool) -> SIMD3<Float>? {
+            var sum = SIMD3<Float>(repeating: 0), n: Float = 0
+            for (p, z) in zip(pixels, depth) where keep(z) && p.x.isFinite && p.y.isFinite && p.z.isFinite { sum += p; n += 1 }
+            return n > 100 ? sum / n : nil
+        }
+        // Both ends need enough pixels to be measured; otherwise there is nothing to compare, so no step.
+        guard let far = mean({ $0 > FinishingMath.objectFar }), let near = mean({ $0 < FinishingMath.objectNear }) else { return ObjectColourValues() }
+        let w = ColorCorrection.oklab(far), n = ColorCorrection.oklab(near)
+        let farChroma = (w.y * w.y + w.z * w.z).squareRoot()
+        var strength: Float = 0
+        if farChroma > 1e-6 {
+            let lean = (n.y * w.y + n.z * w.z) / farChroma
+            strength = min(1, max(0, lean / (0.5 * farChroma)))
+        }
+        // No objects near (the near pixels are water too): no tint step.
+        let distance = simd_length(n - w)
+        let t = min(1, max(0, (distance - FinishingMath.objectDistanceLow) / (FinishingMath.objectDistanceHigh - FinishingMath.objectDistanceLow)))
+        strength *= t * t * (3 - 2 * t)
+        // Near pixels as saturated as the water are water too; a far colour without a tint gives no direction.
+        func smooth(_ x: Float, _ low: Float, _ high: Float) -> Float {
+            let u = min(1, max(0, (x - low) / (high - low))); return u * u * (3 - 2 * u)
+        }
+        let nearSaturation = (n.y * n.y + n.z * n.z).squareRoot() / max(n.x, 1e-3), farSaturation = farChroma / max(w.x, 1e-3)
+        strength *= 1 - smooth(nearSaturation / max(farSaturation, 1e-6), FinishingMath.objectSaturationRatioLow, FinishingMath.objectSaturationRatioHigh)
+        strength *= smooth(farChroma, FinishingMath.objectFarChromaLow, FinishingMath.objectFarChromaHigh)
+        if strength < FinishingMath.objectTintFloor { strength = 0 }
+        let farSRGB = pointwiseMax(FinishingMath.rec2020ToSRGB * far, SIMD3(repeating: 1e-4))
+        let luma = (farSRGB * ColorCorrection.luma).sum()
+        let cap = FinishingMath.objectGainCap
+        var gains = SIMD3<Float>(repeating: 1)
+        if strength > 0 {
+            for i in 0..<3 { gains[i] = min(cap, max(1 / cap, pow(luma / farSRGB[i], strength))) }
+        }
+        let water = FinishingMath.rec2020ToSRGB * far * gains
+        return ObjectColourValues(gains: gains, redFromGreen: FinishingMath.objectRedK * max(0, redLoss), strength: strength,
+                                  waterExcess: max(0, water.y - 0.5 * (water.x + water.z)))
+    }
+
+    /// Object colour step (UnderBlueObjectColour): reads the frame at depth-map size, makes the values, applies them.
+    func objectColour(_ frame: CIImage, plan: RestorationPlan, depth: CIImage, redLoss: Float, context: CIContext) -> CIImage {
+        guard let objectColourKernel else { return frame }
+        let dw = plan.depth.width, dh = plan.depth.height
+        guard dw > 0, dh > 0, frame.extent.width > 0, frame.extent.height > 0 else { return frame }
+        let pixels = Self.workingPixels(frame, width: dw, height: dh, context: context)
+        let values = Self.objectColourValues(pixels: pixels, depth: plan.depth.values, redLoss: redLoss)
+        guard values.strength > 0 || values.redFromGreen > 0 else { return frame }
+        func row(_ m: simd_float3x3, _ i: Int) -> CIVector { CIVector(x: CGFloat(m[0][i]), y: CGFloat(m[1][i]), z: CGFloat(m[2][i]), w: 0) }
+        let to = FinishingMath.rec2020ToSRGB, from = FinishingMath.sRGBToRec2020
+        let output = objectColourKernel.apply(extent: frame.extent, arguments: [frame, depth,
+            row(to, 0), row(to, 1), row(to, 2), row(from, 0), row(from, 1), row(from, 2),
+            CIVector(x: CGFloat(values.gains.x), y: CGFloat(values.gains.y), z: CGFloat(values.gains.z), w: CGFloat(values.redFromGreen)),
+            CIVector(x: CGFloat(FinishingMath.objectNearFull), y: CGFloat(FinishingMath.objectNearNone), z: CGFloat(values.waterExcess), w: 0)])
+        return (output ?? frame).cropped(to: frame.extent)
+    }
+
+    /// The frame scaled to `width` x `height`, as linear Rec.2020 pixels (row 0 on top, as the depth map).
+    static func workingPixels(_ frame: CIImage, width: Int, height: Int, context: CIContext) -> [SIMD3<Float>] {
+        let small = frame.transformed(by: CGAffineTransform(translationX: -frame.extent.minX, y: -frame.extent.minY)
+            .concatenating(CGAffineTransform(scaleX: CGFloat(width) / frame.extent.width, y: CGFloat(height) / frame.extent.height)))
+        var raw = [Float](repeating: 0, count: width * height * 4)
+        context.render(small, toBitmap: &raw, rowBytes: width * 16, bounds: CGRect(x: 0, y: 0, width: width, height: height),
+                       format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+        return (0..<(width * height)).map { SIMD3(raw[$0 * 4], raw[$0 * 4 + 1], raw[$0 * 4 + 2]) }
+    }
+
+    /// The values of the object colour step for video (docs/RestorationExperiments.md, A2 for video): step 2 only.
+    /// `waterAB` is the water's OKLab a,b; pixels near that colour get no red, as a frame has no depth map.
+    struct VideoObjectColourValues: Sendable, Equatable {
+        var waterAB = SIMD2<Float>(0, 0)
+        var waterExcess: Float = 0
+        var redFromGreen: Float = 0
+
+        /// Two scenes' values mixed, as the scene fade mixes the rest. A scene without values adds no red.
+        static func mixed(_ a: Self?, _ b: Self?, amount: Float) -> Self? {
+            guard let some = a ?? b else { return nil }
+            let a = a ?? Self(waterAB: some.waterAB, waterExcess: some.waterExcess, redFromGreen: 0)
+            let b = b ?? Self(waterAB: some.waterAB, waterExcess: some.waterExcess, redFromGreen: 0)
+            let t = min(1, max(0, amount))
+            return Self(waterAB: a.waterAB + (b.waterAB - a.waterAB) * t, waterExcess: a.waterExcess + (b.waterExcess - a.waterExcess) * t,
+                        redFromGreen: a.redFromGreen + (b.redFromGreen - a.redFromGreen) * t)
+        }
+    }
+
+    /// `pixels` are linear Rec.2020 colours of a keyframe after the video path, one per depth value. The water is the
+    /// mean of the far pixels; nil when 100 or fewer.
+    static func videoObjectColourValues(pixels: [SIMD3<Float>], depth: [Float], redLoss: Float) -> VideoObjectColourValues? {
+        guard pixels.count == depth.count else { return nil }
+        var sum = SIMD3<Float>(repeating: 0), n: Float = 0
+        for (p, z) in zip(pixels, depth) where z > FinishingMath.objectFar && p.x.isFinite && p.y.isFinite && p.z.isFinite { sum += p; n += 1 }
+        guard n > 100 else { return nil }
+        let far = sum / n
+        let lab = ColorCorrection.oklab(far)
+        let water = FinishingMath.rec2020ToSRGB * far
+        return VideoObjectColourValues(waterAB: SIMD2(lab.y, lab.z), waterExcess: max(0, water.y - 0.5 * (water.x + water.z)),
+                                       redFromGreen: FinishingMath.objectRedK * max(0, redLoss))
+    }
+
+    /// Object colour step for video (UnderBlueObjectColourVideo).
+    func videoObjectColour(_ frame: CIImage, values: VideoObjectColourValues) -> CIImage {
+        guard let objectColourVideoKernel, values.redFromGreen > 0 else { return frame }
+        func row(_ m: simd_float3x3, _ i: Int) -> CIVector { CIVector(x: CGFloat(m[0][i]), y: CGFloat(m[1][i]), z: CGFloat(m[2][i]), w: 0) }
+        let to = FinishingMath.rec2020ToSRGB, from = FinishingMath.sRGBToRec2020
+        let output = objectColourVideoKernel.apply(extent: frame.extent, arguments: [frame,
+            row(to, 0), row(to, 1), row(to, 2), row(from, 0), row(from, 1), row(from, 2),
+            CIVector(x: CGFloat(values.waterAB.x), y: CGFloat(values.waterAB.y),
+                     z: CGFloat(FinishingMath.objectWaterDistanceLow), w: CGFloat(FinishingMath.objectWaterDistanceHigh)),
+            CIVector(x: CGFloat(values.waterExcess), y: CGFloat(values.redFromGreen), z: 0, w: 0)])
+        return (output ?? frame).cropped(to: frame.extent)
     }
 
     /// The subject lift, at the one place it may run. Both of combined()'s return points go through here,
@@ -332,4 +468,17 @@ final class RestorationEngine: Sendable {
         (ColorCorrection.make(analysis: settings.analysis, preset: settings.preset, adjustments: settings.adjustments),
          ColorCorrection.make(analysis: settings.analysis, preset: settings.preset, plan: plan, adjustments: settings.adjustments))
     }
+}
+
+/// One cached video object colour result (RestorationEngine.videoObjectColourValues).
+struct VideoObjectCacheEntry: Sendable {
+    struct Key: Sendable, Equatable {
+        let start: Double
+        let end: Double
+        let settings: FilterSettings
+        let preservesHDR: Bool
+    }
+    let key: Key
+    let values: RestorationEngine.VideoObjectColourValues?
+    static let capacity = 16
 }

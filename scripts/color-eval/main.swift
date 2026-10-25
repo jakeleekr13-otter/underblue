@@ -4,6 +4,7 @@ import Foundation
 import simd
 import ImageIO
 import UniformTypeIdentifiers
+import Vision
 
 // Analysis fields by name, for HT_EVAL_ANALYSIS_FIELDS. WaterAnalysis.fields holds the same key
 // paths, but without the names an environment variable needs.
@@ -289,15 +290,26 @@ func fullReference(_ a: [UInt8], _ b: [UInt8], _ w: Int, _ h: Int, into m: inout
 // HT_EVAL_ABLATE=1 (E27) adds `abl_<stage>` outputs: the current path with one finishing stage off.
 // HT_EVAL_VIDEO_PATH=1 adds `videopath`: combined() as video calls it (video: true), to check a photo-only change leaves it.
 let videoPath = ProcessInfo.processInfo.environment["HT_EVAL_VIDEO_PATH"] == "1"
+// HT_EVAL_VIDEO_A2=1 adds `videobase` (combined() as video calls it, one constant depth) and `videoa2` (videobase plus the
+// object colour step for video). The still plays the scene keyframe: the values come from videobase and the still's depth map.
+let videoA2 = ProcessInfo.processInfo.environment["HT_EVAL_VIDEO_A2"] == "1"
 let ablations: [(String, (inout ColorCorrection) -> Void)] = ProcessInfo.processInfo.environment["HT_EVAL_ABLATE"] == "1" ? [
     ("none", { _ in }), ("clarity", { $0.clarity = 0 }), ("definition", { $0.definition = 0 }), ("detail", { $0.detail = 0 }),
     ("shadows", { $0.shadowLift = 0; $0.highlightAmount = 1 }), ("vibrance", { $0.vibrance = 0 }), ("saturation", { $0.saturation = 1 }),
     ("tone", { $0.contrast = 1; $0.brightness = 0; $0.toneCurve = 0; $0.midLift = 0 }), ("subject", { $0.subjectTone = SIMD3(repeating: 1) }),
     ("neutral", { $0.neutralGains = SIMD3(repeating: 1) }), ("reference", { $0.referenceStrength = 0 }),
     ("local", { $0.clarity = 0; $0.definition = 0; $0.detail = 0; $0.shadowLift = 0; $0.highlightAmount = 1 }),
+    // Sand grain (docs/RestorationExperiments.md, D1 finding): the colour stages left after "all".
+    // Green plants (docs/RestorationExperiments.md, A2 seagrass): the cast and warmth stages.
+    ("cast", { $0.castGains = SIMD3(repeating: 1) }), ("warmth", { $0.warmth = 0 }),
+    ("rebuild", { $0.redRebuild = 0 }), ("subjectred", { $0.subjectRed = 1 }), ("watertone", { $0.waterTone = SIMD3(repeating: 1); $0.waterSaturation = 1 }),
+    ("allrebuild", { $0.clarity = 0; $0.definition = 0; $0.detail = 0; $0.shadowLift = 0; $0.highlightAmount = 1; $0.contrast = 1; $0.brightness = 0
+              $0.toneCurve = 0; $0.midLift = 0; $0.vibrance = 0; $0.saturation = 1; $0.warmth = 0; $0.redRebuild = 0 }),
+    ("allneutral", { $0.clarity = 0; $0.definition = 0; $0.detail = 0; $0.shadowLift = 0; $0.highlightAmount = 1; $0.contrast = 1; $0.brightness = 0
+              $0.toneCurve = 0; $0.midLift = 0; $0.vibrance = 0; $0.saturation = 1; $0.warmth = 0; $0.neutralGains = SIMD3(repeating: 1) }),
     ("all", { $0.clarity = 0; $0.definition = 0; $0.detail = 0; $0.shadowLift = 0; $0.highlightAmount = 1; $0.contrast = 1; $0.brightness = 0
               $0.toneCurve = 0; $0.midLift = 0; $0.vibrance = 0; $0.saturation = 1; $0.warmth = 0 })] : []
-let variants = ["original", "grayworld", "current", "restoration", "combined", "lift", "uniform", "reference", "signal"] + ablations.map { "abl_\($0.0)" } + (ablations.isEmpty ? [] : ["abl_calm", "abl_bare", "abl_combsubject", "abl_combrestored"]) + (videoPath ? ["videopath"] : [])
+let variants = ["original", "grayworld", "current", "restoration", "combined", "lift", "uniform", "reference", "signal"] + ablations.map { "abl_\($0.0)" } + (ablations.isEmpty ? [] : ["abl_calm", "abl_bare", "abl_combsubject", "abl_combrestored"]) + (videoPath ? ["videopath"] : []) + (videoA2 ? ["videobase", "videoa2"] : [])
 var csv = "image,variant,psnr,ssim,deltaE,farHue,farChroma,nearA,nearRG,contrastL,meanL,localContrast,farLocalContrast,farHueOK,farChromaOK,fallback,confidence,depthConf,waterConf,betaDR,betaDG,betaDB,binfR,binfG,binfB,floorPct,gainPct,recR,subjectShare,subjectL,outsideL,subjectChroma,subjectViolet,clipped,subjectClipped,outsideChroma,subjectLocalContrast,subjectOvershoot\n"
 let files = try FileManager.default.contentsOfDirectory(atPath: rawDir.path).filter { [".png", ".jpg", ".jpeg", ".arw"].contains(where: $0.lowercased().hasSuffix) }.sorted()
 let started = Date()
@@ -367,6 +379,23 @@ for name in selected {
         plan?.subjectMask = subjects
         // The subject lift has its own cap (docs/SubjectEmphasis.md, E2), so m5's coral block counts.
         liftMask = await subjectMask(source, cap: SubjectMask.liftMaximumShare)
+        // HT_EVAL_PRESS="x,y[+x,y...]" (docs/ManualSubject.md, R6): the lift mask from a press at x,y (top left, 0-1),
+        // with included points after "+". No fallback: a nil mask is reported and the lift is off.
+        if let press = ProcessInfo.processInfo.environment["HT_EVAL_PRESS"], #available(macOS 27.0, *) {
+            let pairs: [[Double]] = press.split(separator: "+").map { $0.split(separator: ",").compactMap { Double($0) } }
+            let points: [NormalizedPoint] = pairs.filter { $0.count == 2 }.map { NormalizedPoint(x: CGFloat($0[0]), y: CGFloat(1 - $0[1])) }
+            if !preciseChecked { preciseChecked = true; print("precise model usable: \(await SubjectMask.preciseModelUsable())") }
+            liftMask = points.isEmpty ? nil
+                : await SubjectMask.precise(source, point: points[0], included: Array(points.dropFirst()), context: engine.context)
+            print("\(name) press mask: \(liftMask.map { "share \($0.values.reduce(0, +) / Float($0.values.count)), grid \($0.width)x\($0.height)" } ?? "nil")")
+        }
+        // HT_EVAL_MASK_DUMP=<dir> writes the lift mask at the render size as raw Float32 <name>_mask_<w>x<h>.raw, top row first.
+        if let dir = ProcessInfo.processInfo.environment["HT_EVAL_MASK_DUMP"], let m = liftMask {
+            var v = [Float](repeating: 0, count: w * h)
+            v.withUnsafeMutableBytes { engine.context.render(m.image(matching: source.extent), toBitmap: $0.baseAddress!, rowBytes: w * 4,
+                                                             bounds: source.extent, format: .Rf, colorSpace: nil) }
+            try? v.withUnsafeBytes { try Data($0).write(to: URL(fileURLWithPath: "\(dir)/\(name)_mask_\(w)x\(h).raw")) }
+        }
         // HT_EVAL_WATER_SWAP="<from>:<to>" fits the water model on a different file and puts it on
         // this image's plan. Depth, limits and the subject mask stay this image's. It separates the
         // water fit from the image, the way HT_EVAL_ANALYSIS_SWAP separates the analysis.
@@ -401,7 +430,7 @@ for name in selected {
     let current = engine.apply(source, settings: settings)
     if ProcessInfo.processInfo.environment["HT_EVAL_LOG"] != nil {
         let a = analysis
-        print("\(name) analysis: redLoss=\(a.redLoss) contrast=\(a.contrast) sat=\(a.saturation) mean=(\(a.meanRed),\(a.meanGreen),\(a.meanBlue)) mid=\(a.midLuminance) water=(\(a.waterRed),\(a.waterGreen),\(a.waterBlue)) neutral=(\(a.neutralRed),\(a.neutralGreen),\(a.neutralBlue)) share=\(a.neutralShare) high=\(a.highShare)")
+        print("\(name) analysis: redLoss=\(a.redLoss) contrast=\(a.contrast) sat=\(a.saturation) mean=(\(a.meanRed),\(a.meanGreen),\(a.meanBlue)) mid=\(a.midLuminance) water=(\(a.waterRed),\(a.waterGreen),\(a.waterBlue)) neutral=(\(a.neutralRed),\(a.neutralGreen),\(a.neutralBlue)) share=\(a.neutralShare) high=\(a.highShare) light=\(a.lightShare)")
         for (label, c) in [("current", ColorCorrection.make(analysis: analysis, preset: settings.preset)),
                            ("restored", plan.map { ColorCorrection.make(analysis: analysis, preset: settings.preset, plan: $0) })] {
             guard let c else { continue }
@@ -490,12 +519,13 @@ for name in selected {
         // variant (docs/SubjectEmphasis.md, E4). Without the mask the lift output equals combined.
         if let liftMask, let spec = ProcessInfo.processInfo.environment["HT_EVAL_LIFT"] {
             let v = spec.split(separator: ",").compactMap { Float($0) }
-            precondition(v.count == 15, "HT_EVAL_LIFT: strength,chromaCap,highlightStart,noiseFloor,chromaExponent,contrast,detail,clarity,highlights,maskLow,maskHigh,tier2,tier3,highlights2,highlights3")
+            precondition(v.count == 15 || v.count == 16, "HT_EVAL_LIFT: strength,chromaCap,highlightStart,noiseFloor,chromaExponent,contrast,detail,clarity,highlights,maskLow,maskHigh,tier2,tier3,highlights2,highlights3[,contrastPivot]")
             var lift = SubjectLift(mask: liftMask, strength: v[0], chromaCap: v[1], tier2: v[11],
                                    tier3: v[12], highlights2: v[13], highlights3: v[14],
                                    maskLow: v[9], maskHigh: v[10], clarity: v[7], highlights: v[8],
                                    detail: v[6], contrast: v[5], chromaExponent: v[4],
                                    highlightStart: v[2], noiseFloor: v[3])
+            if v.count == 16 { lift.contrastPivot = v[15] }
             if tierMapOn { lift.tiers = softTiers(source, plan: plan, analysis: analysis, subject: liftMask) }
             // HT_EVAL_TIER_DUMP=<dir> writes the map as <name>_tiers.png: red tier two, green tier three.
             if let dir = ProcessInfo.processInfo.environment["HT_EVAL_TIER_DUMP"], let map = lift.tiers,
@@ -517,9 +547,18 @@ for name in selected {
             // The video entry point (correction values passed in), as video frames are rendered.
             outputs["uniform"] = (try? restoration.combined(source, plan: uniform, values: restoration.corrections(settings: settings, plan: uniform),
                                                             settings: settings, filter: engine)) ?? current
+            if videoA2, let base = try? restoration.combined(source, plan: uniform, values: restoration.corrections(settings: settings, plan: uniform),
+                                                              settings: settings, filter: engine, video: true) {
+                outputs["videobase"] = base
+                let pixels = RestorationEngine.workingPixels(base, width: plan.depth.width, height: plan.depth.height, context: engine.context)
+                let v = RestorationEngine.videoObjectColourValues(pixels: pixels, depth: plan.depth.values, redLoss: settings.analysis.redLoss)
+                if ProcessInfo.processInfo.environment["HT_EVAL_LOG"] != nil { print("\(name) video object colour: \(v.map { "\($0)" } ?? "nil")") }
+                outputs["videoa2"] = v.map { restoration.videoObjectColour(base, values: $0) } ?? base
+            }
         }
     } else {
         outputs["restoration"] = source; outputs["combined"] = current; outputs["uniform"] = current
+        if videoA2 { outputs["videobase"] = current; outputs["videoa2"] = current }
         outputs["lift"] = current
     }
     var refPx: [UInt8]?
@@ -540,6 +579,43 @@ for name in selected {
             "\(m.subjectShare)", "\(m.subjectL)", "\(m.outsideL)", "\(m.subjectChroma)", "\(m.subjectViolet)", "\(m.clipped)", "\(m.subjectClipped)", "\(m.outsideChroma)", "\(m.subjectLocalContrast)", "\(m.subjectOvershoot)"]
         csv += fields.joined(separator: ",") + "\n"
         if let sheetDir, sheetNames?.contains(name) ?? true { save(img, sheetDir.appendingPathComponent("\(name.split(separator: ".")[0])__\(v).jpg")) }
+    }
+    // HT_EVAL_MATTES=1 (Stage B1, docs/RestorationExperiments.md) writes the water and subject maps as grey PNGs next to the
+    // sheet files: depth, t (contrastTransmission), matte = (1 - t) outside the Vision mask, the mask, calmWeight r/g/b and
+    // the waterShare share. Values are read raw (SubjectTiers.channel) and written 0...1 as 0...255. No CSV row changes.
+    if ProcessInfo.processInfo.environment["HT_EVAL_MATTES"] == "1", let sheetDir, sheetNames?.contains(name) ?? true {
+        let stem = name.split(separator: ".")[0]
+        func put(_ key: String, _ v: [Float]?) {
+            guard let v else { print("\(name): no \(key) map"); return }
+            var bytes = v.map { UInt8(max(0, min(1, $0)) * 255 + 0.5) }
+            let url = sheetDir.appendingPathComponent("\(stem)__map_\(key).png")
+            guard let ctx = CGContext(data: &bytes, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w, space: CGColorSpaceCreateDeviceGray(),
+                                      bitmapInfo: CGImageAlphaInfo.none.rawValue), let cg = ctx.makeImage(),
+                  let dest = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil) else { print("\(name): \(key) not written"); return }
+            CGImageDestinationAddImage(dest, cg, nil)
+            if !CGImageDestinationFinalize(dest) { print("\(name): \(key) not written") }
+        }
+        func upsample(width dw: Int, height dh: Int, _ values: [Float]) -> [Float] {
+            (0..<(w * h)).map { i in values[((i / w) * dh / h) * dw + ((i % w) * dw / w)] }
+        }
+        let mask = subjects.map { upsample(width: $0.width, height: $0.height, $0.values) }
+        put("subject", mask)
+        if let plan {
+            put("depth", upsample(width: plan.depth.width, height: plan.depth.height, plan.depth.values))
+            let t = restoration.contrastTransmission(source, plan: plan).map { SubjectTiers.channel($0, 0, width: w, height: h, context: engine.context) }
+            put("t", t)
+            put("matte", t.map { t in (0..<(w * h)).map { (1 - t[$0]) * (1 - (mask?[$0] ?? 0)) } })
+            let cv = restoration.corrections(settings: settings, plan: plan).current
+            let calm = engine.waterCalmWeight(source, correction: cv)
+            for (i, key) in ["calm_r", "calm_g", "calm_b"].enumerated() {
+                put(key, calm.map { SubjectTiers.channel($0, i, width: w, height: h, context: engine.context) })
+            }
+            put("share", engine.waterShare(source, correction: cv).map { SubjectTiers.channel($0, 3, width: w, height: h, context: engine.context) })
+            // The grain level (FilterEngine.grainMap) of the current output, x10 so it shows (0.1 = white).
+            put("grain10", outputs["current"].flatMap { engine.grainMap($0, short: Float(min(w, h))) }.map { SubjectTiers.channel($0, 0, width: w, height: h, context: engine.context).map { $0 * 10 } })
+        } else {
+            print("\(name): no plan, no depth maps")
+        }
     }
     done += 1
     if done % 50 == 0 { print("\(done) images, \(Int(Date().timeIntervalSince(started)))s"); try csv.write(toFile: outCSV, atomically: true, encoding: .utf8) }

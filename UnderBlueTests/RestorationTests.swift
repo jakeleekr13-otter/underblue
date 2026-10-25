@@ -1,5 +1,6 @@
 import XCTest
 import CoreImage
+import simd
 @testable import UnderBlue
 
 final class RestorationTests: XCTestCase {
@@ -1074,6 +1075,133 @@ final class RestorationTests: XCTestCase {
         }
     }
 
+    func testObjectColourKernelMatchesCPUMirrorAndKeepsNeutralsNeutral() throws {
+        let engine = FilterEngine()
+        let kernel = try XCTUnwrap(MetalKernels.color("UnderBlueObjectColour"))
+        let extent = CGRect(x: 0, y: 0, width: 4, height: 4)
+        func solid(_ c: SIMD3<Float>) -> CIImage {
+            CIImage(color: CIColor(red: CGFloat(c.x), green: CGFloat(c.y), blue: CGFloat(c.z), colorSpace: FilterEngine.workingSpace)!).cropped(to: extent)
+        }
+        func row(_ m: simd_float3x3, _ i: Int) -> CIVector { CIVector(x: CGFloat(m[0][i]), y: CGFloat(m[1][i]), z: CGFloat(m[2][i]), w: 0) }
+        let gains = SIMD3<Float>(1.3, 0.9, 1.1), red: Float = 1.8
+        // An olive reef (near), the same reef far away, a grey, and a blue water colour.
+        let cases: [(c: SIMD3<Float>, depth: Float)] = [(.init(0.10, 0.16, 0.08), 0.1), (.init(0.10, 0.16, 0.08), 0.95),
+                                                        (.init(0.3, 0.3, 0.3), 0.1), (.init(0.05, 0.12, 0.30), 0.99)]
+        for (c, depth) in cases {
+            // Raw depth, as the app's map (no colour management): a device-space CIColor would be linearised.
+            let depthImage = solid(SIMD3(repeating: depth))
+            let out = try XCTUnwrap(kernel.apply(extent: extent, arguments: [solid(c), depthImage,
+                row(FinishingMath.rec2020ToSRGB, 0), row(FinishingMath.rec2020ToSRGB, 1), row(FinishingMath.rec2020ToSRGB, 2),
+                row(FinishingMath.sRGBToRec2020, 0), row(FinishingMath.sRGBToRec2020, 1), row(FinishingMath.sRGBToRec2020, 2),
+                CIVector(x: CGFloat(gains.x), y: CGFloat(gains.y), z: CGFloat(gains.z), w: CGFloat(red)),
+                CIVector(x: CGFloat(FinishingMath.objectNearFull), y: CGFloat(FinishingMath.objectNearNone), z: 0.01, w: 0)]))
+            var px = [Float](repeating: 0, count: 4)
+            engine.context.render(out, toBitmap: &px, rowBytes: 16, bounds: CGRect(x: 1, y: 1, width: 1, height: 1), format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+            assertEqual(SIMD3(px[0], px[1], px[2]), FinishingMath.objectColour(c, depth: depth, gains: gains, redFromGreen: red, waterExcess: 0.01), accuracy: 0.003)
+        }
+        // With unit gains, a grey has no green excess: it stays as it is, near or far.
+        let grey = SIMD3<Float>(0.3, 0.3, 0.3)
+        assertEqual(FinishingMath.objectColour(grey, depth: 0.1, gains: .one, redFromGreen: red), grey, accuracy: 1e-3)
+        // The near olive reef gets red (its hue moves toward brown); the far one (water depth) does not.
+        let reef = SIMD3<Float>(0.10, 0.16, 0.08)
+        let near = FinishingMath.objectColour(reef, depth: 0.1, gains: .one, redFromGreen: red)
+        XCTAssertGreaterThan(near.x / near.y, reef.x / reef.y * 1.2)
+        assertEqual(FinishingMath.objectColour(reef, depth: 0.95, gains: .one, redFromGreen: red), reef, accuracy: 1e-3)
+    }
+
+    func testObjectColourValuesTakeTheWaterTintOnlyWhenObjectsCarryIt() {
+        let n = 400
+        let depth = [Float](repeating: 0.1, count: n / 2) + [Float](repeating: 0.95, count: n / 2)
+        let water = SIMD3<Float>(0.05, 0.14, 0.13)                    // teal water, far
+        // Near objects tinted like the water (O6): the tint is taken.
+        let tinted = [SIMD3<Float>](repeating: SIMD3(0.20, 0.30, 0.28), count: n / 2) + [SIMD3<Float>](repeating: water, count: n / 2)
+        let a = RestorationEngine.objectColourValues(pixels: tinted, depth: depth, redLoss: 0.5)
+        XCTAssertGreaterThan(a.strength, 0)
+        XCTAssertGreaterThan(a.gains.x, 1)                             // red up against teal water
+        XCTAssertEqual(a.redFromGreen, FinishingMath.objectRedK * 0.5, accuracy: 1e-6)
+        // Near objects that do not lean toward the water colour (warm reef): no tint step.
+        let warm = [SIMD3<Float>](repeating: SIMD3(0.30, 0.22, 0.15), count: n / 2) + [SIMD3<Float>](repeating: water, count: n / 2)
+        let b = RestorationEngine.objectColourValues(pixels: warm, depth: depth, redLoss: 0)
+        XCTAssertEqual(b.strength, 0)
+        XCTAssertEqual(b.gains, SIMD3(repeating: 1))
+        XCTAssertEqual(b.redFromGreen, 0)
+        // Too few near or far pixels to measure: no step at all.
+        let tiny = RestorationEngine.objectColourValues(pixels: Array(tinted.prefix(16)), depth: Array(depth.prefix(8)) + Array(depth.suffix(8)), redLoss: 0.5)
+        XCTAssertEqual(tiny, RestorationEngine.ObjectColourValues())
+        // Open water: the near pixels are water too (r13). No tint step, and the water's own excess is the red baseline.
+        let open = [SIMD3<Float>](repeating: water, count: n)
+        let c = RestorationEngine.objectColourValues(pixels: open, depth: depth, redLoss: 0.5)
+        XCTAssertEqual(c.strength, 0)
+        XCTAssertGreaterThan(c.waterExcess, 0)
+        let waterOut = FinishingMath.objectColour(water, depth: 0.1, gains: c.gains, redFromGreen: c.redFromGreen, waterExcess: c.waterExcess)
+        assertEqual(waterOut, water, accuracy: 1e-3)
+        // Open water lit from above (25 Oct clips): the near pixels are deeper water of the same hue. Far enough apart
+        // in brightness to pass the distance check (0.17), but more saturated than the water (ratio 1.57), so no tint step.
+        let shaded = [SIMD3<Float>](repeating: SIMD3(0.005, 0.04, 0.04), count: n / 2) + [SIMD3<Float>](repeating: water, count: n / 2)
+        XCTAssertEqual(RestorationEngine.objectColourValues(pixels: shaded, depth: depth, redLoss: 0.5).strength, 0)
+        // A far colour with almost no tint (a dark cave read as far): no direction to take, so no tint step.
+        let grey = SIMD3<Float>(0.030, 0.032, 0.031)
+        let cave = [SIMD3<Float>](repeating: SIMD3(0.20, 0.22, 0.21), count: n / 2) + [SIMD3<Float>](repeating: grey, count: n / 2)
+        XCTAssertEqual(RestorationEngine.objectColourValues(pixels: cave, depth: depth, redLoss: 0.5).strength, 0)
+    }
+
+    func testVideoObjectColourKernelMatchesCPUMirrorAndLeavesTheWater() throws {
+        let engine = FilterEngine()
+        let kernel = try XCTUnwrap(MetalKernels.color("UnderBlueObjectColourVideo"))
+        let extent = CGRect(x: 0, y: 0, width: 4, height: 4)
+        func solid(_ c: SIMD3<Float>) -> CIImage {
+            CIImage(color: CIColor(red: CGFloat(c.x), green: CGFloat(c.y), blue: CGFloat(c.z), colorSpace: FilterEngine.workingSpace)!).cropped(to: extent)
+        }
+        func row(_ m: simd_float3x3, _ i: Int) -> CIVector { CIVector(x: CGFloat(m[0][i]), y: CGFloat(m[1][i]), z: CGFloat(m[2][i]), w: 0) }
+        // Blue-teal water far (green excess 0.025; m6's is 0.035), an olive reef near: the values come from the far pixels.
+        let water = SIMD3<Float>(0.04, 0.10, 0.16), reef = SIMD3<Float>(0.10, 0.16, 0.08), grey = SIMD3<Float>(0.3, 0.3, 0.3)
+        let depth = [Float](repeating: 0.1, count: 200) + [Float](repeating: 0.95, count: 200)
+        let pixels = [SIMD3<Float>](repeating: reef, count: 200) + [SIMD3<Float>](repeating: water, count: 200)
+        let values = try XCTUnwrap(RestorationEngine.videoObjectColourValues(pixels: pixels, depth: depth, redLoss: 0.6))
+        let lab = ColorCorrection.oklab(water)
+        XCTAssertEqual(values.waterAB.x, lab.y, accuracy: 1e-5)
+        XCTAssertEqual(values.waterAB.y, lab.z, accuracy: 1e-5)
+        XCTAssertEqual(values.redFromGreen, FinishingMath.objectRedK * 0.6, accuracy: 1e-5)
+        for c in [water, reef, grey] {
+            let out = try XCTUnwrap(kernel.apply(extent: extent, arguments: [solid(c),
+                row(FinishingMath.rec2020ToSRGB, 0), row(FinishingMath.rec2020ToSRGB, 1), row(FinishingMath.rec2020ToSRGB, 2),
+                row(FinishingMath.sRGBToRec2020, 0), row(FinishingMath.sRGBToRec2020, 1), row(FinishingMath.sRGBToRec2020, 2),
+                CIVector(x: CGFloat(values.waterAB.x), y: CGFloat(values.waterAB.y),
+                         z: CGFloat(FinishingMath.objectWaterDistanceLow), w: CGFloat(FinishingMath.objectWaterDistanceHigh)),
+                CIVector(x: CGFloat(values.waterExcess), y: CGFloat(values.redFromGreen), z: 0, w: 0)]))
+            var px = [Float](repeating: 0, count: 4)
+            engine.context.render(out, toBitmap: &px, rowBytes: 16, bounds: CGRect(x: 1, y: 1, width: 1, height: 1), format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+            assertEqual(SIMD3(px[0], px[1], px[2]), FinishingMath.objectColourVideo(c, waterAB: values.waterAB, waterExcess: values.waterExcess,
+                                                                                  redFromGreen: values.redFromGreen), accuracy: 0.003)
+        }
+        func video(_ c: SIMD3<Float>) -> SIMD3<Float> {
+            FinishingMath.objectColourVideo(c, waterAB: values.waterAB, waterExcess: values.waterExcess, redFromGreen: values.redFromGreen)
+        }
+        // The water colour gets no red (no depth map in video: its own colour keeps it out), nor does a grey.
+        assertEqual(video(water), water, accuracy: 1e-3)
+        assertEqual(video(grey), grey, accuracy: 1e-3)
+        // The olive reef, far from the water colour, gets red: its hue moves toward brown.
+        let out = video(reef)
+        XCTAssertGreaterThan(out.x / out.y, reef.x / reef.y * 1.2)
+        // Too few far pixels to know the water: no values.
+        XCTAssertNil(RestorationEngine.videoObjectColourValues(pixels: Array(pixels.prefix(250)), depth: Array(depth.prefix(250)), redLoss: 0.6))
+    }
+
+    func testVideoObjectColourValuesMixLikeTheSceneFade() {
+        typealias V = RestorationEngine.VideoObjectColourValues
+        let a = V(waterAB: SIMD2(-0.05, -0.05), waterExcess: 0.02, redFromGreen: 2)
+        let b = V(waterAB: SIMD2(-0.03, -0.09), waterExcess: 0, redFromGreen: 1)
+        let half = V.mixed(a, b, amount: 0.5)
+        XCTAssertEqual(half?.redFromGreen ?? 0, 1.5, accuracy: 1e-6)
+        XCTAssertEqual(half?.waterAB.y ?? 0, -0.07, accuracy: 1e-6)
+        // A scene without values adds no red: the red fades in from 0, and the water is the other scene's.
+        let fromNone = V.mixed(nil, b, amount: 0.25)
+        XCTAssertEqual(fromNone?.redFromGreen ?? -1, 0.25, accuracy: 1e-6)
+        XCTAssertEqual(fromNone?.waterAB ?? .zero, b.waterAB)
+        XCTAssertEqual(V.mixed(a, nil, amount: 1)?.redFromGreen ?? -1, 0, accuracy: 1e-6)
+        XCTAssertNil(V.mixed(nil, nil, amount: 0.5))
+    }
+
     func testLightDetailKernelMatchesCPUMirrorAndSparesDarkAreasAndEdges() throws {
         let engine = FilterEngine()
         let kernel = try XCTUnwrap(MetalKernels.color("UnderBlueLightDetail"))
@@ -1090,9 +1218,9 @@ final class RestorationTests: XCTestCase {
         var outputs: [SIMD3<Float>] = []
         for (pixel, base) in cases {
             // The kernel takes an unsharp mask at intensity 1: pixel + (pixel - blur).
-            let output = try XCTUnwrap(kernel.apply(extent: CGRect(x: 0, y: 0, width: 4, height: 4), arguments: [solid(pixel), solid(2 * pixel - base),
+            let output = try XCTUnwrap(kernel.apply(extent: CGRect(x: 0, y: 0, width: 4, height: 4), arguments: [solid(pixel), solid(2 * pixel - base), solid(.zero),
                 CIVector(x: CGFloat(FinishingMath.lightDetailAmount), y: CGFloat(FinishingMath.lightDetailLow), z: CGFloat(FinishingMath.lightDetailHigh), w: 0),
-                CIVector(x: CGFloat(FinishingMath.lightDetailEdgeLow), y: CGFloat(FinishingMath.lightDetailEdgeHigh), z: 0, w: 0)]))
+                CIVector(x: CGFloat(FinishingMath.lightDetailEdgeLow), y: CGFloat(FinishingMath.lightDetailEdgeHigh), z: CGFloat(FinishingMath.lightDetailGrainLow), w: CGFloat(FinishingMath.lightDetailGrainHigh))]))
             var px = [Float](repeating: 0, count: 4)
             engine.context.render(output, toBitmap: &px, rowBytes: 16, bounds: CGRect(x: 1, y: 1, width: 1, height: 1),
                                   format: .RGBAf, colorSpace: FilterEngine.workingSpace)
@@ -1106,6 +1234,17 @@ final class RestorationTests: XCTestCase {
         // Dark areas and edges keep their value.
         assertEqual(outputs[2], cases[2].pixel, accuracy: 1e-5)
         assertEqual(outputs[3], cases[3].pixel, accuracy: 1e-5)
+        // Grainy texture (bright sand, grain at lightDetailGrainHigh) keeps its value; the kernel agrees.
+        let (ray, base) = cases[0]
+        let grain = FinishingMath.lightDetailGrainHigh
+        assertEqual(FinishingMath.lightDetail(ray, base: base, grain: grain), ray, accuracy: 1e-6)
+        let grainy = try XCTUnwrap(kernel.apply(extent: CGRect(x: 0, y: 0, width: 4, height: 4), arguments: [solid(ray), solid(2 * ray - base), solid(SIMD3(repeating: grain)),
+            CIVector(x: CGFloat(FinishingMath.lightDetailAmount), y: CGFloat(FinishingMath.lightDetailLow), z: CGFloat(FinishingMath.lightDetailHigh), w: 0),
+            CIVector(x: CGFloat(FinishingMath.lightDetailEdgeLow), y: CGFloat(FinishingMath.lightDetailEdgeHigh), z: CGFloat(FinishingMath.lightDetailGrainLow), w: CGFloat(FinishingMath.lightDetailGrainHigh))]))
+        var px = [Float](repeating: 0, count: 4)
+        engine.context.render(grainy, toBitmap: &px, rowBytes: 16, bounds: CGRect(x: 1, y: 1, width: 1, height: 1),
+                              format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+        assertEqual(SIMD3(px[0], px[1], px[2]), ray, accuracy: 0.003)
     }
 
     func testFinishingKernelMatchesCPUMirrorWithWhiteReference() {

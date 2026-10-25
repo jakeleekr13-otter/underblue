@@ -379,6 +379,7 @@ Choices made while building (not asked):
 - Manual draws no tier lines, and every tier piece stays on, as in Auto.
 - Semi-auto and Manual share one strength value per photo.
 - Strength 0 keeps the picked mask for the local veil and drops only the lift.
+- Intensity 0 used to skip the lift too, so the strength slider did nothing there (Jake, iPhone, 25 Oct 2026). Now Intensity 0 leaves the photo untouched but still applies the lift to the picked subjects. This holds in Auto too. Original stays untouched. Test: `testSubjectLiftWorksAtIntensityZero`.
 - A press that would push the picks over half the frame is refused with the Semi-auto messages. A press that finds nothing says "No subject found there. Try another spot."
 
 Tools in `scripts/manual-subject/`: `probe.swift` (R2-R5, Vision only), and `run.sh`, `specs.sh`, `spill.py`, `foreign.py`, `sheet.py` (R6). The R6 tools expect the harness binary in `bin/` and write to `out/` beside themselves; build it with `build_eval` from `scripts/color-eval/common.sh`.

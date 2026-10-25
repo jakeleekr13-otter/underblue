@@ -449,6 +449,29 @@ Go rule: no new halo or ring. The neutral surfaces, the plant, black gear and gr
 
 Cost on iPhone: one map at depth-map size and one small blur. Depth and the Vision mask already exist, so there is no new model call.
 
+#### B2 depth trust rule (25 Oct 2026)
+- Trust = the correlation of the depth map with the colour water share (`waterShare`), at depth-map size.
+- Measured on 18 photos (960 px):
+  - Depth and colour agree on the layout: DSC03545 0.83, r15 0.87, DSC03687 0.87, DSC03656 0.74, m5 0.89, m6 0.86, r03 0.65, r14 0.91.
+  - Open water, where depth invents a layout: r13 0.11, r01 0.36, r07 -0.20, r10 -0.04, r11 0.00, r12 0.30, O6 0.35, clip stills v1 -0.38, v2 0.27, v3 -0.40.
+- So: no trust below about 0.45, full trust above 0.6. The gap is 0.36 to 0.65.
+
+#### B2 rule 1, the subject light removal (E18 ring): no go (25 Oct 2026)
+- Tried: on trusted photos, the colour step runs with and without `subjectTone`, mixed by a depth mask. Far water gets no removal. The colour kernel kept one image input (a second input broke iOS before).
+- Ring metric (DSC03545 at 2000 px; water chroma 2-10 px around the two pale fish, over 25-40 px out; scale of a 1000 px image): source 0.917, ours 0.786.
+  - Removal off everywhere, legacy path: 0.869. This is the ceiling.
+  - Fade at depth 0.85-0.95: 0.797. At 0.78-0.88: 0.806.
+- Why so little: the depth map is too coarse. The fish read 0.75 and the water 0.98, but the ring band averages 0.93 (10th percentile 0.75). The ring is only 1-4 depth pixels wide, so the upscaled map blends fish and water there.
+- Other photos changed more than the target: r03 p99 dE76 14.8, DSC03656 17.3, m6 mean 1.5.
+- Reverted. A fix for E18 needs a sharper subject edge than the depth map gives.
+
+#### B2 other rules: no visible defect to fix (25 Oct 2026)
+- B1 said depth beats colour on large areas: r15's diver, and the bright surface water and sun glare at the top of DSC03687 and DSC03656. Checked our output on those by eye and in numbers:
+  - DSC03656 sun glare (box median, OKLab L / chroma / hue): centre 0.96/0.055/196 → 0.997/0.001/197; ring around it 0.92/0.120/197 → 0.97/0.040/197. It stays cyan-white, and white glare looks natural.
+  - DSC03687: the top looks natural by eye.
+  - r15: Jake accepted the diver on 20 Oct 2026.
+- So the water tone, white reference and local veil switches have no visible target. B2 stops here; the depth trust rule is recorded for later use.
+
 ## Stage D — floating particles
 
 Kind: measurement. No new removal step is planned yet. Jake asked for this check on 24 Oct 2026.

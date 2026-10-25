@@ -242,10 +242,19 @@ enum FinishingMath {
     static let objectNearFull: Float = 0.6, objectNearNone: Float = 0.9, objectRedK: Float = 3
     /// The water's tint: strength = how far the near mean leans toward the far mean (OKLab a,b projection over half
     /// the far chroma); below objectTintFloor it is 0. Gains are capped at objectGainCap and its inverse.
-    static let objectTintFloor: Float = 0.3, objectGainCap: Float = 1.6, objectNear: Float = 0.4, objectFar: Float = 0.8
+    /// The floor was 0.3; O1 (0.35) only lost its blue water to teal and turned its reef pink, so it is 0.5 (25 Oct 2026).
+    static let objectTintFloor: Float = 0.5, objectGainCap: Float = 1.6, objectNear: Float = 0.4, objectFar: Float = 0.8
     /// The tint step needs objects: the near mean must differ from the far water (OKLab distance, full from the high
     /// end). In open-water photos the near pixels are water too (r01, r07, r10-r13: 0.004 to 0.089); O6's reef is 0.161.
     static let objectDistanceLow: Float = 0.10, objectDistanceHigh: Float = 0.14
+    /// Objects under the tint are less saturated than the water. Near saturation (OKLab chroma / L) over far
+    /// saturation: full below the low end, none above the high end. Chroma alone falls with brightness, so it read dark
+    /// near water as objects. Open-water frames whose near pixels are darker water pass the distance check on
+    /// brightness alone (25 Oct clips: 1.09 to 3.34) and turned the sunlit water pink; O6's reef is 0.84.
+    static let objectSaturationRatioLow: Float = 0.92, objectSaturationRatioHigh: Float = 1.02
+    /// The far water needs a real tint to measure (far chroma, none below the low end): a dark cave read as far
+    /// (chroma 0.021) gave noise gains and an orange ray. O6's water is 0.056.
+    static let objectFarChromaLow: Float = 0.03, objectFarChromaHigh: Float = 0.04
     /// Linear Rec.2020 <-> linear sRGB (D65). Columns are the source primaries.
     static let rec2020ToSRGB = simd_float3x3(rows: [SIMD3(1.6605, -0.5876, -0.0728), SIMD3(-0.1246, 1.1329, -0.0083), SIMD3(-0.0182, -0.1006, 1.1187)])
     static let sRGBToRec2020 = simd_float3x3(rows: [SIMD3(0.6274, 0.3293, 0.0433), SIMD3(0.0691, 0.9195, 0.0114), SIMD3(0.0164, 0.0880, 0.8956)])

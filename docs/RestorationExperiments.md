@@ -300,7 +300,7 @@ Rule tried (`a2_proto.red_from_green`): red += k0 × redLoss × green excess × 
 | m5 dE | 12.2 | 11.0 |
 | m6 dE | 27.2 | 26.5 |
 | O6 chart mean chroma | 0.076 | 0.010 |
-| AquaColorFix mean dE, pairs 1-5 | unmeasured | 10.84 |
+| AquaColorFix mean dE, pairs 1-5 | unmeasured | 10.84 (10.53 after the gate fix below) |
 | Grain r14 / r03 / m5 / pl1 | unmeasured | 1.72x / 1.85x / 2.05x / 1.36x |
 | Neutral grey ramp max chroma | unmeasured | 0.01 |
 
@@ -319,6 +319,30 @@ Rule tried (`a2_proto.red_from_green`): red += k0 × redLoss × green excess × 
   - The cast step before A2 causes most of the shift toward yellow: 10 to 32 degrees. A2 step 2 adds 1 to 6 more, and 15 on pl5 mid.
   - Colour alone cannot tell the olive reef (needs red) from green seagrass (keeps green). Their green excess overlaps: seagrass 0.14 to 0.89 relative, O4 reef 0.52.
   - Open: green plant protection. It needs a rule for the cast step too, not only for A2.
+
+#### A2 gate fix: open water with the sun (25 Oct 2026)
+- Found with stills from the Tune_25_Oct clips (two per clip, at 30% and 70%), run as photos. Step 1 got full strength on open-water frames:
+  - v1 and v3 (hammerheads, sun above): the pink ring around the sun got stronger, and the sunlit water turned cream.
+  - v2 (green water, manta): the top turned lilac.
+  - v4_70 (dark cave, ray): the ray turned orange.
+  - Mean dE76 against pre-A2: 9 to 13 on these frames.
+- The pink ring itself is older than A2: it shows in the pre-A2 output too.
+- Cause: in these frames the near pixels are darker water. They pass the distance check on brightness alone.
+- Fix: step 1 needs near pixels less saturated than the water (OKLab chroma / L).
+  - The near/far saturation ratio gives full strength below 0.92 and none above 1.02.
+  - Measured: O6 0.84; open-water frames 1.09 to 3.34.
+  - A plain chroma ratio was tried first. It failed because chroma falls with brightness: v2's dark near water read 0.74.
+- The far colour needs a real tint: far chroma 0.03 (none) to 0.04 (full). v4_70's cave reads 0.021.
+- Tint floor 0.3 → 0.5. O1 (strength 0.35) only lost its blue water to teal, and its reef turned pink.
+- Result on 40 images (real set, AquaColorFix O1-O3 and O5, guard set, m5, m6, O4, O6, 10 clip stills):
+  - Under 0.5 mean dE76 from pre-A2: O1, v2, v4 and all 15 real photos except r01, r05, r07, r10, r11, r14 and r15. Those seven change by 0.6 to 4.2, from step 2 (step 1 is 0 on every real photo).
+  - O6, O4, m5 and m6 keep the A2 gains.
+  - The guards above are unchanged. AquaColorFix pair 1 went 10.59 → 9.05.
+
+#### A2 for video (in progress)
+- Video renders with one constant depth, so step 2 cannot fade by depth. Keyframe analysis has a depth map, so the values can be made per scene there.
+- Prototype: `a2_video.py`. It makes the values on the video-path output and tries step 2 with no depth fade. The red starts above a percentile of the far water's green excess.
+- First run (before the gate fix): on o6 and the clips, a 90th-percentile baseline lands within 0.7 dE76 of the photo rule. On v2_70, near hue was 151 against the photo rule's 111. Re-run after the gate fix: unmeasured.
 
 ### A2 — our own estimate rule (only if A1 passes)
 

@@ -347,6 +347,13 @@ final class RestorationEngine: Sendable {
         let distance = simd_length(n - w)
         let t = min(1, max(0, (distance - FinishingMath.objectDistanceLow) / (FinishingMath.objectDistanceHigh - FinishingMath.objectDistanceLow)))
         strength *= t * t * (3 - 2 * t)
+        // Near pixels as saturated as the water are water too; a far colour without a tint gives no direction.
+        func smooth(_ x: Float, _ low: Float, _ high: Float) -> Float {
+            let u = min(1, max(0, (x - low) / (high - low))); return u * u * (3 - 2 * u)
+        }
+        let nearSaturation = (n.y * n.y + n.z * n.z).squareRoot() / max(n.x, 1e-3), farSaturation = farChroma / max(w.x, 1e-3)
+        strength *= 1 - smooth(nearSaturation / max(farSaturation, 1e-6), FinishingMath.objectSaturationRatioLow, FinishingMath.objectSaturationRatioHigh)
+        strength *= smooth(farChroma, FinishingMath.objectFarChromaLow, FinishingMath.objectFarChromaHigh)
         if strength < FinishingMath.objectTintFloor { strength = 0 }
         let farSRGB = pointwiseMax(FinishingMath.rec2020ToSRGB * far, SIMD3(repeating: 1e-4))
         let luma = (farSRGB * ColorCorrection.luma).sum()

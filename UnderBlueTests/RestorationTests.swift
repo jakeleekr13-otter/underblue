@@ -1135,6 +1135,14 @@ final class RestorationTests: XCTestCase {
         XCTAssertGreaterThan(c.waterExcess, 0)
         let waterOut = FinishingMath.objectColour(water, depth: 0.1, gains: c.gains, redFromGreen: c.redFromGreen, waterExcess: c.waterExcess)
         assertEqual(waterOut, water, accuracy: 1e-3)
+        // Open water lit from above (25 Oct clips): the near pixels are deeper water of the same hue. Far enough apart
+        // in brightness to pass the distance check (0.17), but more saturated than the water (ratio 1.57), so no tint step.
+        let shaded = [SIMD3<Float>](repeating: SIMD3(0.005, 0.04, 0.04), count: n / 2) + [SIMD3<Float>](repeating: water, count: n / 2)
+        XCTAssertEqual(RestorationEngine.objectColourValues(pixels: shaded, depth: depth, redLoss: 0.5).strength, 0)
+        // A far colour with almost no tint (a dark cave read as far): no direction to take, so no tint step.
+        let grey = SIMD3<Float>(0.030, 0.032, 0.031)
+        let cave = [SIMD3<Float>](repeating: SIMD3(0.20, 0.22, 0.21), count: n / 2) + [SIMD3<Float>](repeating: grey, count: n / 2)
+        XCTAssertEqual(RestorationEngine.objectColourValues(pixels: cave, depth: depth, redLoss: 0.5).strength, 0)
     }
 
     func testLightDetailKernelMatchesCPUMirrorAndSparesDarkAreasAndEdges() throws {

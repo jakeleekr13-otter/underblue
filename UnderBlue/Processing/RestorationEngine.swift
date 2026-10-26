@@ -284,7 +284,14 @@ final class RestorationEngine: Sendable {
                   settings: FilterSettings, filter: FilterEngine, video: Bool = false,
                   subjectLift: SubjectLift? = nil) throws -> CIImage {
         let amount = min(1, max(0, settings.appliedIntensity))
-        guard settings.preset != .original, amount > 0 else { return image }
+        guard settings.preset != .original else { return image }
+        guard amount > 0 else {
+            // Intensity 0 leaves the photo as it is. The subject strength is its own slider (Jake, 25 Oct 2026,
+            // docs/ManualSubject.md), so the picked subjects still get their lift, on the untouched photo.
+            guard let subjectLift else { return image }
+            let share = subjectLift.tier2 > 0 || subjectLift.tier3 > 0 ? filter.waterShare(image, correction: values.current) : nil
+            return lifted(image, subjectLift, filter, share, contrastTransmission(image, plan: plan))
+        }
         // Both paths calm the water the source shows. On the restored image the water test read 0.65
         // in far water and below 0.2 near a subject, which left a noisy band (IMG_7260, 8 Oct 2026).
         let calm = filter.waterCalmWeight(image, correction: values.current)

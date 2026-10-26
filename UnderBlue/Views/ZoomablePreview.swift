@@ -38,17 +38,66 @@ struct PreviewZoom: Equatable {
 ///
 /// `overlay` draws over the fitted image and zooms with it. It gets the fitted size. While `overlayActive`,
 /// double tap zoom is off, so a quick second tap on a subject does not zoom. Pinch still zooms.
+///
+/// Pinch and pan are simultaneous gestures, so the overlay's own taps do not block them. A child view's
+/// gesture takes a touch before the parent's `.gesture`, which stopped panning while the picker showed
+/// (Jake, iPhone, 25 Oct 2026).
+///
+/// `onHold`: Manual subject picking (docs/ManualSubject.md). A finger kept still for `holdDuration` calls it with
+/// the point, 0...1 from the image's top left. It is measured here, in the frame's space: in the overlay's space
+/// the image moves with a pan, so a panning finger looked still and fired a pick.
 struct ZoomablePreview<Overlay: View>: View {
     let image: CGImage
     @Binding var zoom: PreviewZoom
     var overlayActive = false
     var onZoomIn: () -> Void = {}
+    var onHold: ((CGPoint) -> Void)? = nil
     let overlay: (CGSize) -> Overlay
     @State private var base = PreviewZoom()
 
+    /// How long a press is held, and how far the finger may move on screen meanwhile.
+    static var holdDuration: Duration { .milliseconds(500) }
+    static var holdSlop: CGFloat { 10 }
+    @State private var holdStart: CGPoint?
+    @State private var holdDone = false
+    @State private var holdTask: Task<Void, Never>?
+    @State private var holds = 0
+
     init(image: CGImage, zoom: Binding<PreviewZoom>, overlayActive: Bool = false, onZoomIn: @escaping () -> Void = {},
-         @ViewBuilder overlay: @escaping (CGSize) -> Overlay) {
-        self.image = image; _zoom = zoom; self.overlayActive = overlayActive; self.onZoomIn = onZoomIn; self.overlay = overlay
+         onHold: ((CGPoint) -> Void)? = nil, @ViewBuilder overlay: @escaping (CGSize) -> Overlay) {
+        self.image = image; _zoom = zoom; self.overlayActive = overlayActive; self.onZoomIn = onZoomIn
+        self.onHold = onHold; self.overlay = overlay
+    }
+
+    /// A point in the frame as a point on the image, 0...1 from its top left. Nil off the image.
+    static func imagePoint(_ location: CGPoint, zoom: PreviewZoom, content: CGSize, container: CGSize) -> CGPoint? {
+        guard content.width > 0, content.height > 0, zoom.scale > 0 else { return nil }
+        let x = (location.x - container.width / 2 - zoom.offset.width) / zoom.scale + content.width / 2
+        let y = (location.y - container.height / 2 - zoom.offset.height) / zoom.scale + content.height / 2
+        let p = CGPoint(x: x / content.width, y: y / content.height)
+        return (0...1).contains(p.x) && (0...1).contains(p.y) ? p : nil
+    }
+
+    private func holdGesture(content: CGSize, container: CGSize) -> some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .local)
+            .onChanged { value in
+                guard !holdDone, let onHold else { return }
+                guard let start = holdStart else {
+                    let start = value.startLocation
+                    holdStart = start
+                    let point = Self.imagePoint(start, zoom: zoom, content: content, container: container)
+                    holdTask = Task { @MainActor in
+                        try? await Task.sleep(for: Self.holdDuration)
+                        guard !Task.isCancelled, holdStart == start, !holdDone else { return }
+                        holdDone = true
+                        if let point { holds += 1; onHold(point) }
+                    }
+                    return
+                }
+                let dx = value.location.x - start.x, dy = value.location.y - start.y
+                if (dx * dx + dy * dy).squareRoot() > Self.holdSlop { holdTask?.cancel(); holdStart = nil; holdDone = true }
+            }
+            .onEnded { _ in holdTask?.cancel(); holdTask = nil; holdStart = nil; holdDone = false }
     }
 
     var body: some View {
@@ -66,7 +115,7 @@ struct ZoomablePreview<Overlay: View>: View {
                     base = zoom
                 }
                 .contentShape(Rectangle())
-                .gesture(MagnifyGesture()
+                .simultaneousGesture(MagnifyGesture()
                     .onChanged { value in
                         zoom = PreviewZoom(scale: base.scale * value.magnification, offset: zoom.offset)
                             .clamped(content: content, container: container)
@@ -88,7 +137,9 @@ struct ZoomablePreview<Overlay: View>: View {
                     }
                     finish()
                 }, isEnabled: !overlayActive)
+                .simultaneousGesture(holdGesture(content: content, container: container), isEnabled: onHold != nil)
         }
+        .sensoryFeedback(.impact(weight: .medium), trigger: holds)
         .accessibilityElement(children: overlayActive ? .contain : .ignore)
         .accessibilityLabel("Photo preview")
         .accessibilityValue(Text("\(Int((zoom.scale * 100).rounded()))%"))
@@ -104,6 +155,31 @@ struct ZoomablePreview<Overlay: View>: View {
     private func finish() {
         base = zoom
         if zoom.isZoomed { onZoomIn() }
+    }
+}
+
+/// A small spinner over the preview while a new render is on its way. It shows only after 0.3 s, so a quick
+/// render does not flash it (Jake, 25 Oct 2026: the subject strength slider felt slow with no sign of work).
+struct PreviewRenderingIndicator: View {
+    let active: Bool
+    @State private var shown = false
+
+    var body: some View {
+        Group {
+            if shown {
+                ProgressView().controlSize(.small).padding(8)
+                    .background(.ultraThinMaterial, in: Circle())
+                    .accessibilityLabel("Updating preview")
+                    .transition(.opacity)
+            }
+        }
+        .padding(10)
+        .allowsHitTesting(false)
+        .task(id: active) {
+            guard active else { withAnimation { shown = false }; return }
+            try? await Task.sleep(for: .milliseconds(300))
+            if !Task.isCancelled { withAnimation { shown = true } }
+        }
     }
 }
 

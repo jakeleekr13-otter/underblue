@@ -1,3 +1,4 @@
+import SwiftUI
 import XCTest
 @testable import UnderBlue
 
@@ -36,6 +37,50 @@ final class ManualSubjectTests: XCTestCase {
         XCTAssertNil(off?.subjectLift, "0%: no lift")
         XCTAssertEqual(off?.subjectMask, picked, "0% still keeps the picks out of the local veil")
         XCTAssertEqual(PhotoProcessor.applying(.picked(picked, strength: 1.5), to: plan)?.subjectLift, SubjectLift(mask: picked).scaled(1.5))
+    }
+
+    func testSubjectLiftWorksAtIntensityZero() throws {
+        let engine = FilterEngine(), restoration = RestorationEngine()
+        let side = 64
+        let map = try NormalizedDepthMap(width: 4, height: 4, values: .init(repeating: 0.6, count: 16))
+        let plan = RestorationPlan(depth: map, depthSource: .monocular,
+            depthStatistics: .init(minimum: 0.6, maximum: 0.6, median: 0.6), backscatterInfinity: .init(0.043, 0.086, 0.121),
+            betaDirect: .init(1.2, 0.6, 0.4), betaBackscatter: .init(1.2, 1.6, 1.6), confidence: 0.8, limits: .init(),
+            transmissionFloorPixelPercentage: 0, maximumGainPixelPercentage: 0)
+        // A mid-grey diver on blue water, the whole frame picked.
+        let image = CIImage(color: CIColor(red: 0.2, green: 0.25, blue: 0.3, colorSpace: FilterEngine.workingSpace)!)
+            .cropped(to: CGRect(x: 0, y: 0, width: side, height: side))
+        var lift = SubjectLift(mask: SubjectMask(width: 4, height: 4, values: .init(repeating: 1, count: 16)))
+        lift.tier2 = 0; lift.tier3 = 0
+        var settings = FilterSettings(); settings.intensity = 0
+        func luma(_ output: CIImage) -> Float {
+            var pixel = [Float](repeating: 0, count: 4)
+            engine.context.render(output, toBitmap: &pixel, rowBytes: 16, bounds: CGRect(x: 32, y: 32, width: 1, height: 1),
+                                  format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+            return (SIMD3(pixel[0], pixel[1], pixel[2]) * ColorCorrection.luma).sum()
+        }
+        let untouched = luma(image)
+        XCTAssertEqual(luma(try restoration.combined(image, plan: plan, settings: settings, filter: engine)), untouched, accuracy: 1e-5,
+                       "Intensity 0 with no lift: the photo as it is")
+        let lifted = luma(try restoration.combined(image, plan: plan, settings: settings, filter: engine, subjectLift: lift))
+        XCTAssertGreaterThan(abs(lifted - untouched), 1e-3, "Intensity 0 still applies the subject lift")
+        let stronger = luma(try restoration.combined(image, plan: plan, settings: settings, filter: engine, subjectLift: lift.scaled(1.5)))
+        XCTAssertNotEqual(stronger, lifted, accuracy: 1e-4, "the subject strength still moves it")
+        settings.preset = .original
+        XCTAssertEqual(luma(try restoration.combined(image, plan: plan, settings: settings, filter: engine, subjectLift: lift)), untouched,
+                       accuracy: 1e-5, "Original stays untouched")
+    }
+
+    func testAHoldInTheFrameMapsToTheImageAtAnyZoom() {
+        let content = CGSize(width: 100, height: 50), container = CGSize(width: 100, height: 100)
+        func point(_ x: CGFloat, _ y: CGFloat, _ zoom: PreviewZoom) -> CGPoint? {
+            ZoomablePreview<EmptyView>.imagePoint(CGPoint(x: x, y: y), zoom: zoom, content: content, container: container)
+        }
+        XCTAssertEqual(point(50, 50, PreviewZoom()), CGPoint(x: 0.5, y: 0.5))
+        XCTAssertEqual(point(0, 25, PreviewZoom()), CGPoint(x: 0, y: 0), "the image starts 25 pt down in the frame")
+        XCTAssertNil(point(50, 10, PreviewZoom()), "above the image")
+        let zoomed = PreviewZoom(scale: 2, offset: CGSize(width: 10, height: 0))
+        XCTAssertEqual(point(50, 50, zoomed), CGPoint(x: 0.45, y: 0.5), "panned right by 10 pt at 2x: the centre shows x 0.45")
     }
 
     func testPressedMasksBecomeGroupsInPressOrder() throws {

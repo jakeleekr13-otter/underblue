@@ -12,6 +12,9 @@ final class EditorModel {
         didSet { if settings.adjustments != oldValue.adjustments { adjustmentStore.save(settings.adjustments) } }
     }
     var preview: CGImage?
+    /// True while a photo preview render runs. The newest render owns it, so a cancelled one does not clear it.
+    private(set) var previewRendering = false
+    private var renderToken = 0
     var originalPreview: CGImage?
     /// Long side of the photo preview. It doubles once the user zooms in, so fine detail stays sharp.
     private(set) var previewMaxPixel: CGFloat = 1600
@@ -180,6 +183,10 @@ final class EditorModel {
             }
             return
         }
+        renderToken += 1
+        let token = renderToken
+        previewRendering = true
+        defer { if token == renderToken { previewRendering = false } }
         do {
             let rendered = try await photos.preview(media.url, settings: settings, original: false, maxPixel: previewMaxPixel,
                                                     subjects: subjectChoice)

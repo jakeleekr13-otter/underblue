@@ -367,7 +367,11 @@ final class RestorationTests: XCTestCase {
                 transmissionFloorPixelPercentage: 0, maximumGainPixelPercentage: 0)
         }
         func oldBlend(_ p: RestorationPlan) throws -> CIImage {
-            let values = restoration.corrections(settings: settings, plan: p)
+            var values = restoration.corrections(settings: settings, plan: p)
+            // The restored subject removal follows the depth trust (combined()); a constant depth keeps it.
+            let constant = (p.depth.values.max() ?? 0) - (p.depth.values.min() ?? 0) <= 0.05
+            let trust = constant ? 1 : restoration.depthTrust(image, plan: p, correction: values.current, filter: engine)
+            values.restored.subjectTone = SIMD3(repeating: 1) + (values.restored.subjectTone - SIMD3(repeating: 1)) * trust
             let current = engine.apply(image, correction: values.current, intensity: 0.8)
             let finished = engine.finishing(try restoration.restore(image, plan: p), correction: values.restored, reference: image)
             return engine.blend(current, engine.blend(image, finished, amount: 0.8), amount: values.restored.physicalWeight)
@@ -1798,6 +1802,41 @@ final class RestorationTests: XCTestCase {
             backscatterInfinity: parameters.infinity, betaDirect: parameters.betaDirect,
             betaBackscatter: parameters.betaBackscatter, confidence: confidence, limits: .init(),
             transmissionFloorPixelPercentage: 0, maximumGainPixelPercentage: 0)
+    }
+
+    func testRestoredSubjectRemovalFollowsDepthTrust() throws {
+        // The pink ring around the sun (docs/RestorationExperiments.md): with no depth trust the restored path takes no
+        // subject light removal, as if subjectTone were 1. Full trust keeps it.
+        var restored = ColorCorrection()
+        restored.subjectTone = SIMD3(1, 0.9, 0.5)
+        assertEqual(RestorationEngine.trusting(restored, depthTrust: 0).subjectTone, SIMD3(repeating: 1), accuracy: 1e-6)
+        assertEqual(RestorationEngine.trusting(restored, depthTrust: 1).subjectTone, SIMD3(1, 0.9, 0.5), accuracy: 1e-6)
+        assertEqual(RestorationEngine.trusting(restored, depthTrust: 0.5).subjectTone, SIMD3(1, 0.95, 0.75), accuracy: 1e-6)
+
+        // combined() passes the trust through: untrusted renders like no removal.
+        let engine = FilterEngine(), restoration = RestorationEngine()
+        let map = try NormalizedDepthMap(width: 4, height: 4, values: .init(repeating: 0.6, count: 16))
+        let plan = RestorationPlan(depth: map, depthSource: .monocular,
+            depthStatistics: .init(minimum: 0.6, maximum: 0.6, median: 0.6), backscatterInfinity: .init(0.043, 0.086, 0.121),
+            betaDirect: .init(1.2, 0.6, 0.4), betaBackscatter: .init(1.2, 1.6, 1.6), confidence: 0.8, limits: .init(),
+            transmissionFloorPixelPercentage: 0, maximumGainPixelPercentage: 0)
+        let image = CIImage(color: CIColor(red: 0.12, green: 0.2, blue: 0.32, colorSpace: FilterEngine.workingSpace)!)
+            .cropped(to: CGRect(x: 0, y: 0, width: 16, height: 16))
+        let settings = FilterSettings(preset: .natural, intensity: 1, analysis: scene(water: .init(0.04, 0.085, 0.29), mid: 0.13))
+        var values = restoration.corrections(settings: settings, plan: plan)
+        values.restored.physicalWeight = 1
+        values.restored.subjectTone = SIMD3(1, 0.9, 0.5)
+        var noRemoval = values
+        noRemoval.restored.subjectTone = SIMD3(repeating: 1)
+        func pixel(_ output: CIImage) -> SIMD3<Float> {
+            var p = [Float](repeating: 0, count: 4)
+            engine.context.render(output, toBitmap: &p, rowBytes: 16, bounds: CGRect(x: 8, y: 8, width: 1, height: 1),
+                                  format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+            return SIMD3(p[0], p[1], p[2])
+        }
+        let untrusted = pixel(try restoration.combined(image, plan: plan, values: values, settings: settings, filter: engine, depthTrust: 0))
+        let without = pixel(try restoration.combined(image, plan: plan, values: noRemoval, settings: settings, filter: engine, depthTrust: 1))
+        assertEqual(untrusted, without, accuracy: 1e-4)
     }
 
     private func assertEqual(_ lhs: SIMD3<Float>, _ rhs: SIMD3<Float>, accuracy: Float,

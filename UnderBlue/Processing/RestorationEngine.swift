@@ -170,6 +170,8 @@ final class RestorationEngine: Sendable {
     /// Video object colour values per scene and settings (videoObjectColourValues). Few entries: one per scene the
     /// preview or export is on, and the settings change only when a slider moves.
     let videoObjectCache = OSAllocatedUnfairLock(initialState: [VideoObjectCacheEntry]())
+    /// depthTrust per video scene (its keyframe), keyed like videoObjectCache.
+    let sceneTrustCache = OSAllocatedUnfairLock(initialState: [(key: VideoObjectCacheEntry.Key, trust: Float)]())
     /// Depth (normalized) from which a pixel takes the full restored result. See combined().
     static let nearDepth: Float = 0.25
 
@@ -279,10 +281,12 @@ final class RestorationEngine: Sendable {
     }
 
     /// combined() with correction values the caller already made. Video mixes two scenes' values here.
+    /// `depthTrust`: how far depth shows where the water is (depthTrust(_:depth:correction:filter:)). Nil measures it on
+    /// the plan's own depth, as photos do. A constant-depth plan (video) cannot show it: the caller passes the scene's.
     func combined(_ image: CIImage, plan: RestorationPlan,
                   values: (current: ColorCorrection, restored: ColorCorrection),
                   settings: FilterSettings, filter: FilterEngine, video: Bool = false,
-                  subjectLift: SubjectLift? = nil) throws -> CIImage {
+                  subjectLift: SubjectLift? = nil, depthTrust knownTrust: Float? = nil) throws -> CIImage {
         let amount = min(1, max(0, settings.appliedIntensity))
         guard settings.preset != .original else { return image }
         guard amount > 0 else {
@@ -303,7 +307,13 @@ final class RestorationEngine: Sendable {
         let current = filter.apply(image, correction: values.current, intensity: amount, calmWeight: calm, violetCalm: false, openWaterRed: video,
                                    edgeGuard: !video)
         let physicallyRestored = try restore(image, plan: plan, liftDark: video)
-        let finished = filter.finishing(physicallyRestored, correction: values.restored, reference: image, calmWeight: calm, openWaterRed: video,
+        // Subject light removal on the restored path only where depth can be trusted. In open water, removing the
+        // backscatter steepens the glow around the sun; the glow then reads as "not water", the removal takes its blue,
+        // and the class flips at one radius: a pink ring (hammerhead clips, 26 Oct 2026).
+        // A constant-depth plan cannot tell; it keeps the removal, as before.
+        let constantDepth = (plan.depth.values.max() ?? 0) - (plan.depth.values.min() ?? 0) <= 0.05
+        let trust = knownTrust ?? (constantDepth ? 1 : depthTrust(image, plan: plan, correction: values.current, filter: filter))
+        let finished = filter.finishing(physicallyRestored, correction: Self.trusting(values.restored, depthTrust: trust), reference: image, calmWeight: calm, openWaterRed: video,
                                        edgeGuard: !video)
         let depthAware = filter.blend(image, finished, amount: amount)
         // Low-confidence fits approach the exact current UnderBlue output. So do the nearest pixels
@@ -331,7 +341,6 @@ final class RestorationEngine: Sendable {
         // The step measures the frame before the lift. Measured after it, the lift moved the near mean, and at a subject
         // strength of 140 % the step switched on for the whole photo: the water turned warm (squid, Intensity 10 %,
         // Jake, 26 Oct 2026, docs/ManualSubject.md). With no lift the two frames are the same.
-        let trust = depthTrust(image, plan: plan, correction: currentValues, filter: filter)
         return objectColour(finishedFrame, measuredOn: unlifted, plan: plan, depth: depth, redLoss: settings.analysis.redLoss,
                             context: filter.context, depthTrust: trust)
     }
@@ -442,12 +451,24 @@ final class RestorationEngine: Sendable {
     /// and turned teal (pairs 1-5 10.53 to 10.63, chart grey 0.010 to 0.029, 26 Oct 2026). The sun stills stay untrusted
     /// either way (luma 0.00 to 0.08). Where depth and brightness agree, depth is used.
     func depthTrust(_ image: CIImage, plan: RestorationPlan, correction: ColorCorrection, filter: FilterEngine) -> Float {
-        let dw = plan.depth.width, dh = plan.depth.height
+        depthTrust(image, depth: plan.depth, correction: correction, filter: filter)
+    }
+
+    /// `restored` with its subject light removal scaled by the depth trust: none at 0, all of it at 1 (combined()).
+    static func trusting(_ restored: ColorCorrection, depthTrust: Float) -> ColorCorrection {
+        var v = restored
+        v.subjectTone = SIMD3(repeating: 1) + (restored.subjectTone - SIMD3(repeating: 1)) * min(1, max(0, depthTrust))
+        return v
+    }
+
+    /// depthTrust on a depth map of the caller's: a video scene's keyframe, whose plan holds one constant depth.
+    func depthTrust(_ image: CIImage, depth: NormalizedDepthMap, correction: ColorCorrection, filter: FilterEngine) -> Float {
+        let dw = depth.width, dh = depth.height
         guard dw > 0, dh > 0, !image.extent.isEmpty,
               let share = filter.waterShare(FilterEngine.downscaled(image, maxPixel: CGFloat(max(dw, dh)) * 2), correction: correction)
         else { return 0 }
         let shares = Self.workingPixels(share, width: dw, height: dh, context: filter.context).map(\.x)
-        return Self.depthTrust(depth: plan.depth.values, share: shares)
+        return Self.depthTrust(depth: depth.values, share: shares)
     }
 
     /// The frame scaled to `width` x `height`, as linear Rec.2020 pixels (row 0 on top, as the depth map).

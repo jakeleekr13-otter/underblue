@@ -250,6 +250,7 @@ What the analysis gives today: O6 has no white reference (neutral (0, 0, 0), sha
 - Jake (25 Oct 2026), on O6: the water does not have to be blue. Forcing it blue (tries 2 to 7) is what made the sand-to-water seam. So try 8 drops the water target.
 - Try 8 changes only photos whose near objects carry the water's tint (O6, strength 1.0). m5, m6 and the plant photos get strength 0 or 0.1 (below the 0.3 floor).
 - Still open: m6's olive reef (needs red from green), and the green water of the sargassum photo (201, Jake's 24 Oct rule). Try 8 does not touch either.
+  - Update 26 Oct 2026: the m6 reef box now reads hue 93 on the photo path (A2, C 0.049; Sea-thru 65, source 160), brown-gold by eye. The video path still reads 133 (`videoa2`; 140 without the video step): video has only step 2, and step 2 alone moves it 7 degrees. Step 1 stays off in video (it greyed v5_70).
 #### A2 step 2: red from green on near subjects (25 Oct 2026)
 
 Jake asked whether O4 can improve. O4 is the m6 scene (the bench maps pair 4 to `market/ref/m6.png`), so it has two independent references: AquaColorFix and Sea-thru. Both agree on three gaps (OKLab L / chroma / hue):
@@ -507,8 +508,27 @@ Measure: median OKLab a (x1000; negative = green, toward 0 = less green, then pi
   - Fade start: 0.6 left the m5 chart a little less grey; 0.8 brought a dip back on v3. 0.7 is between.
 - Result, v3_70 chroma at the same distances: photo 0.133 / 0.129 / 0.124 / 0.129 / 0.107, video 0.132 / 0.128 / 0.121 / 0.123 / 0.111. v1 is unchanged.
 - Guards, against the state before: r14 sand grain 1.72x to 1.61x (video 1.59x to 1.32x); m5 chart grey row photo 0.009 to 0.010, video 0.043 to 0.055 (Sea-thru 0.079). The rest is unchanged.
-- By eye: v3_70's disc is cyan like the original, with a much softer edge. A faint pinkish rim stays at the outer edge on v3_30 (photo) and at the lower edge of v1's bright area. Not fixed.
+- By eye: v3_70's disc is cyan like the original, with a much softer edge. A faint pinkish rim stayed at the outer edge on v3_30 (photo) and at the lower edge of v1's bright area. Fixed later the same day; see "The pink rim around the sun".
 - Jake checked the clips on the iPhone (26 Oct 2026). At the default intensity (80) the sharks get a dark outline; it does not look wrong, and at 50 it looks fine. He accepts it as it is: deep water with little light. This is the known video halo from the local veil (22 Oct 2026, mitigated by `liftDark`; photos avoid it with the Vision subject mask). Not worked on.
+
+### The pink rim around the sun: fixed (26 Oct 2026)
+- Seen: a pink-beige ring at the edge of v3_30's bright disc, and a band under v1_30's bright area. Photo and video path.
+- Measure: OKLab a on a 20 px wide vertical line through v1_30's sun (x 150-170, y 300-414, 960 px). Before: photo a -14 for y 312-342, then -29 by y 360. Video: -13, then -30.
+- Stage sweep (`HT_EVAL_RESTORED_ABLATE`): the step goes with any one of these off on the restored path: red rebuild, cast gains, subject light removal (`subjectTone`). The legacy path has no step.
+- Probe of the finishing gates on the same line:
+  - The restored image (the finishing input) already has the cliff. Luminance falls 0.096 → 0.050 between y 342 and 366, while the original falls smoothly (L 55 → 51). Depth is flat there (0.95).
+  - Removing the backscatter steepens the glow, because near the sun the glow is only a little above the backscatter.
+  - Inside the glow the pixels read "not water" (water-like 0.23-0.33, against 0.91-0.96 outside). The subject light removal takes their blue (v1_30: blue × 0.44), so the glow turns pink. The class flips at one radius, which draws the ring.
+- Fix: on the restored path, the subject light removal scales with the depth trust (`RestorationEngine.trusting`). Open water (trust 0) takes none; the legacy path still removes the subjects' cast.
+  - Photos: trust from the photo's own depth.
+  - Video: trust per scene, from its keyframe's own depth map (`sceneTrust`, cached). A scene without a keyframe keeps full trust.
+  - A constant-depth plan with no trust given keeps full trust (it cannot tell).
+- First try: video always untrusted. AquaColorFix as video went 10.98 → 11.39, so video now uses the scene trust.
+- Result on the same line: photo a -35 flat; video -37 to -41. By eye, the glow stays cyan on v1_30 and v3_30, with no pink band.
+- Guards against the state before:
+  - AquaColorFix unchanged on both paths (10.53 photo, 10.98 video).
+  - Neutral surfaces, black gear, plants, grain and the neutral ramp are unchanged.
+  - Open-water photos move a little: r07 nearRG 0.38 → 0.35, far chroma 25.7 → 27.9; r10 nearRG 0.52 → 0.48; r04, r11-r13 and m3 by 0.1-0.4.
 
 ### Too-bright sunlit areas in clips (Jake, 25 Oct 2026: "the bright parts are too bright and do not blend naturally")
 

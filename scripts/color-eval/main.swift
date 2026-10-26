@@ -581,11 +581,13 @@ for name in selected {
             outputs["signal"] = signal
         }
         if let uniform = try? plan.withUniformDepth() {
+            // As a video scene: trust from the still's own depth map (RestorationEngine.sceneTrust uses the keyframe's).
+            let sceneTrust = restoration.depthTrust(source, plan: plan, correction: restoration.corrections(settings: settings, plan: uniform).current, filter: engine)
             // The video entry point (correction values passed in), as video frames are rendered.
             outputs["uniform"] = (try? restoration.combined(source, plan: uniform, values: restoration.corrections(settings: settings, plan: uniform),
-                                                            settings: settings, filter: engine)) ?? current
+                                                            settings: settings, filter: engine, depthTrust: sceneTrust)) ?? current
             if videoA2, let base = try? restoration.combined(source, plan: uniform, values: restoration.corrections(settings: settings, plan: uniform),
-                                                              settings: settings, filter: engine, video: true) {
+                                                              settings: settings, filter: engine, video: true, depthTrust: sceneTrust) {
                 outputs["videobase"] = base
                 let pixels = RestorationEngine.workingPixels(base, width: plan.depth.width, height: plan.depth.height, context: engine.context)
                 let v = RestorationEngine.videoObjectColourValues(pixels: pixels, depth: plan.depth.values, redLoss: settings.analysis.redLoss)

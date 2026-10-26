@@ -508,6 +508,7 @@ Measure: median OKLab a (x1000; negative = green, toward 0 = less green, then pi
 - Result, v3_70 chroma at the same distances: photo 0.133 / 0.129 / 0.124 / 0.129 / 0.107, video 0.132 / 0.128 / 0.121 / 0.123 / 0.111. v1 is unchanged.
 - Guards, against the state before: r14 sand grain 1.72x to 1.61x (video 1.59x to 1.32x); m5 chart grey row photo 0.009 to 0.010, video 0.043 to 0.055 (Sea-thru 0.079). The rest is unchanged.
 - By eye: v3_70's disc is cyan like the original, with a much softer edge. A faint pinkish rim stays at the outer edge on v3_30 (photo) and at the lower edge of v1's bright area. Not fixed.
+- Jake checked the clips on the iPhone (26 Oct 2026). At the default intensity (80) the sharks get a dark outline; it does not look wrong, and at 50 it looks fine. He accepts it as it is: deep water with little light. This is the known video halo from the local veil (22 Oct 2026, mitigated by `liftDark`; photos avoid it with the Vision subject mask). Not worked on.
 
 ### Too-bright sunlit areas in clips (Jake, 25 Oct 2026: "the bright parts are too bright and do not blend naturally")
 
@@ -641,6 +642,29 @@ Go rule: removal after colour is not lower than before colour (43-71%), and smal
 Cost on iPhone: unmeasured. Measure it only after the algorithm is done.
 
 Photos: a single photo has no neighbour frame, so the drifting test cannot work there. Decide on photo removal after D1 shows how visible the specks are.
+
+#### D2 result (26 Oct 2026): go
+
+Bench: `particle-bench/chain.swift` (build `build_chain.sh`). Colour is the app's video path: `VideoRestorationAnalyzer` on the whole clip, then `combined(moment:)`, Natural Dive at 0.8. Every variant is scored after one render into 420v; motion comes from the original frames. "Removed" counts the reference's drifting specks whose peak drops below half.
+
+| Segment | Variant | Drifting specks per frame | Removed | Small subjects kept | Dark small kept | Pixels changed > 2 |
+|---|---|---|---|---|---|---|
+| S3 c1 fish, 0-4 s | original | 5.47 | | | | |
+| | particles on the original | 3.12 | 46.4% | 100% | 100% | 0.031% |
+| | colour only | 2.41 | | | | |
+| | **particles, then colour** | **1.12** | **64.6%** | **100%** | **100%** | 0.031% |
+| | colour, then particles | 1.23 | 41.4% | 99.9% | 100% | 0.239% |
+| S1 c3 snow, 29.5-35.5 s | original | 144.57 | | | | |
+| | particles on the original | 42.17 | 65.7% | 99.2% | 99.0% | 0.098% |
+| | colour only | 45.33 | | | | |
+| | **particles, then colour** | **4.34** | **86.5%** | **99.9%** | **99.8%** | 0.058% |
+| | colour, then particles | 12.15 | 43.4% | 99.9% | 100% | 0.029% |
+
+- Go rule met: after colour, the planned order removes more than before colour (64.6% and 86.5%, against 46.4% and 65.7%), and small subjects stay at 99.9% or more.
+- Colour alone already removes most visible specks (S1 145 to 45 per frame, S3 5.5 to 2.4): the water calm smooths them, as D1 found.
+- The other order (colour first) is worse on both segments. The planned order holds.
+- By eye (crops at 2x): every small dark fish in the S3 window stays; the S1 snow window has fewer specks.
+- Not done: the cost on the iPhone, and the wiring into the exporter. The prototype's own numbers (Mac M3): 126-204 fps at 1080p, 63-67 fps at 4K, 3 frames of lag.
 
 ## Not in this plan
 

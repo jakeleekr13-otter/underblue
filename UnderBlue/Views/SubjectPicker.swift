@@ -200,6 +200,49 @@ struct SubjectPicker: View {
     }
 }
 
+/// The subject strength slider, 0 to 150 % (docs/ManualSubject.md). It scales only the lift on the picked subjects;
+/// Intensity stays the base. The percentage follows the finger at once. The value reaches the model, and so a new
+/// render, only when the finger rests for `settle` or lets go: a render runs to its end once started, so sending
+/// every 5 % step made the preview stutter while dragging (Jake, iPhone, 26 Oct 2026).
+struct SubjectStrengthSlider: View {
+    let strength: Float
+    /// One row beside the Mac's subject bar; the iPhone puts the label above the slider.
+    var compact = false
+    let onChange: (Float) -> Void
+    static let settle: Duration = .milliseconds(150)
+    @State private var draft: Double?
+    @State private var editing = false
+
+    var body: some View {
+        let shown = draft ?? Double(strength)
+        let slider = Slider(value: Binding(get: { shown }, set: { draft = $0 }),
+                            in: 0...Double(SubjectSelection.maximumStrength), step: 0.05,
+                            onEditingChanged: { active in editing = active; if !active { commit() } })
+            .accessibilityLabel("Subject strength")
+        let percent = Text(shown, format: .percent.precision(.fractionLength(0))).monospacedDigit()
+        Group {
+            if compact {
+                HStack { Text("Subject strength"); slider.frame(width: 140); percent }
+            } else {
+                VStack { HStack { Text("Subject strength"); Spacer(); percent }; slider }
+            }
+        }
+        .task(id: draft) {
+            guard draft != nil else { return }
+            try? await Task.sleep(for: Self.settle)
+            if !Task.isCancelled { commit() }
+        }
+        // A change from outside (Reset, another photo) shows at once when the finger is off the slider.
+        .onChange(of: strength) { _, _ in if !editing { draft = nil } }
+    }
+
+    private func commit() {
+        guard let draft else { return }
+        if Float(draft) != strength { onChange(Float(draft)) }
+        if !editing { self.draft = nil }
+    }
+}
+
 /// The text under the picker controls: what is selected, and why a tap did nothing.
 @MainActor
 enum SubjectPickerText {

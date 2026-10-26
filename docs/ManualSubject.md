@@ -395,6 +395,7 @@ Fixes after Jake's iPhone check, 25 Oct 2026:
   One render is far below 3 s on these photos. Jake then said the delay shows while the slider keeps moving: each step starts a new render, and a render that has started runs to its end. Not measured: the photo Jake used, a zoomed preview (3200 px), 48 MP or HEIC sources.
 - A spinner now shows over the preview while a render runs (`PreviewRenderingIndicator`), after 0.3 s, on the iPhone and the Mac (Jake's request).
 - Next: make dragging cheaper, for example a smaller preview while the finger is on the slider and the full one on release. Not designed yet.
+- Jake (26 Oct 2026) still felt the slider stutter on the squid and chose the quick way: render less often. `SubjectStrengthSlider` shows the percentage at once, but sends the value (and so a render) only when the finger rests for 0.15 s or lets go. iPhone and Mac. Caching the frame before the lift, so a drag reruns only the lift, stays an option if this is not enough.
 
 Whole-photo colour jump at a high subject strength (Jake, squid photo, Intensity 10 %, 26 Oct 2026):
 

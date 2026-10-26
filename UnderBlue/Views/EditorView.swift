@@ -205,23 +205,11 @@ struct EditorView: View {
                     Button("Reset") { model.resetSubjects() }
                 }.buttonStyle(.bordered).frame(minHeight: 44)
             }
-            if subjects.showsStrength { subjectStrength(subjects) }
+            if subjects.showsStrength { SubjectStrengthSlider(strength: subjects.strength) { model.setSubjectStrength($0) } }
             Text(SubjectPickerText.summary(subjects)).font(.footnote).foregroundStyle(.secondary)
             if let legend = SubjectPickerText.legend(subjects) { Text(legend).font(.footnote).foregroundStyle(.secondary) }
             if let notice = SubjectPickerText.notice(subjects) { Text(notice).font(.footnote).foregroundStyle(.orange) }
         }.animation(.default, value: subjects.status)
-    }
-    /// The subject strength, 0 to 150%. It scales only the lift on the picked subjects; Intensity stays the base.
-    private func subjectStrength(_ subjects: SubjectSelection) -> some View {
-        VStack {
-            HStack {
-                Text("Subject strength"); Spacer()
-                Text(Double(subjects.strength), format: .percent.precision(.fractionLength(0))).monospacedDigit()
-            }
-            Slider(value: Binding(get: { Double(subjects.strength) }, set: { model.setSubjectStrength(Float($0)) }),
-                   in: 0...Double(SubjectSelection.maximumStrength), step: 0.05)
-                .accessibilityLabel("Subject strength")
-        }
     }
     /// One row that scrolls sideways, or a two-column grid when the pane is narrow and tall.
     @ViewBuilder private func presetPicker(grid: Bool) -> some View {

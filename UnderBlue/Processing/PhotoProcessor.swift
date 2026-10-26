@@ -49,6 +49,9 @@ actor PhotoProcessor {
         engine = FilterEngine(memoryLimitMB: memoryLimitMB)
     }
 
+    /// Frees Core Image's cached data for this processor (CIContext.clearCaches).
+    func clearCaches() { engine.context.clearCaches() }
+
     func open(_ url: URL) throws -> CIImage {
         if UTType(filenameExtension: url.pathExtension)?.conforms(to: .rawImage) == true { return try openRAW(url) }
         guard let image = CIImage(contentsOf: url, options: [.applyOrientationProperty: true, .expandToHDR: true]),
@@ -222,6 +225,15 @@ actor PhotoProcessor {
         // The rest runs synchronously in its own autorelease pool. Core Image's objects (and the big buffers a 48 MP render
         // holds) were otherwise freed only later, so the next export started 2.4 GB higher and was killed for memory
         // (iPhone 17, 26 Oct 2026).
+        // A very large photo needs about 56 bytes per pixel at its peak (+2.7 GB at 48 MP). The previous export's memory
+        // comes back about a second after it ends; the next 48 MP export, started at once, was killed for memory
+        // (iPhone 17, 26 Oct 2026). So wait for it, at most 3 s, then clear Core Image's caches afterwards.
+        let pixels = Int(source.extent.width) * Int(source.extent.height)
+        if pixels > FilterEngine.materializeAbove {
+            let needed = UInt64(pixels) * Self.largeExportBytesPerPixel
+            for _ in 0..<30 where VideoExporter.availableMemoryBytes() < needed { try await Task.sleep(for: .milliseconds(100)) }
+        }
+        defer { if pixels > FilterEngine.materializeAbove { engine.context.clearCaches() } }
         return try autoreleasepool {
             let chosen = Self.settings(settings, for: subjects) { engine.analyze(source, subjects: $0) }
             let image = processed(cleaned(source, source: source, url: url, settings: chosen, plan: plan), settings: chosen, plan: plan)
@@ -250,6 +262,8 @@ actor PhotoProcessor {
     }
 
     private static let quality = CIImageRepresentationOption(rawValue: kCGImageDestinationLossyCompressionQuality as String)
+    /// Peak memory of a photo export above FilterEngine.materializeAbove, per pixel (48 MP, iPhone 17, 26 Oct 2026).
+    static let largeExportBytesPerPixel: UInt64 = 56
 
     /// A file reaches the user only if it opens at full size in the chosen format. HEIC must hold 10 bits,
     /// and an HDR export its gain map with headroom above SDR white.

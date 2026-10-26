@@ -67,17 +67,31 @@ final class PhotoCostProbeTests: XCTestCase {
         let limits = (env["UB_COST_LIMITS"] ?? "0,768,1024").split(separator: ",").compactMap { Int($0) }
         let files = try FileManager.default.contentsOfDirectory(at: input, includingPropertiesForKeys: nil)
             .filter { ["jpg", "jpeg", "heic"].contains($0.pathExtension.lowercased()) }.sorted { $0.lastPathComponent < $1.lastPathComponent }
+        print(String(format: "COST footprint at start %.0f MB", Double(Self.footprint()) / 1_048_576))
+        // One processor per memory target for every photo, as the editor and the batch keep theirs.
+        let processors = Dictionary(uniqueKeysWithValues: limits.map { ($0, PhotoProcessor(memoryLimitMB: $0 > 0 ? $0 : nil)) })
         for url in files {
             for limit in limits {
-                let processor = PhotoProcessor(memoryLimitMB: limit > 0 ? limit : nil)
+                let processor = processors[limit]!
                 var settings = FilterSettings()
+                print(String(format: "COST %@ footprint before analysis %.0f MB", url.lastPathComponent, Double(Self.footprint()) / 1_048_576))
                 settings.analysis = try await processor.analyze(url)
+                print(String(format: "COST %@ footprint after analysis %.0f MB", url.lastPathComponent, Double(Self.footprint()) / 1_048_576))
                 for round in 1...2 {
                     var output: URL?, failure: String?
                     let r: (ms: Double, peakMB: Double) = await measure {
-                        do { output = try await processor.export(url, settings: settings) } catch { failure = "\(error)" }
+                        let format: ExportOptions.PhotoFormat = env["UB_COST_FORMAT"] == "heic" ? .heic : .jpeg
+                        do { output = try await processor.export(url, settings: settings, keepHDR: env["UB_COST_HDR"] == "1", format: format) }
+                        catch { failure = "\(error)" }
                     }
                     if let output { try? FileManager.default.removeItem(at: output) }
+                    if env["UB_COST_CLEAR"] == "1" {
+                        try? await Task.sleep(for: .seconds(1))
+                        let before = Double(Self.footprint()) / 1_048_576
+                        await processor.clearCaches()
+                        try? await Task.sleep(for: .milliseconds(500))
+                        print(String(format: "COST clearCaches: %.0f -> %.0f MB", before, Double(Self.footprint()) / 1_048_576))
+                    }
                     print(String(format: "COST target %@ %@ round %d: %.0f ms, peak +%.0f MB, footprint after %.0f MB %@", limit > 0 ? "\(limit) MB" : "default",
                                  url.lastPathComponent, round, r.ms, r.peakMB, Double(Self.footprint()) / 1_048_576,
                                  failure.map { "FAILED " + String($0.prefix(120)) } ?? "ok"))

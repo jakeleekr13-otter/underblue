@@ -22,9 +22,12 @@ Causes and fixes:
 3. After one 48 MP export the memory stayed up, and the next export was killed ("signal kill"). Fix: the synchronous part of the export runs in its own `autoreleasepool`.
 - Result: 48 MP exports twice in a row, 7.5 s and 6.9 s; peak +2.7 GB; footprint after about 1.7 GB.
 
+4. Real 48 MP photos (`DeveloperMedia/licese-free-images/48mp/`, iPhone 16 Pro and 15 Pro Max, Wikimedia Commons): the second photo in a row was killed. After an export the footprint stays at 1.6-2.0 GB for about a second, and the next 48 MP export (peak +2.7 GB) went over the limit. `clearCaches` alone freed 5-50 MB. Fix: before an export above 30 MP, wait (at most 3 s) until free memory covers 56 bytes per pixel, and clear the caches after it.
+- Result, three real 48 MP photos back to back, twice each: JPEG 7.0-14.6 s, HEIC with HDR 11.2-20.0 s (the MPO photo with a gain map is the slowest). All passed. The later exports include up to 3 s of waiting.
+
 Still open:
-- A real 48 MP photo (HEIF Max or ProRAW) on the device, saved as JPEG and HEIC.
-- The footprint stays about 1.7 GB after a 48 MP export (the next export reuses it).
+- A 48 MP ProRAW (DNG) photo: none found with an open licence.
+- A batch of many 48 MP photos on the device (the probe ran three in a row).
 - Preview of a 48 MP photo: not checked (it renders a 1600 px copy, below the cut threshold).
 - Probe: `UnderBlueTests/PhotoCostProbeTests.swift`; inputs in Documents/cost-in and cost-48 on the device.
 

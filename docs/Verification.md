@@ -2,6 +2,24 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## 48 MP photos fail to export on the iPhone (found 26 Oct 2026, open)
+
+Measured on the iPhone 17 (iOS 27), Release build, with an 8064 × 6048 JPEG. It is IMG_7400 scaled up, so a synthetic file. No real 48 MP photo was tried.
+- `PhotoProcessor.export` fails in under a second: "Failed to render part of the image because memory requirement of 399985784 too big (tile 8x12)".
+  - 399,985,784 bytes is 8064 × 6048 × 8, one half-float RGBA buffer of the whole frame.
+  - `main` (f71ba86) fails the same way, so it predates the 26 Oct work.
+- The Core Image memory target does not fix it:
+  - default: 20 MP ok (8.1 s); 48 MP fails.
+  - 768 MB: 20 MP also fails.
+  - 1024 MB: 20 MP ok but slower (13.2 s); 48 MP fails.
+- Stages through the same JPEG writer, at 48 MP:
+  - Pass: the source alone; shadows/highlights alone; each unsharp mask alone; finishing with shadows, clarity and definition off (5.4 s).
+  - Pass: finishing with only one of them on (shadows 5.1 s, clarity 10.3 s, definition 19.9 s).
+  - Hang (stopped after 5-10 min, endless IOSurface allocation failures): the full finishing, with or without the water core.
+- Tried: clarity and definition both reading the unsharpened image (no nested blurs). The full finishing still hung. Reverted.
+- Not found yet: which node Core Image turns into a full-frame buffer. Next step: dump the render graph (`CI_PRINT_TREE`) on the device, or render the export in tiles.
+- Probe: `UnderBlueTests/PhotoCostProbeTests.swift` (not committed on 26 Oct), photos in Documents/cost-in and cost-48 on the device.
+
 ## Labs: remove backscatter spots (26 Oct 2026, branch `restoration-experiments`)
 
 What changed:
@@ -10,8 +28,14 @@ What changed:
 
 Checked so far: Mac harness, unit tests and the Mac build. The app UI was not checked.
 
+Measured on the iPhone 17, Release build (26 Oct 2026), IMG_7400 at 20 MP, export:
+- Switch off: 7.7-8.1 s, peak +1.3-1.7 GB. Switch on: 12.2-12.5 s, peak +1.3 GB, both the first export (finds the orbs) and the second (reuses them).
+- So the detection is cheap, but taking the orbs off adds about 4.5 s to every export. Not explained yet.
+- The water core (photos, not Labs): one finishing call 1.25 s → 2.0 s at 20 MP; a photo makes two.
+- 48 MP: fails with the switch off too; see "48 MP photos fail to export".
+
 Still open:
-- iPhone: time and memory for one photo at 20 MP and at 48 MP, with the switch on.
+- The 4.5 s cost of taking the orbs off.
 - Mac app: turn the switch on in the Help window while a photo is in the preview. The preview should redraw without the orbs (`PreviewPane` watches the switch).
 - iPhone app: preview and saved photo match, with the switch on and off.
 

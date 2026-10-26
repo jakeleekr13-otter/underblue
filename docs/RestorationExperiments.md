@@ -251,6 +251,7 @@ What the analysis gives today: O6 has no white reference (neutral (0, 0, 0), sha
 - Try 8 changes only photos whose near objects carry the water's tint (O6, strength 1.0). m5, m6 and the plant photos get strength 0 or 0.1 (below the 0.3 floor).
 - Still open: m6's olive reef (needs red from green), and the green water of the sargassum photo (201, Jake's 24 Oct rule). Try 8 does not touch either.
   - Update 26 Oct 2026: the m6 reef box now reads hue 93 on the photo path (A2, C 0.049; Sea-thru 65, source 160), brown-gold by eye. The video path still reads 133 (`videoa2`; 140 without the video step): video has only step 2, and step 2 alone moves it 7 degrees. Step 1 stays off in video (it greyed v5_70).
+  - Tried 26 Oct 2026: step 1 in video for scenes whose keyframe depth can be trusted. Reverted. m6 and O4 get no gains (strength 0): the photo's brown comes from step 2's red by depth, which video cannot do without per-pixel depth. v5_30 and v5_70 count as trusted and got strong gains (1.6, 0.89, 0.63), the greying seen before. Video m6 stays olive for now.
 #### A2 step 2: red from green on near subjects (25 Oct 2026)
 
 Jake asked whether O4 can improve. O4 is the m6 scene (the bench maps pair 4 to `market/ref/m6.png`), so it has two independent references: AquaColorFix and Sea-thru. Both agree on three gaps (OKLab L / chroma / hue):
@@ -700,6 +701,7 @@ Bench: `particle-bench/chain.swift` (build `build_chain.sh`). Colour is the app'
 - The filter builds on iOS (its kernels compile from source at run time). Both outputs have 600 frames. With it on, 0.02-0.08% of the pixels change, by 5-15 levels at most (this stretch has few specks).
 - The added time per frame is about the same at 1080p and 4K (36 ms). So it is likely a wait for the GPU in the filter, not the pixel work. Not checked.
 - Decision (Jake, 26 Oct 2026): off by default (`VideoExporter(removesParticles:)` false). Turn it on when the cost is down to about +20% time and +100 MB. Photo particles come first.
+- Jake (26 Oct 2026): record only. No more video particle work for now.
 
 ### D3 — photo particles (started 26 Oct 2026)
 

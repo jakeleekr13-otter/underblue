@@ -2,6 +2,8 @@
 
 Status: plan revised 24 Oct 2026. Nothing built. Order (Jake, 24 Oct 2026): the subject work (SubjectEmphasis.md, SubjectPicker.md), then [RestorationExperiments](RestorationExperiments.md), then this plan.
 
+Update 26 Oct 2026: not started. Jake is not sure the presets are needed, because the restoration work went well. Decide before L2.
+
 ## Goal
 
 A built-in preset that adds a look on top of Natural. The user drags one dot on a 2D pad to change the look. The app places the dot for each photo or video scene by itself. The user can tap the preset and do nothing else.

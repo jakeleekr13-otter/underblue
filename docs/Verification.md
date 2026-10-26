@@ -28,6 +28,7 @@ Causes and fixes:
 Still open:
 - A 48 MP ProRAW (DNG) photo: none found with an open licence.
 - A batch of many 48 MP photos on the device (the probe ran three in a row).
+- Jake (26 Oct 2026): the ProRAW and batch checks are accepted as open. No sample or device run is planned.
 - Preview of a 48 MP photo: not checked (it renders a 1600 px copy, below the cut threshold).
 - Probe: `UnderBlueTests/PhotoCostProbeTests.swift`; inputs in Documents/cost-in and cost-48 on the device.
 
@@ -46,6 +47,7 @@ Measured on the iPhone 17, Release build (26 Oct 2026), IMG_7400 at 20 MP, expor
 - 48 MP: failed with the switch off too; see "48 MP photos failed to export".
 - After the 48 MP fix (the A2 measurement on a small copy): switch off 4.2-4.4 s, switch on 5.1-5.8 s at 20 MP.
 - Mac app: turn the switch on in the Help window while a photo is in the preview. The preview should redraw without the orbs (`PreviewPane` watches the switch).
+  - Jake (26 Oct 2026): check this before the Mac archive.
 - iPhone app: preview and saved photo match, with the switch on and off.
 
 ## Apple Log and ProRes RAW (26 Oct 2026, branch `apple-log`)

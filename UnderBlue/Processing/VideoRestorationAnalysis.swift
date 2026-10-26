@@ -118,6 +118,13 @@ struct VideoRestorationAnalysis: Sendable {
     let sourceProfile: VideoSourceProfile
     let previewPolicy: ProcessingPolicy
     let exportPolicy: ProcessingPolicy
+    /// The camera's short colour pulses, taken out of every frame before the correction. Nil keeps the frames.
+    var colourTrack: VideoColourTrack? = nil
+
+    /// The source frame at `time` as the correction should see it. Preview and export both use this.
+    func stabilised(_ image: CIImage, at time: Double) -> CIImage {
+        colourTrack?.stabilised(image, at: time) ?? image
+    }
 
     /// The longest cross-fade between two scenes, in seconds. The change happens somewhere between
     /// two keyframes, so the fade is centred on the middle of that gap. It may be longer than the gap:
@@ -255,32 +262,49 @@ actor VideoRestorationAnalyzer {
         generator.requestedTimeToleranceAfter = CMTime(seconds: 0.03, preferredTimescale: 600)
         // An Apple Log frame comes out of the generator as the log signal, so it is decoded first.
         let log = metadata.appleLog
-        func frame(_ cg: CGImage) -> CIImage {
-            let image = CIImage(cgImage: cg)
-            return engine.sdr(log?.decode(image) ?? image)
+        let engine = engine
+        @Sendable func mapped(_ image: CIImage) -> CIImage { engine.sdr(log?.decode(image) ?? image) }
+        let videoDuration = metadata.videoDuration
+        // Every frame's colour balance, so the keyframes and the rendered frames lose the camera's short
+        // colour pulses alike (VideoColourTrack). A clip it cannot read keeps its frames as they are.
+        let colourTrack: VideoColourTrack?
+        // An SDR clip is measured on the CPU (VideoColourTrack.measure).
+        var measured: (@Sendable (CIImage) -> CIImage)?
+        if log != nil || metadata.isHDR { measured = mapped }
+        do { colourTrack = try await VideoColourTrack.measure(url: url, duration: videoDuration, context: engine.context, frame: measured) }
+        catch is CancellationError { throw CancellationError() } catch { colourTrack = nil }
+        func frame(_ cg: CGImage, at time: CMTime) -> CIImage {
+            let image = mapped(CIImage(cgImage: cg))
+            return colourTrack?.stabilised(image, at: time.seconds) ?? image
         }
 
         // One frame that cannot be read must not stop the whole analysis (code 6, video3, 1 Oct 2026):
         // a failed keyframe is skipped, and only a clip with no readable keyframe fails.
         // Keyframes stay inside the video track: a longer audio track ran them past the last frame.
-        let videoDuration = metadata.videoDuration
         let keyframes = Self.keyframeTimes(duration: videoDuration)
-        var times: [Double] = [], samples: [WaterAnalysis] = [], firstFrame: CGImage?
+        var times: [Double] = [], actualTimes: [CMTime] = [], samples: [WaterAnalysis] = [], firstFrame: (CGImage, CMTime)?
         for time in keyframes {
             try Task.checkCancellation()
-            let cg: CGImage
-            do { cg = try await generator.image(at: CMTime(seconds: time, preferredTimescale: 600)).image }
+            let read: (image: CGImage, actualTime: CMTime)
+            do { read = try await generator.image(at: CMTime(seconds: time, preferredTimescale: 600)) }
             catch is CancellationError { throw CancellationError() } catch { continue }
-            if firstFrame == nil { firstFrame = cg }
+            if firstFrame == nil { firstFrame = (read.image, read.actualTime) }
             times.append(time)
-            samples.append(engine.analyze(frame(cg)))
+            actualTimes.append(read.actualTime)
+            samples.append(engine.analyze(frame(read.image, at: read.actualTime)))
         }
         guard let firstFrame else { throw UnderBlueError.unreadable }
         var representativeTime = max(0, videoDuration * 0.5)
         let representative: CGImage
-        do { representative = try await generator.image(at: CMTime(seconds: representativeTime, preferredTimescale: 600)).image }
-        catch is CancellationError { throw CancellationError() } catch { representative = firstFrame; representativeTime = times[0] }
-        let representativeImage = frame(representative)
+        let representativeImage: CIImage
+        do {
+            let read = try await generator.image(at: CMTime(seconds: representativeTime, preferredTimescale: 600))
+            representative = read.image
+            representativeImage = frame(read.image, at: read.actualTime)
+        } catch is CancellationError { throw CancellationError() } catch {
+            representative = firstFrame.0; representativeTime = times[0]
+            representativeImage = frame(firstFrame.0, at: firstFrame.1)
+        }
         let device = await profiler.profile(representativeImage: representativeImage)
         let source = VideoSourceProfile.make(url: url, metadata: metadata)
         let runtime = RuntimeSystemState.current
@@ -304,7 +328,7 @@ actor VideoRestorationAnalyzer {
                 let cg: CGImage
                 do { cg = try await generator.image(at: CMTime(seconds: times[index], preferredTimescale: 600)).image }
                 catch is CancellationError { throw CancellationError() } catch { restorationFailures += 1; continue }
-                let image = frame(cg)
+                let image = frame(cg, at: actualTimes[index])
                 do {
                     let depth = try await depthEstimator.monocularDepth(for: image)
                         .resampled(maxDimension: previewPolicy.depthMapMaxDimension)
@@ -362,7 +386,8 @@ actor VideoRestorationAnalyzer {
         return VideoRestorationAnalysis(legacyAnalysis: .sceneMean(samples, keeping: clipKept),
                                         representativeFrame: representative, representativeTime: representativeTime,
                                         scenes: scenes, initialEnvironment: environment, deviceProfile: device,
-                                        sourceProfile: source, previewPolicy: previewPolicy, exportPolicy: exportPolicy)
+                                        sourceProfile: source, previewPolicy: previewPolicy, exportPolicy: exportPolicy,
+                                        colourTrack: colourTrack)
     }
 
     private func aggregate(_ plans: [RestorationPlan]) -> InitialRestorationEnvironment? {

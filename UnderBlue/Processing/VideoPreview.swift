@@ -89,8 +89,12 @@ struct VideoPreview {
         // nonisolated(nonsending): the non-Sendable asset never leaves the caller's isolation.
         let filtered = try await AVVideoComposition(applyingFiltersTo: asset) { [engine, restorationEngine, diagnosticGate, diagnostics] request in
             let (current, original) = settings.snapshot()
-            let source = log.map { engine.sdr($0.decode(request.sourceImage)) } ?? request.sourceImage
+            var source = log.map { engine.sdr($0.decode(request.sourceImage)) } ?? request.sourceImage
             guard !original else { return AVCIImageFilteringResult(resultImage: source, ciContext: engine.context) }
+            // The Original preset shows the frame as it is, as its export does.
+            if current.preset != .original, let analysis {
+                source = analysis.stabilised(source, at: request.compositionTime.seconds)
+            }
             let fallback = engine.apply(source, settings: current, edgeGuard: false, coresWater: false)
             guard let moment = analysis?.moment(at: request.compositionTime.seconds) else {
                 return AVCIImageFilteringResult(resultImage: fallback, ciContext: engine.context)

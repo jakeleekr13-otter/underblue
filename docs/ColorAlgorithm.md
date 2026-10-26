@@ -369,7 +369,7 @@ Custom is the user preset (gear tile). It starts from the Natural values and ren
 
 ## Restoration kernel
 
-The kernel is `UnderBlueRestoration` in `RestorationEngine.swift`. `RestorationMath` is its CPU mirror.
+The kernel is `UnderBlueRestoration`, run by `RestorationEngine.restore`. `RestorationMath` (`RestorationMath.swift`) is its CPU mirror.
 
 **Image formation:** `observed = clear x exp(-betaDirect x z) + backscatterInfinity x (1 - exp(-betaBackscatter x z))`, per channel (`RestorationMath.forward`).
 
@@ -470,7 +470,7 @@ Still open: 31% of the legs and fins clip (source 23.6%). Not measured: whether 
 
 ## CPU mirrors and tests
 
-The kernels run in Metal. The finishing kernels are in `FinishingKernels.metal`; their CPU mirrors are in `FinishingMath.swift`. The restoration kernels are in `RestorationKernels.metal`, and `RestorationMath` is in `RestorationEngine.swift`. Xcode compiles the `.metal` files into the app's `default.metallib`; `MetalKernels` loads them. The value rules are in `ColorCorrection.swift`: `make()`, its helpers (`SceneFactors`, `baseCastGains`, `presetSaturation`, `waterRules`, `toneRules`, `presetRules`) and the white reference. `ColorMath.swift` holds the colour spaces, the water target and solver, the restoration mirror and the lift curve. The CPU mirrors must give the same result:
+The kernels run in Metal. The finishing kernels are in `FinishingKernels.metal`; their CPU mirrors are in `FinishingMath.swift`. The restoration kernels are in `RestorationKernels.metal`, and `RestorationMath` is in `RestorationMath.swift`. Xcode compiles the `.metal` files into the app's `default.metallib`; `MetalKernels` loads them. The value rules are in `ColorCorrection.swift`: `make()`, its helpers (`SceneFactors`, `baseCastGains`, `presetSaturation`, `waterRules`, `toneRules`, `presetRules`) and the white reference. `ColorMath.swift` holds the colour spaces, the water target and solver, the restoration mirror and the lift curve. The CPU mirrors must give the same result:
 
 | Kernel | CPU mirror | Test that compares them |
 |---|---|---|

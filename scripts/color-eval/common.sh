@@ -29,7 +29,9 @@ build_eval() {
     swiftc -O -swift-version 6 -o $out/eval ${2:-$HERE/main.swift} $src/FilterEngine.swift $src/MetalKernels.swift \
         $src/FinishingMath.swift $src/ColorCorrection.swift $src/ColorMath.swift $src/WaterAnalysis.swift \
         $src/FilterSettings.swift $src/DivePreset.swift $src/RestorationPlan.swift \
-        $src/RestorationEngine.swift $src/WaterModelEstimator.swift $src/DepthEstimator.swift $src/SubjectMask.swift \
+        $src/RestorationEngine.swift $src/RestorationMath.swift $src/RestorationEngine+ObjectColour.swift \
+        $src/RestorationEngine+DepthTrust.swift $src/FilterEngine+WaterCalm.swift $src/FilterEngine+Analysis.swift \
+        $src/WaterModelEstimator.swift $src/DepthEstimator.swift $src/SubjectMask.swift \
         $src/SubjectTiers.swift $src/SubjectCandidates.swift $src/PhotoOrbs.swift $HERE/PlanUniform.swift \
         > $out/build.log 2>&1 || { echo "harness build failed, see $out/build.log"; return 1; }
     ln -sfn $MODEL $out/DepthAnythingV2SmallF16P6.mlmodelc

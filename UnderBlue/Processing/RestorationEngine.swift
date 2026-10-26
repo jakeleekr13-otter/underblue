@@ -283,10 +283,12 @@ final class RestorationEngine: Sendable {
     /// combined() with correction values the caller already made. Video mixes two scenes' values here.
     /// `depthTrust`: how far depth shows where the water is (depthTrust(_:depth:correction:filter:)). Nil measures it on
     /// the plan's own depth, as photos do. A constant-depth plan (video) cannot show it: the caller passes the scene's.
+    /// `measuring` returns the frame before the subject lift and the object colour step (photos measure that frame).
     func combined(_ image: CIImage, plan: RestorationPlan,
                   values: (current: ColorCorrection, restored: ColorCorrection),
                   settings: FilterSettings, filter: FilterEngine, video: Bool = false,
-                  subjectLift: SubjectLift? = nil, depthTrust knownTrust: Float? = nil) throws -> CIImage {
+                  subjectLift: SubjectLift? = nil, depthTrust knownTrust: Float? = nil, measuring: Bool = false) throws -> CIImage {
+        let correctionValues = values
         let amount = min(1, max(0, settings.appliedIntensity))
         guard settings.preset != .original else { return image }
         guard amount > 0 else {
@@ -334,6 +336,7 @@ final class RestorationEngine: Sendable {
             CIVector(x: CGFloat(weight), y: CGFloat(Self.nearDepth), z: 0, w: 0)])
         let blended = (mixed ?? filter.blend(current, depthAware, amount: weight)).cropped(to: image.extent)
         let unlifted = filter.violetCalm(blended, source: image, calmWeight: calm)
+        if measuring { return unlifted }
         let finishedFrame = subjectLift == nil ? unlifted
             : filter.violetCalm(lifted(blended, subjectLift, filter, share, liftSignal), source: image, calmWeight: calm)
         // Photos only: video holds one depth per scene, so it never reaches this path, and the flag keeps it out too.
@@ -341,7 +344,17 @@ final class RestorationEngine: Sendable {
         // The step measures the frame before the lift. Measured after it, the lift moved the near mean, and at a subject
         // strength of 140 % the step switched on for the whole photo: the water turned warm (squid, Intensity 10 %,
         // Jake, 26 Oct 2026, docs/ManualSubject.md). With no lift the two frames are the same.
-        return objectColour(finishedFrame, measuredOn: unlifted, plan: plan, depth: depth, redLoss: settings.analysis.redLoss,
+        // The step reads the frame at depth-map size. Shrinking the full frame that far made Core Image render the whole
+        // pipeline at full size in one buffer: 390 MB for a 48 MP photo, above its 256 MB intermediate limit, so the
+        // export failed (iPhone 17, 26 Oct 2026). So a copy of the source at twice the depth map's size goes through the
+        // same pipeline, and that copy is measured.
+        let measureSize = CGFloat(2 * max(plan.depth.width, plan.depth.height))
+        var measured = unlifted
+        if max(image.extent.width, image.extent.height) > measureSize {
+            measured = try combined(FilterEngine.downscaled(image, maxPixel: measureSize), plan: plan, values: correctionValues,
+                                    settings: settings, filter: filter, depthTrust: trust, measuring: true)
+        }
+        return objectColour(finishedFrame, measuredOn: measured, plan: plan, depth: depth, redLoss: settings.analysis.redLoss,
                             context: filter.context, depthTrust: trust)
     }
 

@@ -21,7 +21,7 @@ enum PhotoPipelineVariant: String, CaseIterable, Sendable {
 enum SubjectModelError: Error, Equatable { case notReady }
 
 actor PhotoProcessor {
-    let engine = FilterEngine()
+    let engine: FilterEngine
     private let diagnostics: DiagnosticRecorder?
     private let depthEstimator = DepthEstimator()
     private let waterEstimator = WaterModelEstimator()
@@ -43,8 +43,10 @@ actor PhotoProcessor {
     private let logger = Logger(subsystem: "com.underblue.app", category: "photo-restoration")
     #endif
 
-    init(diagnostics: DiagnosticRecorder? = nil) {
+    /// `memoryLimitMB` is the Core Image memory target for one render (FilterEngine). Nil keeps the system default.
+    init(diagnostics: DiagnosticRecorder? = nil, memoryLimitMB: Int? = nil) {
         self.diagnostics = diagnostics
+        engine = FilterEngine(memoryLimitMB: memoryLimitMB)
     }
 
     func open(_ url: URL) throws -> CIImage {
@@ -217,29 +219,34 @@ actor PhotoProcessor {
         let original = try open(url)
         let source = engine.sdr(original)
         let plan = try await plan(for: url, source: source, subjects: subjects)
-        let chosen = Self.settings(settings, for: subjects) { engine.analyze(source, subjects: $0) }
-        let image = processed(cleaned(source, source: source, url: url, settings: chosen, plan: plan), settings: chosen, plan: plan)
-        // The SDR image in the file is the normal export. The HDR version (PhotoHDR) becomes its gain map.
-        var hdr: CIImage?
-        if keepHDR, original.contentHeadroom > 1 {
-            guard let expanded = photoHDR.reexpand(image, original: original, toneMapped: source) else { throw UnderBlueError.exportFailed }
-            hdr = expanded
-        }
-        let target = try TemporaryFiles.makeURL(extension: format.fileExtension)
-        do {
-            var options: [CIImageRepresentationOption: Any] = [Self.quality: 1.0]
-            if let hdr { options[.hdrImage] = hdr }
-            let tagged = image.settingProperties(Self.metadata(from: url))
-            switch format {
-            case .jpeg:
-                try engine.context.writeJPEGRepresentation(of: tagged, to: target, colorSpace: FilterEngine.photoSpace, options: options)
-            case .heic:
-                try engine.context.writeHEIF10Representation(of: tagged, to: target, colorSpace: FilterEngine.photoSpace, options: options)
+        // The rest runs synchronously in its own autorelease pool. Core Image's objects (and the big buffers a 48 MP render
+        // holds) were otherwise freed only later, so the next export started 2.4 GB higher and was killed for memory
+        // (iPhone 17, 26 Oct 2026).
+        return try autoreleasepool {
+            let chosen = Self.settings(settings, for: subjects) { engine.analyze(source, subjects: $0) }
+            let image = processed(cleaned(source, source: source, url: url, settings: chosen, plan: plan), settings: chosen, plan: plan)
+            // The SDR image in the file is the normal export. The HDR version (PhotoHDR) becomes its gain map.
+            var hdr: CIImage?
+            if keepHDR, original.contentHeadroom > 1 {
+                guard let expanded = photoHDR.reexpand(image, original: original, toneMapped: source) else { throw UnderBlueError.exportFailed }
+                hdr = expanded
             }
-            try Task.checkCancellation()
-            try Self.check(target, format: format, size: image.extent.size, hdr: hdr != nil)
-            return target
-        } catch { TemporaryFiles.remove(target); throw error }
+            let target = try TemporaryFiles.makeURL(extension: format.fileExtension)
+            do {
+                var options: [CIImageRepresentationOption: Any] = [Self.quality: 1.0]
+                if let hdr { options[.hdrImage] = hdr }
+                let tagged = image.settingProperties(Self.metadata(from: url))
+                switch format {
+                case .jpeg:
+                    try engine.context.writeJPEGRepresentation(of: tagged, to: target, colorSpace: FilterEngine.photoSpace, options: options)
+                case .heic:
+                    try engine.context.writeHEIF10Representation(of: tagged, to: target, colorSpace: FilterEngine.photoSpace, options: options)
+                }
+                try Task.checkCancellation()
+                try Self.check(target, format: format, size: image.extent.size, hdr: hdr != nil)
+                return target
+            } catch { TemporaryFiles.remove(target); throw error }
+        }
     }
 
     private static let quality = CIImageRepresentationOption(rawValue: kCGImageDestinationLossyCompressionQuality as String)

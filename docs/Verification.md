@@ -2,23 +2,31 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
-## 48 MP photos fail to export on the iPhone (found 26 Oct 2026, open)
+## 48 MP photos failed to export on the iPhone (found and fixed 26 Oct 2026)
 
-Measured on the iPhone 17 (iOS 27), Release build, with an 8064 × 6048 JPEG. It is IMG_7400 scaled up, so a synthetic file. No real 48 MP photo was tried.
-- `PhotoProcessor.export` fails in under a second: "Failed to render part of the image because memory requirement of 399985784 too big (tile 8x12)".
-  - 399,985,784 bytes is 8064 × 6048 × 8, one half-float RGBA buffer of the whole frame.
-  - `main` (f71ba86) fails the same way, so it predates the 26 Oct work.
-- The Core Image memory target does not fix it:
-  - default: 20 MP ok (8.1 s); 48 MP fails.
-  - 768 MB: 20 MP also fails.
-  - 1024 MB: 20 MP ok but slower (13.2 s); 48 MP fails.
-- Stages through the same JPEG writer, at 48 MP:
-  - Pass: the source alone; shadows/highlights alone; each unsharp mask alone; finishing with shadows, clarity and definition off (5.4 s).
-  - Pass: finishing with only one of them on (shadows 5.1 s, clarity 10.3 s, definition 19.9 s).
-  - Hang (stopped after 5-10 min, endless IOSurface allocation failures): the full finishing, with or without the water core.
-- Tried: clarity and definition both reading the unsharpened image (no nested blurs). The full finishing still hung. Reverted.
-- Not found yet: which node Core Image turns into a full-frame buffer. Next step: dump the render graph (`CI_PRINT_TREE`) on the device, or render the export in tiles.
-- Probe: `UnderBlueTests/PhotoCostProbeTests.swift` (not committed on 26 Oct), photos in Documents/cost-in and cost-48 on the device.
+Measured on the iPhone 17 (iOS 27), Release build, with an 8064 × 6048 JPEG. It is IMG_7400 scaled up, so a synthetic file.
+
+The failure:
+- `PhotoProcessor.export` failed in under a second: "memory requirement of 399985784 too big (tile 8x12)". `main` (f71ba86) failed the same way.
+- The Core Image memory target does not fix it: 768 MB broke 20 MP too; 1024 MB made 20 MP slower (13.2 s against 8.1 s) and 48 MP still failed.
+- `CI_PRINT_TREE` on the device: every photo render has `intermediatesLimit=256MB`.
+
+Causes and fixes:
+1. The A2 object colour step measured the finished full-size frame shrunk to depth-map size (518 × 392). That render needed the whole pipeline at full size. Fix: measure a copy of the source at twice the depth map's size, run through the same pipeline (`combined(measuring:)`).
+   - The guards are unchanged to the last digit.
+   - 20 MP export: 8.1 s → 4.4 s. With the Labs orb switch on: 12.3 s → 5.1 s.
+2. Even then, the full chain of wide blurs needed about 400 MB of intermediates for one tile at 48 MP. Each half of finishing alone fits. Fix: above 30 MP, finishing renders its image once into a half-float buffer before the sharpening (`FilterEngine.materializedIfLarge`).
+   - Against the uncut render (Mac, threshold lowered to 1 MP, p1-p4): about 8-9% of pixels move by 1 level, 3 or more on at most 0.04%, 5 or more on 0-324 of 2.76 M pixels, mostly near the edges.
+   - A 32-bit buffer was closer (largest difference 1-4), but the app was killed for memory at 48 MP. Three cut points instead of one: same differences, more memory.
+   - Photos up to 30 MP keep the uncut render.
+3. After one 48 MP export the memory stayed up, and the next export was killed ("signal kill"). Fix: the synchronous part of the export runs in its own `autoreleasepool`.
+- Result: 48 MP exports twice in a row, 7.5 s and 6.9 s; peak +2.7 GB; footprint after about 1.7 GB.
+
+Still open:
+- A real 48 MP photo (HEIF Max or ProRAW) on the device, saved as JPEG and HEIC.
+- The footprint stays about 1.7 GB after a 48 MP export (the next export reuses it).
+- Preview of a 48 MP photo: not checked (it renders a 1600 px copy, below the cut threshold).
+- Probe: `UnderBlueTests/PhotoCostProbeTests.swift`; inputs in Documents/cost-in and cost-48 on the device.
 
 ## Labs: remove backscatter spots (26 Oct 2026, branch `restoration-experiments`)
 
@@ -32,10 +40,8 @@ Measured on the iPhone 17, Release build (26 Oct 2026), IMG_7400 at 20 MP, expor
 - Switch off: 7.7-8.1 s, peak +1.3-1.7 GB. Switch on: 12.2-12.5 s, peak +1.3 GB, both the first export (finds the orbs) and the second (reuses them).
 - So the detection is cheap, but taking the orbs off adds about 4.5 s to every export. Not explained yet.
 - The water core (photos, not Labs): one finishing call 1.25 s → 2.0 s at 20 MP; a photo makes two.
-- 48 MP: fails with the switch off too; see "48 MP photos fail to export".
-
-Still open:
-- The 4.5 s cost of taking the orbs off.
+- 48 MP: failed with the switch off too; see "48 MP photos failed to export".
+- After the 48 MP fix (the A2 measurement on a small copy): switch off 4.2-4.4 s, switch on 5.1-5.8 s at 20 MP.
 - Mac app: turn the switch on in the Help window while a photo is in the preview. The preview should redraw without the orbs (`PreviewPane` watches the switch).
 - iPhone app: preview and saved photo match, with the switch on and off.
 

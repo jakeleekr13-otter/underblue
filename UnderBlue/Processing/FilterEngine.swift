@@ -207,6 +207,8 @@ final class FilterEngine: Sendable {
         shadows.highlightAmount = v.highlightAmount
         corrected = (shadows.outputImage ?? corrected).cropped(to: image.extent)
 
+        // A very large photo is cut here: the stages before and after each fit Core Image's intermediate limit, together not.
+        corrected = materializedIfLarge(corrected)
         let unsharpened = corrected
         for (amount, radius) in [(v.clarity, v.clarityRadius), (v.definition, v.definitionRadius)] where amount > 0 {
             let mask = CIFilter.unsharpMask()
@@ -395,6 +397,30 @@ final class FilterEngine: Sendable {
         let core = CIVector(x: CGFloat(FinishingMath.coreLow), y: CGFloat(FinishingMath.coreHigh), z: CGFloat(FinishingMath.coreStrength), w: 0)
         return kernel.apply(extent: image.extent, arguments: [image, blurred(FinishingMath.coreFineRadius),
                                                               blurred(FinishingMath.coreWideRadius), weight, core]) ?? image
+    }
+    /// Pixel count above which a render is cut into pieces (materializedIfLarge). 20 and 24 MP stay one graph.
+    static let materializeAbove = 30_000_000
+    /// `image` rendered once into a half-float buffer in working values, when it is larger than `above`; the stages after
+    /// it read the buffer. At 48 MP the whole chain of wide blurs needed about 400 MB of intermediates for one tile, above
+    /// Core Image's 256 MB limit, and the export failed (iPhone 17, 26 Oct 2026). Cut once, before the sharpening, each
+    /// part fits. Against the uncut render (Mac, 1 MP threshold): about 9% of pixels move by 1 level, at most 0.04% by 3
+    /// or more. A 32-bit buffer was closer, but the app was killed for memory at 48 MP. One buffer of 8 bytes per pixel
+    /// (390 MB at 48 MP) while the render runs. On a failure it returns `image`.
+    func materializedIfLarge(_ image: CIImage, above: Int = FilterEngine.materializeAbove) -> CIImage {
+        let e = image.extent
+        guard e.width.isFinite, e.height.isFinite, Int(e.width) * Int(e.height) > above else { return image }
+        let w = Int(e.width), h = Int(e.height)
+        var data = Data(count: w * h * 8)
+        let rendered: Bool = data.withUnsafeMutableBytes { buffer in
+            guard let base = buffer.baseAddress else { return false }
+            let destination = CIRenderDestination(bitmapData: base, width: w, height: h, bytesPerRow: w * 8, format: .RGBAh)
+            destination.colorSpace = nil
+            let origin = image.transformed(by: CGAffineTransform(translationX: -e.minX, y: -e.minY))
+            do { _ = try context.startTask(toRender: origin, to: destination).waitUntilCompleted(); return true } catch { return false }
+        }
+        guard rendered else { return image }
+        return CIImage(bitmapData: data, bytesPerRow: w * 8, size: CGSize(width: w, height: h), format: .RGBAh, colorSpace: nil)
+            .transformed(by: CGAffineTransform(translationX: e.minX, y: e.minY))
     }
     private func colorStage(_ image: CIImage, _ v: ColorCorrection) -> CIImage {
         guard let colorKernel else {

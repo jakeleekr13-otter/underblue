@@ -1604,6 +1604,27 @@ final class RestorationTests: XCTestCase {
         }
     }
 
+    func testMaterializedImageKeepsItsPixelsAndPlace() throws {
+        // The cut for very large photos (FilterEngine.materializedIfLarge): small images pass through, large ones come back
+        // as a buffer with the same extent and the same values (half float).
+        let engine = FilterEngine()
+        let extent = CGRect(x: 3, y: 5, width: 40, height: 30)
+        let ramp = CIFilter(name: "CILinearGradient", parameters: [
+            "inputPoint0": CIVector(x: 3, y: 5), "inputPoint1": CIVector(x: 43, y: 35),
+            "inputColor0": CIColor(red: 0.05, green: 0.2, blue: 0.4, colorSpace: FilterEngine.workingSpace)!,
+            "inputColor1": CIColor(red: 0.6, green: 0.5, blue: 0.3, colorSpace: FilterEngine.workingSpace)!])!.outputImage!.cropped(to: extent)
+        XCTAssertTrue(engine.materializedIfLarge(ramp) === ramp, "below the threshold nothing changes")
+        let cut = engine.materializedIfLarge(ramp, above: 100)
+        XCTAssertFalse(cut === ramp)
+        XCTAssertEqual(cut.extent, extent)
+        func pixels(_ image: CIImage) -> [Float] {
+            var out = [Float](repeating: 0, count: 40 * 30 * 4)
+            engine.context.render(image, toBitmap: &out, rowBytes: 40 * 16, bounds: extent, format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+            return out
+        }
+        for (a, b) in zip(pixels(ramp), pixels(cut)) { XCTAssertEqual(a, b, accuracy: 0.002) }
+    }
+
     func testWaterCoreTakesOnlyTheWeakRippleInWater() throws {
         // Water mottling (docs/RestorationExperiments.md): a weak band comes off in water, a strong one (a faint fish) stays,
         // and nothing changes outside the water.

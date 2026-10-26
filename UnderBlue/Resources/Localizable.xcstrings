@@ -11729,6 +11729,47 @@
           }
         }
       }
+    },
+    "UnderBlue can’t edit ProRes RAW video. Record in ProRes or HEVC instead." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UnderBlue can’t edit ProRes RAW video. Record in ProRes or HEVC instead."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UnderBlue no puede editar vídeo ProRes RAW. Graba en ProRes o HEVC."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UnderBlueはProRes RAWビデオを編集できません。ProResまたはHEVCで撮影してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UnderBlue는 ProRes RAW 동영상을 편집할 수 없습니다. ProRes 또는 HEVC로 촬영하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UnderBlue 无法编辑 ProRes RAW 视频。请改用 ProRes 或 HEVC 录制。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UnderBlue 無法編輯 ProRes RAW 影片。請改用 ProRes 或 HEVC 錄製。"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

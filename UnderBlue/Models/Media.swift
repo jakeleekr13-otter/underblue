@@ -56,11 +56,12 @@ enum TemporaryFiles {
 }
 
 enum UnderBlueError: LocalizedError {
-    case unreadable, unsupported, exportFailed, permission, storage, invalidOutput, trialUnavailable
+    case unreadable, unsupported, proResRAW, exportFailed, permission, storage, invalidOutput, trialUnavailable
     var errorDescription: String? {
         switch self {
         case .unreadable: String(localized: "This media couldn’t be opened. Try another photo or video.")
         case .unsupported: String(localized: "This media format isn’t supported on this device.")
+        case .proResRAW: String(localized: "UnderBlue can’t edit ProRes RAW video. Record in ProRes or HEVC instead.")
         case .exportFailed: String(localized: "The export couldn’t finish. Please try again.")
         case .permission: String(localized: "Allow UnderBlue to add to Photos in Settings, then try saving again.")
         case .storage: String(localized: "There isn’t enough free storage. Free up some space and try again.")

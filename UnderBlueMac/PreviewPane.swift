@@ -7,6 +7,8 @@ struct PreviewPane: View {
 
     /// The Labs switch lives in Help, a separate window on the Mac. This keeps the model in step with it.
     @AppStorage(SubjectPickerStore.key) private var subjectPickerSwitch = false
+    /// The Labs orb switch (PhotoOrbs.enabledKey). The processor reads it at render time; this redraws the preview.
+    @AppStorage(PhotoOrbs.enabledKey) private var removeOrbsSwitch = false
 
     var body: some View {
         @Bindable var model = model
@@ -31,6 +33,7 @@ struct PreviewPane: View {
         }
         .onChange(of: model.selection) { _, _ in zoom = PreviewZoom() }
         .onChange(of: subjectPickerSwitch, initial: true) { _, on in model.subjectPickerEnabled = on && SubjectPickerStore.isSupported }
+        .onChange(of: removeOrbsSwitch) { _, _ in model.orbSwitchChanged() }
         .onChange(of: PreciseModelLoader.shared.isReady) { _, ready in if ready { model.preciseModelReady() } }
     }
 

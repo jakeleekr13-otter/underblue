@@ -2,6 +2,19 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## Labs: remove backscatter spots (26 Oct 2026, branch `restoration-experiments`)
+
+What changed:
+- A Labs switch in Help, "Remove backscatter spots", is off by default.
+- When it is on, photos lose faint round orbs before colour (`PhotoOrbs`, docs/RestorationExperiments.md, D3).
+
+Checked so far: Mac harness, unit tests and the Mac build. The app UI was not checked.
+
+Still open:
+- iPhone: time and memory for one photo at 20 MP and at 48 MP, with the switch on.
+- Mac app: turn the switch on in the Help window while a photo is in the preview. The preview should redraw without the orbs (`PreviewPane` watches the switch).
+- iPhone app: preview and saved photo match, with the switch on and off.
+
 ## Apple Log and ProRes RAW (26 Oct 2026, branch `apple-log`)
 
 What changed:

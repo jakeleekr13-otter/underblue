@@ -532,6 +532,11 @@ final class MacModel {
     }
 
     /// Off returns every item to Auto and removes the lift. On or off, the preview redraws.
+    /// The Labs orb switch changed in Help (PhotoOrbs). Exports read it themselves; only the preview needs a redraw.
+    func orbSwitchChanged() {
+        if selectedItem?.kind == .photo, !showingOriginal { refreshPreview() }
+    }
+
     private func subjectSwitchChanged() {
         if !subjectPickerEnabled {
             for id in Array(subjectStates.keys) {

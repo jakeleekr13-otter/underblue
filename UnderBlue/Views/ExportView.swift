@@ -96,7 +96,7 @@ struct ExportView: View {
                 Text("There isn’t enough free memory for this video. Close other apps, then choose Check again.")
             }
     }
-    static func photoSummary(_ options: ExportOptions) -> String {
+    nonisolated static func photoSummary(_ options: ExportOptions) -> String {
         switch (options.range, options.photoFormat) {
         case (.sdr, .jpeg): String(localized: "Original resolution · SDR · JPEG")
         case (.hdr, .jpeg): String(localized: "Original resolution · HDR · JPEG with gain map")

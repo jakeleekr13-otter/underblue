@@ -21,11 +21,11 @@ final class BatchEngineTests: XCTestCase {
     private var output: URL!
     private var created: [URL] = []
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         output = FileManager.default.temporaryDirectory.appendingPathComponent("BatchEngineOut-\(UUID().uuidString)", isDirectory: true)
         created = [output]
     }
-    override func tearDown() { for url in created { try? FileManager.default.removeItem(at: url) } }
+    override func tearDown() async throws { for url in created { try? FileManager.default.removeItem(at: url) } }
 
     private func makePhoto(_ color: CIColor, size: CGSize, name: String) throws -> ImportedMedia {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("BatchEngineSource-\(UUID().uuidString)", isDirectory: true)

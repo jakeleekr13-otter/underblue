@@ -55,8 +55,8 @@ struct EditorView: View {
     }
     /// Landscape always gets the side panel. A regular-width screen close to square (an unfolded foldable)
     /// gets it too, because a bottom panel would leave the preview a short, wide strip.
-    static let squareAspect: CGFloat = 0.85
-    static func usesSidePanel(_ size: CGSize, regularWidth: Bool) -> Bool {
+    nonisolated static let squareAspect: CGFloat = 0.85
+    nonisolated static func usesSidePanel(_ size: CGSize, regularWidth: Bool) -> Bool {
         size.width > size.height || (regularWidth && size.width >= size.height * squareAspect)
     }
     /// Where a partly folded screen splits. `nil` when nothing is folded, or before iOS 27.1.

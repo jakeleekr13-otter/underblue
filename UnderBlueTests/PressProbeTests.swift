@@ -15,29 +15,16 @@ final class PressProbeTests: XCTestCase {
                          ("bothDivers", CGPoint(x: 0.567, y: 0.333), [CGPoint(x: 0.708, y: 0.300)])],
     ]
 
-    private static func footprint() -> UInt64 {
-        var info = task_vm_info_data_t()
-        var count = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<natural_t>.size)
-        let result = withUnsafeMutablePointer(to: &info) {
-            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count) }
-        }
-        return result == KERN_SUCCESS ? info.phys_footprint : 0
-    }
+    private static func footprint() -> UInt64 { FootprintSampler.footprint() }
 
     /// Runs `body` while a thread samples the footprint every 2 ms. Returns the time and the peak over the start.
     private func measure(_ body: () async -> SubjectMask?) async -> (ms: Double, peakMB: Double, mask: SubjectMask?) {
-        let start = Self.footprint()
-        let peak = UnsafeMutablePointer<UInt64>.allocate(capacity: 1); peak.pointee = start
-        let running = UnsafeMutablePointer<Bool>.allocate(capacity: 1); running.pointee = true
-        defer { peak.deallocate(); running.deallocate() }
-        let sampler = Thread { while running.pointee { peak.pointee = max(peak.pointee, Self.footprint()); usleep(2000) } }
-        sampler.start()
+        let sampler = FootprintSampler()
+        sampler.begin()
         let t = Date()
         let mask = await body()
         let ms = Date().timeIntervalSince(t) * 1000
-        running.pointee = false
-        usleep(5000)
-        return (ms, Double(Int64(peak.pointee) - Int64(start)) / 1_048_576, mask)
+        return (ms, sampler.end(), mask)
     }
 
     /// The preview render behind the subject strength slider: no lift, picks without the lift (strength 0),

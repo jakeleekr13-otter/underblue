@@ -5,7 +5,8 @@ import UniformTypeIdentifiers
 enum MediaScanner {
     /// Photos and videos in `urls`. A folder is searched deeply. Hidden files and package contents are skipped.
     /// `skipped` counts files that are neither a photo nor a video. A folder counts only what it holds.
-    nonisolated static func scan(_ urls: [URL]) -> (media: [ImportedMedia], skipped: Int) {
+    /// @concurrent: a deep folder walk blocks, so it runs off the caller's actor (the main actor).
+    @concurrent static func scan(_ urls: [URL]) async -> (media: [ImportedMedia], skipped: Int) {
         var media: [ImportedMedia] = []
         var skipped = 0
         var seen = Set<String>()

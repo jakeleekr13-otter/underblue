@@ -19,8 +19,9 @@ enum FileImport {
     }
 
     /// Copies a file picked in Files into the app's temporary folder.
-    static func load(_ url: URL) async throws -> ImportedMedia {
-        try await Task.detached(priority: .userInitiated) { try copy(url) }.value
+    /// @concurrent: the copy (and an iCloud download) blocks, so it runs off the caller's actor (the main actor).
+    @concurrent static func load(_ url: URL) async throws -> ImportedMedia {
+        try copy(url)
     }
 
     private static func copy(_ url: URL) throws -> ImportedMedia {
@@ -42,17 +43,16 @@ enum FileImport {
     /// Takes the newest share from the extension's inbox and moves its files into the temporary folder.
     /// Returns nothing when the inbox is empty or the App Group is unavailable.
     /// `inbox` is the App Group inbox. Tests pass a temporary folder.
-    static func takeShared(inbox: URL? = nil) async -> (media: [ImportedMedia], failed: Int)? {
-        await Task.detached(priority: .userInitiated) { () -> (media: [ImportedMedia], failed: Int)? in
-            guard let root = inbox ?? (try? SharedInbox.root()), let share = SharedInbox.takeNewest(at: root) else { return nil }
-            defer { SharedInbox.remove(share.folder) }
-            var media: [ImportedMedia] = []
-            for item in share.items {
-                guard let kind = kind(of: UTType(filenameExtension: item.url.pathExtension)),
-                      let url = try? TemporaryFiles.adopt(item.url) else { continue }
-                media.append(ImportedMedia(url: url, kind: kind, originalName: item.originalName))
-            }
-            return (media, share.items.count - media.count)
-        }.value
+    /// @concurrent: the file moves block, so they run off the caller's actor (the main actor).
+    @concurrent static func takeShared(inbox: URL? = nil) async -> (media: [ImportedMedia], failed: Int)? {
+        guard let root = inbox ?? (try? SharedInbox.root()), let share = SharedInbox.takeNewest(at: root) else { return nil }
+        defer { SharedInbox.remove(share.folder) }
+        var media: [ImportedMedia] = []
+        for item in share.items {
+            guard let kind = kind(of: UTType(filenameExtension: item.url.pathExtension)),
+                  let url = try? TemporaryFiles.adopt(item.url) else { continue }
+            media.append(ImportedMedia(url: url, kind: kind, originalName: item.originalName))
+        }
+        return (media, share.items.count - media.count)
     }
 }

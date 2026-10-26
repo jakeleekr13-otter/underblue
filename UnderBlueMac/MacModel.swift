@@ -174,7 +174,7 @@ final class MacModel {
             return
         }
         for url in urls where url.startAccessingSecurityScopedResource() { openedScopes.append(url) }
-        let result = await Task.detached(priority: .userInitiated) { MediaScanner.scan(urls) }.value
+        let result = await MediaScanner.scan(urls)
         let known = Set(engine.items.map { $0.url.standardizedFileURL.path })
         let fresh = result.media.filter { !known.contains($0.url.standardizedFileURL.path) }
         engine.add(fresh)

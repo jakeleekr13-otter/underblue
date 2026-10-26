@@ -9,7 +9,7 @@ final class ShareFlowTests: XCTestCase {
     private static var alive: [MacModel] = []
     private var folders: [URL] = []
 
-    override func tearDown() { for folder in folders { try? FileManager.default.removeItem(at: folder) } }
+    override func tearDown() async throws { for folder in folders { try? FileManager.default.removeItem(at: folder) } }
 
     private func makeFolder() throws -> URL {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("ShareFlow-\(UUID().uuidString)", isDirectory: true)

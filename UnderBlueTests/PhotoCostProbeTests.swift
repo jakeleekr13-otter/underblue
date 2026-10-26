@@ -8,29 +8,16 @@ import XCTest
 /// (copy them there with `devicectl device copy to`), and is skipped without them. Results go to the console as COST
 /// lines. Run on a device with -test-timeouts-enabled: a render that fails can hang for many minutes.
 final class PhotoCostProbeTests: XCTestCase {
-    private static func footprint() -> UInt64 {
-        var info = task_vm_info_data_t()
-        var count = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<natural_t>.size)
-        let result = withUnsafeMutablePointer(to: &info) {
-            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count) }
-        }
-        return result == KERN_SUCCESS ? info.phys_footprint : 0
-    }
+    private static func footprint() -> UInt64 { FootprintSampler.footprint() }
 
     /// Runs `body` while a thread samples the footprint every 2 ms. Returns the time and the peak over the start.
     private func measure(_ body: () async throws -> Void) async rethrows -> (ms: Double, peakMB: Double) {
-        let start = Self.footprint()
-        let peak = UnsafeMutablePointer<UInt64>.allocate(capacity: 1); peak.pointee = start
-        let running = UnsafeMutablePointer<Bool>.allocate(capacity: 1); running.pointee = true
-        defer { peak.deallocate(); running.deallocate() }
-        let sampler = Thread { while running.pointee { peak.pointee = max(peak.pointee, Self.footprint()); usleep(2000) } }
-        sampler.start()
+        let sampler = FootprintSampler()
+        sampler.begin()
         let t = Date()
         try await body()
         let ms = Date().timeIntervalSince(t) * 1000
-        running.pointee = false
-        usleep(5000)
-        return (ms, Double(Int64(peak.pointee) - Int64(start)) / 1_048_576)
+        return (ms, sampler.end())
     }
 
     func testExportCostWithAndWithoutOrbRemoval() async throws {

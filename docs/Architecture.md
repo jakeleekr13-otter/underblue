@@ -12,6 +12,20 @@ The initial directory was empty. Development proceeded through building the foun
 | Commerce | Verified StoreKit ownership and durable Keychain trial reservation |
 | Views | Native home, editor, export and purchase screens |
 
+## Concurrency (27 Oct 2026)
+
+All targets build in Swift 6 language mode with approachable concurrency on. App, Mac app and both test targets build with no Swift warnings.
+
+| Rule | Why |
+|---|---|
+| Image work runs inside an actor: `PhotoProcessor`, `VideoExporter`, `VideoRestorationAnalyzer`, `DepthEstimator`. Main-actor models only `await` them. | The main thread never renders. |
+| A blocking call from main-actor code (a file copy, a folder walk, a decode pass) goes in a `@concurrent` function. No `Task.detached`. | With approachable concurrency a plain `nonisolated async` function runs on the caller's actor. `@concurrent` moves it off, keeps the caller's priority and cancellation, and shows the intent in the declaration. |
+| A pure static helper on a SwiftUI view is `nonisolated`. | A view is main-actor; the helper reads no state, so tests and other actors can call it. |
+| Shared state read on another thread uses `Synchronization` (`Mutex`, `Atomic`), never a raw pointer. | `FootprintSampler` replaced two raw-pointer samplers in the probe tests: a data race. |
+| An `@MainActor` XCTest class overrides `setUp() async throws` and `tearDown() async throws`. | The synchronous overrides are nonisolated and cannot touch main-actor properties. |
+
+Large engine files are split into extensions by stage, for example `RestorationEngine+ObjectColour.swift` and `FilterEngine+WaterCalm.swift`. A member another file needs loses `private`, with a comment that names the file. `MacModel.swift` stays one file: a split would make about 20 private members visible to the whole module.
+
 ## Color
 
 A reused Metal-backed CIContext works in extended linear Rec.2020 with half-float intermediates. Photos retain wide color through processing and are converted to Display P3 at JPEG or HEIC output. Orientation is baked and EXIF orientation normalized.

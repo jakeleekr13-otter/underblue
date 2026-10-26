@@ -70,7 +70,7 @@ struct ZoomablePreview<Overlay: View>: View {
     }
 
     /// A point in the frame as a point on the image, 0...1 from its top left. Nil off the image.
-    static func imagePoint(_ location: CGPoint, zoom: PreviewZoom, content: CGSize, container: CGSize) -> CGPoint? {
+    nonisolated static func imagePoint(_ location: CGPoint, zoom: PreviewZoom, content: CGSize, container: CGSize) -> CGPoint? {
         guard content.width > 0, content.height > 0, zoom.scale > 0 else { return nil }
         let x = (location.x - container.width / 2 - zoom.offset.width) / zoom.scale + content.width / 2
         let y = (location.y - container.height / 2 - zoom.offset.height) / zoom.scale + content.height / 2

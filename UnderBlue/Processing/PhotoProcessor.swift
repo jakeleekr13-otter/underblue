@@ -28,6 +28,8 @@ actor PhotoProcessor {
     private let restorationEngine = RestorationEngine()
     private let photoHDR = PhotoHDR()
     private struct Prepared { let analysis: WaterAnalysis; let plan: RestorationPlan? }
+    /// Orbs per photo (PhotoOrbs), found on first use while the Labs switch is on. Nil inside: none found.
+    private var orbs: [URL: PhotoOrbs?] = [:]
     /// Keyed by photo so a batch can switch between photos without repeating depth analysis.
     private var prepared: [URL: Prepared] = [:]
     /// The pickable subject groups per photo. Made on the first request, because Vision runs again for them.
@@ -197,7 +199,8 @@ actor PhotoProcessor {
         let plan = original ? nil : try await plan(for: url, source: source, subjects: subjects)
         let small = FilterEngine.downscaled(source, maxPixel: maxPixel)
         let chosen = Self.settings(settings, for: subjects) { engine.analyze(source, subjects: $0) }
-        let result = original ? small : processed(small, settings: chosen, plan: plan)
+        let result = original ? small : processed(cleaned(small, source: source, url: url, settings: chosen, plan: plan),
+                                                  settings: chosen, plan: plan)
         guard let rendered = engine.context.createCGImage(result, from: result.extent, format: .RGBA8, colorSpace: FilterEngine.photoSpace) else { throw UnderBlueError.unreadable }
         return rendered
     }
@@ -215,7 +218,7 @@ actor PhotoProcessor {
         let source = engine.sdr(original)
         let plan = try await plan(for: url, source: source, subjects: subjects)
         let chosen = Self.settings(settings, for: subjects) { engine.analyze(source, subjects: $0) }
-        let image = processed(source, settings: chosen, plan: plan)
+        let image = processed(cleaned(source, source: source, url: url, settings: chosen, plan: plan), settings: chosen, plan: plan)
         // The SDR image in the file is the normal export. The HDR version (PhotoHDR) becomes its gain map.
         var hdr: CIImage?
         if keepHDR, original.contentHeadroom > 1 {
@@ -278,7 +281,8 @@ actor PhotoProcessor {
         let small = FilterEngine.downscaled(source, maxPixel: 1600)
         var result: [PhotoPipelineVariant: CGImage] = [:]
         for variant in PhotoPipelineVariant.allCases {
-            let image = processed(small, settings: settings, plan: plan, debugVariant: variant)
+            let image = processed(cleaned(small, source: source, url: url, settings: settings, plan: plan), settings: settings,
+                                  plan: plan, debugVariant: variant)
             if let rendered = engine.context.createCGImage(image, from: image.extent, format: .RGBA8, colorSpace: FilterEngine.photoSpace) {
                 result[variant] = rendered
             }
@@ -288,7 +292,7 @@ actor PhotoProcessor {
     #endif
 
     /// Drops a photo's cached analysis once it leaves the session.
-    func forget(_ url: URL) { prepared[url] = nil; candidates[url] = nil; tierMaps[url] = nil }
+    func forget(_ url: URL) { prepared[url] = nil; candidates[url] = nil; tierMaps[url] = nil; orbs[url] = nil }
 
     /// The white reference trusts what sits on a subject (FilterEngine.analyze). With picked subjects it
     /// reads the picks, so a group the user cleared is not a subject there either (Jake, 24 Oct 2026).
@@ -381,6 +385,25 @@ actor PhotoProcessor {
         let result = Prepared(analysis: analysis, plan: restorationPlan)
         prepared[url] = result
         return result
+    }
+
+    /// `image` (`source` or a smaller copy) with the photo's orbs taken off (PhotoOrbs), before colour. Only while
+    /// the Labs switch is on; the Original preset leaves it as it is. Found once per photo on the full source, so
+    /// preview and export take off the same spots. Needs the plan's depth and subjects.
+    private func cleaned(_ image: CIImage, source: CIImage, url: URL, settings: FilterSettings, plan: RestorationPlan?) -> CIImage {
+        guard settings.preset != .original, PhotoOrbs.isEnabled(), let plan, let analysis = prepared[url]?.analysis else { return image }
+        if orbs[url] == nil {
+            let correction = restorationEngine.corrections(settings: FilterSettings(preset: .natural, analysis: analysis), plan: plan).current
+            let detectionImage = FilterEngine.downscaled(source, maxPixel: PhotoOrbs.detectionSize)
+            let found = PhotoOrbs.detect(source, share: engine.waterShare(detectionImage, correction: correction),
+                                         subjects: plan.subjectMask, depth: plan.depth, context: engine.context)
+            orbs[url] = .some(found)
+            #if DEBUG
+            logger.debug("photo orbs found: \(found?.count ?? 0)")
+            #endif
+        }
+        guard let found = orbs[url] ?? nil else { return image }
+        return found.applied(to: image)
     }
 
     private func processed(_ source: CIImage, settings: FilterSettings, plan: RestorationPlan?,

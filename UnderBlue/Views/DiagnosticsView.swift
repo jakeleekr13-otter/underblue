@@ -12,6 +12,8 @@ struct DiagnosticsView: View {
     @State private var showLicenses = false
     /// Saved on the device, off by default (SubjectPickerStore).
     @AppStorage(SubjectPickerStore.key) private var subjectPicker = false
+    /// Saved on the device, off by default (PhotoOrbs.enabledKey).
+    @AppStorage(PhotoOrbs.enabledKey) private var removeOrbs = false
 
     /// The precise model's download, under the Labs switch. Nothing once it is ready.
     @ViewBuilder private var modelStatus: some View {
@@ -93,6 +95,11 @@ struct DiagnosticsView: View {
                         #endif
                     }
                 }
+            }
+            Section {
+                Toggle(isOn: $removeOrbs) { Label("Remove backscatter spots", systemImage: "circle.dotted") }
+            } footer: {
+                Text("Experimental. Removes faint round spots from floating particles in the water. Photos only. Small fish may fade a little.")
             }
             Section {
                 Link(destination: URL(string: "mailto:\(Self.supportEmail)?subject=UnderBlue%20Support")!) {

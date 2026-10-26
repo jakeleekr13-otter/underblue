@@ -730,6 +730,62 @@ Round 5, scored on our output (orbs counted with the round 4 rules, water only, 
 
 Next: the app. Plan: detect on the source at 1920 px (blurs on the GPU, the spot tests on the CPU), build the bump correction at that size, scale it up and subtract it from the source before colour. The analysis and the plan stay on the original. Photos only, preview and export alike, once per photo. Then the cost on the iPhone (20 MP and 48 MP).
 
+#### D3 in the app: a Labs switch (26 Oct 2026)
+
+`UnderBlue/Processing/PhotoOrbs.swift` ports round 5. `PhotoProcessor` runs it only while the Labs switch "Remove backscatter spots" (Help) is on. Off by default. Detection runs once per photo, on the full source, the first time it is needed. Preview and export use the same spots. The Original preset is left as it is. Harness: `HT_EVAL_ORBS=1` adds `orbs`, and `HT_EVAL_ORB_MAXBUMP` overrides the cap.
+
+Port fixes:
+- The water share is the alpha channel of `FilterEngine.waterShare`. The first port read red (luma) and found almost nothing.
+- Blurs need 32-bit float. The engine context is half float, which steps by 0.125 levels above 128. Against the 0.8-level floor it cut the finds to 30/38/6/5 (Python: 37/64/15/10). A Python check with half-float blurs gave 31/37/5/3.
+- The rules read sRGB luma, as in the prototype. Removal factors stay in the working space.
+- Depth trust for the far gate: the correlation of depth with the share (alpha), as in the prototype. See the next part for why the colour step's trust differs.
+- After these fixes: 37/55/13/14 finds, about 0.35 s per photo on the Mac. Water orbs go; p1's reef and bubbles stay (mean change 0.11 in the subject mask, 0.20 in bubble clusters).
+
+Depth trust reads luma, not the share (found while porting):
+- `RestorationEngine.depthTrust(_:plan:correction:filter:)` correlates depth with the share kernel's luma output (channel 0), not the share (alpha). The 25 Oct table above came from the share.
+- Switched to the share as a test, the guards got worse:
+  - AquaColorFix pairs 1-5: 10.53 → 10.63 (p3 6.25 → 6.73); p6 12.61 → 13.02.
+  - O6 chart grey (photo): 0.010 → 0.029.
+  - r01 nearRG: 0.55 → 0.47.
+- By eye, the O3 sunfish turned teal, and the O6 reef and sand turned cyan.
+- Correlation (luma / share): O3 0.67 / 0.32, O6 0.63 / 0.35, v1_30 0.06 / -0.38, v3_30 0.08 / -0.40, m5 0.90 / 0.89.
+- With the share, O3 and O6 lose trust. Luma keeps the sun stills untrusted. So luma stays, and the code comment says so.
+- The sun stills read the same either way: v1_30 -72, v1_70 -75.
+
+Small fish: the blocker, and the cap:
+- On the AquaColorFix photos, the uncapped detector touched small fish. I labelled all 125 changed regions by eye:
+
+| Photo | Changed regions | Fish faded or erased |
+|---|---|---|
+| O1 (fish school) | 80 | 34 |
+| O3 | 12 | 1 |
+| O4 | 19 | 9 |
+| O5 | 14 | 0 |
+
+- Three fish got a dark rim.
+- Round 5's "good by eye" was wrong: it rested on two crops. The prototype's strongest finds on p1 were reef patches and a bubble patch.
+- Tried as fish tests:
+  - Size does not separate them. Median radius: fish 9.8 px, orbs 10.4 px.
+  - Elongation does not separate them either: 1.36 against 1.28.
+  - Edge sharpness fails too: the blurred fish are softer than the orbs.
+- Brightness separates them. Bump (smooth luma at the centre over the ring around it), p10 / median / p90:
+  - fish: 8.6 / 17 / 26;
+  - orbs: 1.2 / 2.5 / 5.6.
+
+| Cap | O1 fish | O4 fish | O3, O5 fish | AquaColorFix orbs removed | Bright real orbs left on p2 |
+|---|---|---|---|---|---|
+| none | 34 | 9 | 1 | 44 of 44 | 0 |
+| 10 | 3 | 4 | 0 | 44 of 44 | 7 |
+| 8 | 0 | 4 | 0 | 41 of 44 | 9 |
+| 6 | 0 | 3 | 0 | 41 of 44 | 13 |
+
+- Jake chose 8, behind a Labs switch.
+- At 8, the four O4 fish are dim green fish, 18-51% fainter. By eye, the O1 school and the O4 fish look unchanged.
+- The cap also drops 9 reef finds on p1.
+- Finds at 8: p1-p4 20/46/13/13; O1-O6 23/0/8/12/18/1.
+
+Open: the cost on the iPhone (20 MP and 48 MP).
+
 ## Not in this plan
 
 - A particle remover for photos. D measures first.

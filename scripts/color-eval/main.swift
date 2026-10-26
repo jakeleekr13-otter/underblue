@@ -299,6 +299,11 @@ let restoredAblate = ProcessInfo.processInfo.environment["HT_EVAL_RESTORED_ABLAT
 // HT_EVAL_RENDER_DIR=<dir> (D3, photo particles) adds `altcombined`: combined() on <dir>/<stem>.png (an edited copy of the
 // source, same size) with the analysis and plan of the source, so only the edit differs.
 let renderDir = ProcessInfo.processInfo.environment["HT_EVAL_RENDER_DIR"]
+// HT_EVAL_ORBS=1 (D3) adds `orbs`: combined() on the source with its orbs taken off (PhotoOrbs), as PhotoProcessor renders.
+let orbsVariant = ProcessInfo.processInfo.environment["HT_EVAL_ORBS"] == "1"
+// HT_EVAL_ORB_MAXBUMP=<levels> overrides PhotoOrbs.defaultMaxBump; 0 or less means no limit.
+let orbMaxBump: Float? = ProcessInfo.processInfo.environment["HT_EVAL_ORB_MAXBUMP"].flatMap(Float.init)
+    .map { $0 > 0 ? $0 : nil } ?? PhotoOrbs.defaultMaxBump
 let ablations: [(String, (inout ColorCorrection) -> Void)] = ProcessInfo.processInfo.environment["HT_EVAL_ABLATE"] == "1" ? [
     ("none", { _ in }), ("clarity", { $0.clarity = 0 }), ("definition", { $0.definition = 0 }), ("detail", { $0.detail = 0 }),
     ("shadows", { $0.shadowLift = 0; $0.highlightAmount = 1 }), ("vibrance", { $0.vibrance = 0 }), ("saturation", { $0.saturation = 1 }),
@@ -317,7 +322,7 @@ let ablations: [(String, (inout ColorCorrection) -> Void)] = ProcessInfo.process
               $0.toneCurve = 0; $0.midLift = 0; $0.vibrance = 0; $0.saturation = 1; $0.warmth = 0; $0.neutralGains = SIMD3(repeating: 1) }),
     ("all", { $0.clarity = 0; $0.definition = 0; $0.detail = 0; $0.shadowLift = 0; $0.highlightAmount = 1; $0.contrast = 1; $0.brightness = 0
               $0.toneCurve = 0; $0.midLift = 0; $0.vibrance = 0; $0.saturation = 1; $0.warmth = 0 })] : []
-let variants = ["original", "grayworld", "current", "restoration", "combined", "lift", "uniform", "reference", "signal"] + ablations.map { "abl_\($0.0)" } + (ablations.isEmpty ? [] : ["abl_calm", "abl_bare", "abl_combsubject", "abl_combrestored"]) + (videoPath ? ["videopath"] : []) + (videoA2 ? ["videobase", "videoa2"] : []) + (restoredAblate ? ["finrest"] + ablations.map { "rab_\($0.0)" } : []) + (renderDir != nil ? ["altcombined"] : [])
+let variants = ["original", "grayworld", "current", "restoration", "combined", "lift", "uniform", "reference", "signal"] + ablations.map { "abl_\($0.0)" } + (ablations.isEmpty ? [] : ["abl_calm", "abl_bare", "abl_combsubject", "abl_combrestored"]) + (videoPath ? ["videopath"] : []) + (videoA2 ? ["videobase", "videoa2"] : []) + (restoredAblate ? ["finrest"] + ablations.map { "rab_\($0.0)" } : []) + (renderDir != nil ? ["altcombined"] : []) + (orbsVariant ? ["orbs"] : [])
 var csv = "image,variant,psnr,ssim,deltaE,farHue,farChroma,nearA,nearRG,contrastL,meanL,localContrast,farLocalContrast,farHueOK,farChromaOK,fallback,confidence,depthConf,waterConf,betaDR,betaDG,betaDB,binfR,binfG,binfB,floorPct,gainPct,recR,subjectShare,subjectL,outsideL,subjectChroma,subjectViolet,clipped,subjectClipped,outsideChroma,subjectLocalContrast,subjectOvershoot\n"
 let files = try FileManager.default.contentsOfDirectory(atPath: rawDir.path).filter { [".png", ".jpg", ".jpeg", ".arw"].contains(where: $0.lowercased().hasSuffix) }.sorted()
 let started = Date()
@@ -519,6 +524,16 @@ for name in selected {
     if let plan, let raw = try? restoration.restore(source, plan: plan) {
         outputs["restoration"] = engine.blend(source, raw, amount: plan.confidence)
         outputs["combined"] = (try? restoration.combined(source, plan: plan, settings: settings, filter: engine)) ?? current
+        if orbsVariant {
+            let correction = restoration.corrections(settings: FilterSettings(preset: .natural, analysis: settings.analysis), plan: plan).current
+            let small = FilterEngine.downscaled(source, maxPixel: PhotoOrbs.detectionSize)
+            let started = Date()
+            let found = PhotoOrbs.detect(source, share: engine.waterShare(small, correction: correction), subjects: plan.subjectMask,
+                                         depth: plan.depth, context: engine.context, maxBump: orbMaxBump)
+            print("\(name) orbs: \(found?.count ?? 0) in \(String(format: "%.2f", Date().timeIntervalSince(started))) s")
+            for spot in found?.spots ?? [] { print("\(name) spot \(spot.x) \(spot.y) \(String(format: "%.1f %.2f", spot.radius, spot.bump))") }
+            outputs["orbs"] = (try? restoration.combined(found?.applied(to: source) ?? source, plan: plan, settings: settings, filter: engine)) ?? current
+        }
         if let renderDir, let altRaw = load(URL(fileURLWithPath: renderDir).appendingPathComponent("\(name.split(separator: ".")[0]).png")) {
             let alt = fit(engine.sdr(altRaw), width: w, height: h)
             outputs["altcombined"] = try? restoration.combined(alt, plan: plan, settings: settings, filter: engine)

@@ -422,8 +422,7 @@ final class RestorationEngine: Sendable {
     }
 
     /// How far the depth map can be trusted as a water map (docs/RestorationExperiments.md, B2): the correlation of
-    /// depth with the colour water share at depth-map size. Where they agree on the layout (reef, wreck, diver: 0.65
-    /// to 0.91) depth is right; in open water depth invents a layout (r13 0.11, clip stills -0.40 to 0.36).
+    /// depth with a second map at depth-map size. The frame version below passes the luma output of the share kernel.
     static func depthTrust(depth: [Float], share: [Float]) -> Float {
         guard depth.count == share.count, depth.count > 100 else { return 0 }
         let n = Float(depth.count)
@@ -437,7 +436,11 @@ final class RestorationEngine: Sendable {
         return t * t * (3 - 2 * t)
     }
 
-    /// depthTrust for a frame: the colour water share made on the frame scaled to the depth map, so it costs one small render.
+    /// depthTrust for a frame, from the share kernel's output on the frame scaled to the depth map (one small render).
+    /// It reads the kernel's LUMA (channel 0), not the share (alpha). That was a slip, but it is the tested rule: with the
+    /// share, the sunfish (AquaColorFix O3, r 0.67 luma / 0.32 share) and the chart reef (O6, 0.63 / 0.35) lost depth trust
+    /// and turned teal (pairs 1-5 10.53 to 10.63, chart grey 0.010 to 0.029, 26 Oct 2026). The sun stills stay untrusted
+    /// either way (luma 0.00 to 0.08). Where depth and brightness agree, depth is used.
     func depthTrust(_ image: CIImage, plan: RestorationPlan, correction: ColorCorrection, filter: FilterEngine) -> Float {
         let dw = plan.depth.width, dh = plan.depth.height
         guard dw > 0, dh > 0, !image.extent.isEmpty,

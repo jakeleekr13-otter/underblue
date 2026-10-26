@@ -2995,6 +2995,47 @@
         }
       }
     },
+    "Experimental. Removes faint round spots from floating particles in the water. Photos only. Small fish may fade a little." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Experimental. Removes faint round spots from floating particles in the water. Photos only. Small fish may fade a little."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Experimental. Quita las manchas redondas y tenues que dejan las partículas en el agua. Solo fotos. Algún pez pequeño puede quedar un poco más tenue."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "試験的な機能です。水中の浮遊物による淡い丸い点を消します。写真のみ。小さな魚が少し薄くなることがあります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "실험 기능입니다. 물속 부유물이 만든 희미한 둥근 점을 지웁니다. 사진에만 적용됩니다. 작은 물고기가 조금 옅어질 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "实验功能。去除水中悬浮颗粒形成的淡圆形光斑。仅适用于照片。小鱼可能会略微变淡。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "實驗功能。去除水中懸浮顆粒形成的淡圓形光斑。僅適用於照片。小魚可能會略微變淡。"
+          }
+        }
+      }
+    },
     "Export" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4344,6 +4385,47 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "兌換代碼"
+          }
+        }
+      }
+    },
+    "Remove backscatter spots" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove backscatter spots"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quitar manchas de partículas"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "浮遊物の丸い点を消す"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "부유물 점 지우기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "去除悬浮颗粒光斑"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "去除懸浮顆粒光斑"
           }
         }
       }

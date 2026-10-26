@@ -396,6 +396,15 @@ Fixes after Jake's iPhone check, 25 Oct 2026:
 - A spinner now shows over the preview while a render runs (`PreviewRenderingIndicator`), after 0.3 s, on the iPhone and the Mac (Jake's request).
 - Next: make dragging cheaper, for example a smaller preview while the finger is on the slider and the full one on release. Not designed yet.
 
+Whole-photo colour jump at a high subject strength (Jake, squid photo, Intensity 10 %, 26 Oct 2026):
+
+- Seen: around 120-140 % the colour around the squid changed. Measured with the colour harness at the photo's own size: up to 137.5 % only the squid changes. From 140 % every water pixel changes (mean sRGB of the water 62/143/188 to 77/139/157, a warm, murky shift). Same result on a second run.
+- Cause: the object colour step (A2, `RestorationEngine.objectColour`, from restoration-experiments) runs after the lift. It measures the near and far mean colours of the finished frame and sets one gain for the whole photo. Its strength is cut to 0 below `objectTintFloor`. The lift moved the near mean, so near 140 % the step switched on for the whole photo.
+- Fix: the step now measures the frame before the lift (`objectColour(_:measuredOn:...)`) and applies its gains to the lifted frame. Checked: no lift, 100 % and 135 % are pixel-identical to before; at 140 % and 145 % the water differs from the no-lift image by at most 1 in 8-bit RGB, and the squid brightens smoothly (mean 169.7, 170.5, 171.4).
+- Also seen before the fix (25 Oct): at 100 % to 130 % the translucent fins brighten. Their colour comes from the water behind them, so this can read as the water changing. Not changed.
+- The device check was not possible on 26 Oct: the iPhone was not connected.
+- Tests: `testFullSubjectStrengthLeavesEverythingOutsideTheMask` (whole photo path, strength 100 % and 150 %: pixels outside the subject must not move by more than 0.001) and `testObjectColourStepTakesItsValuesFromTheMeasuredFrame`. The scene came from a sweep of near and water colours with the fix reverted: 40 scenes moved the water. In the chosen one (blue water, a dark subject, Intensity 10 %) the water moved by 0.057 already at 100 %. So the bug could also hit the fixed lift in Auto and Semi-auto. With the fix reverted the test fails; with it, it passes.
+
 Tools in `scripts/manual-subject/`: `probe.swift` (R2-R5, Vision only), and `run.sh`, `specs.sh`, `spill.py`, `foreign.py`, `sheet.py` (R6). The R6 tools expect the harness binary in `bin/` and write to `out/` beside themselves; build it with `build_eval` from `scripts/color-eval/common.sh`.
 
 `UnderBlueTests/PressProbeTests.swift` repeats R8 on a device. It is skipped unless `Documents/press-in` exists in the app container.

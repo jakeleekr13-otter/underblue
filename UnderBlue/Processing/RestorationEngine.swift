@@ -322,10 +322,16 @@ final class RestorationEngine: Sendable {
         let mixed = depthBlendKernel.apply(extent: image.extent, arguments: [current, depthAware, depth,
             CIVector(x: CGFloat(weight), y: CGFloat(Self.nearDepth), z: 0, w: 0)])
         let blended = (mixed ?? filter.blend(current, depthAware, amount: weight)).cropped(to: image.extent)
-        let finishedFrame = filter.violetCalm(lifted(blended, subjectLift, filter, share, liftSignal), source: image, calmWeight: calm)
+        let unlifted = filter.violetCalm(blended, source: image, calmWeight: calm)
+        let finishedFrame = subjectLift == nil ? unlifted
+            : filter.violetCalm(lifted(blended, subjectLift, filter, share, liftSignal), source: image, calmWeight: calm)
         // Photos only: video holds one depth per scene, so it never reaches this path, and the flag keeps it out too.
         guard !video else { return finishedFrame }
-        return objectColour(finishedFrame, plan: plan, depth: depth, redLoss: settings.analysis.redLoss, context: filter.context)
+        // The step measures the frame before the lift. Measured after it, the lift moved the near mean, and at a subject
+        // strength of 140 % the step switched on for the whole photo: the water turned warm (squid, Intensity 10 %,
+        // Jake, 26 Oct 2026, docs/ManualSubject.md). With no lift the two frames are the same.
+        return objectColour(finishedFrame, measuredOn: unlifted, plan: plan, depth: depth, redLoss: settings.analysis.redLoss,
+                            context: filter.context)
     }
 
     /// The values of the object colour step (docs/RestorationExperiments.md, A2): made from the frame itself, at
@@ -380,12 +386,14 @@ final class RestorationEngine: Sendable {
                                   waterExcess: max(0, water.y - 0.5 * (water.x + water.z)))
     }
 
-    /// Object colour step (UnderBlueObjectColour): reads the frame at depth-map size, makes the values, applies them.
-    func objectColour(_ frame: CIImage, plan: RestorationPlan, depth: CIImage, redLoss: Float, context: CIContext) -> CIImage {
+    /// Object colour step (UnderBlueObjectColour): reads `measuredOn` (default: the frame) at depth-map size, makes the
+    /// values, applies them to the frame.
+    func objectColour(_ frame: CIImage, measuredOn measured: CIImage? = nil, plan: RestorationPlan, depth: CIImage,
+                      redLoss: Float, context: CIContext) -> CIImage {
         guard let objectColourKernel else { return frame }
         let dw = plan.depth.width, dh = plan.depth.height
         guard dw > 0, dh > 0, frame.extent.width > 0, frame.extent.height > 0 else { return frame }
-        let pixels = Self.workingPixels(frame, width: dw, height: dh, context: context)
+        let pixels = Self.workingPixels(measured ?? frame, width: dw, height: dh, context: context)
         let values = Self.objectColourValues(pixels: pixels, depth: plan.depth.values, redLoss: redLoss)
         guard values.strength > 0 || values.redFromGreen > 0 else { return frame }
         func row(_ m: simd_float3x3, _ i: Int) -> CIVector { CIVector(x: CGFloat(m[0][i]), y: CGFloat(m[1][i]), z: CGFloat(m[2][i]), w: 0) }

@@ -1,5 +1,6 @@
 import CoreImage
 import Darwin
+import ImageIO
 import Vision
 import XCTest
 @testable import UnderBlue
@@ -64,6 +65,52 @@ final class PressProbeTests: XCTestCase {
                     print(String(format: "PREVIEW %@ %@ round %d: %.0f ms", name, label, round, Date().timeIntervalSince(t) * 1000))
                 }
             }
+        }
+    }
+
+    /// Renders one photo through the app's preview path with several subject choices, as PNGs, to see what a
+    /// choice changes around the subject. Set TEST_RUNNER_UB_PRESS_FILE, TEST_RUNNER_UB_PRESS_POINT
+    /// ("x,y", top left 0-1), TEST_RUNNER_UB_PRESS_OUT, and optionally TEST_RUNNER_UB_PRESS_INTENSITY and _STRENGTHS.
+    func testRenderSubjectChoicesForComparison() async throws {
+        guard #available(iOS 27.0, macOS 27.0, *) else { throw XCTSkip("needs iOS 27") }
+        let env = ProcessInfo.processInfo.environment
+        guard let file = env["UB_PRESS_FILE"], let out = env["UB_PRESS_OUT"],
+              let xy = env["UB_PRESS_POINT"]?.split(separator: ",").compactMap({ Double($0) }), xy.count == 2 else {
+            throw XCTSkip("UB_PRESS_FILE, UB_PRESS_POINT or UB_PRESS_OUT is not set")
+        }
+        // A fresh simulator has no model yet: download it once, as PreciseModelLoader does.
+        if !(await SubjectMask.preciseModelUsable()) {
+            try await SubjectMask.downloadPreciseModel(progress: ProgressManager(totalCount: 1).subprogress(assigningCount: 1))
+        }
+        let usable = await SubjectMask.preciseModelUsable()
+        try XCTSkipUnless(usable, "model not ready")
+        // On a device the paths are inside the app's Documents (copy the photo there with `devicectl device copy to`).
+        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let url = file.hasPrefix("/") ? URL(fileURLWithPath: file) : documents.appendingPathComponent(file)
+        let folder = out.hasPrefix("/") ? URL(fileURLWithPath: out, isDirectory: true) : documents.appendingPathComponent(out, isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let processor = PhotoProcessor()
+        var settings = FilterSettings()
+        settings.analysis = try await processor.analyze(url)
+        if let i = env["UB_PRESS_INTENSITY"].flatMap(Float.init) { settings.intensity = i }
+        let mask = try await processor.pressMask(url, at: CGPoint(x: xy[0], y: xy[1]))
+        if let mask {
+            let data = mask.values.withUnsafeBytes { Data($0) }
+            try data.write(to: folder.appendingPathComponent("mask_\(mask.width)x\(mask.height).raw"))
+        }
+        // TEST_RUNNER_UB_PRESS_STRENGTHS="1.35,1.4" renders 100 % and these strengths instead of the default set.
+        let strengths = env["UB_PRESS_STRENGTHS"]?.split(separator: ",").compactMap { Float($0) } ?? []
+        let choices: [(String, SubjectChoice)] = strengths.isEmpty
+            ? [("off", .off), ("auto", .auto), ("picked000", .picked(mask, strength: 0)),
+               ("picked100", .picked(mask)), ("picked130", .picked(mask, strength: 1.3))]
+            : [("picked100", .picked(mask))] + strengths.map { (String(format: "picked%03d", Int(($0 * 100).rounded())), .picked(mask, strength: $0)) }
+        for (label, choice) in choices {
+            let image = try await processor.preview(url, settings: settings, original: false, maxPixel: 1600, subjects: choice)
+            let target = folder.appendingPathComponent("\(label).png")
+            guard let destination = CGImageDestinationCreateWithURL(target as CFURL, "public.png" as CFString, 1, nil) else { continue }
+            CGImageDestinationAddImage(destination, image, nil)
+            XCTAssertTrue(CGImageDestinationFinalize(destination))
+            print("PRESSRENDER \(label) -> \(target.path)")
         }
     }
 

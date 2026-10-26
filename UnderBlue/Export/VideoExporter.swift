@@ -15,13 +15,20 @@ struct VideoExportResult: Sendable {
 actor VideoExporter {
     private let restorationEngine = RestorationEngine()
     private let diagnostics: DiagnosticRecorder?
+    /// Marine snow removal (ParticleFilter) before colour. SDR only: HDR was never measured. Off with the Original
+    /// preset, which leaves the video as it is. docs/RestorationExperiments.md, D2: after colour it removes 65-87% of
+    /// the drifting specks that colour leaves, and keeps 99.9% or more of small subjects.
+    /// Off by default (Jake, 26 Oct 2026): on an iPhone 17 it made a 1080p export 70% slower and its peak memory
+    /// 449 -> 1023 MB; 4K was 15% slower. It goes on when that cost is down to about +20% time and +100 MB.
+    private let removesParticles: Bool
     private let signposter = OSSignposter(subsystem: "com.underblue.app", category: "export")
     #if DEBUG
     private let logger = Logger(subsystem: "com.underblue.app", category: "video-performance")
     #endif
 
-    init(diagnostics: DiagnosticRecorder? = nil) {
+    init(diagnostics: DiagnosticRecorder? = nil, removesParticles: Bool = false) {
         self.diagnostics = diagnostics
+        self.removesParticles = removesParticles
     }
 
     func export(url: URL, metadata: VideoMetadata, settings: FilterSettings, options: ExportOptions,
@@ -112,6 +119,11 @@ actor VideoExporter {
         writer.startSession(atSourceTime: .zero)
         guard reader.startReading() else { throw reader.error ?? UnderBlueError.unreadable }
         let loopStartedAt = Date()
+        // The particle filter returns each frame 3 frames later; `pending` holds what is ready to write.
+        // Nil (HDR, Original, or kernels that failed to build) passes every frame straight through.
+        let particles = removesParticles && !hdr && settings.preset != .original ? ParticleFilter(context: engine.context) : nil
+        var pending: [ParticleFilter.Frame] = []
+        var sourceDone = false
         var videoDone = false
         var audioDone = Set<Int>()
         var frames = 0
@@ -132,14 +144,23 @@ actor VideoExporter {
             }
             if !videoDone && input.isReadyForMoreMediaData, let destination {
                 let frame: (CIImage, CMTime)? = try autoreleasepool {
-                    guard let sample = output.copyNextSampleBuffer() else { videoDone = true; input.markAsFinished(); return nil }
-                    guard let buffer = CMSampleBufferGetImageBuffer(sample) else { throw UnderBlueError.unreadable }
-                    let time = CMSampleBufferGetPresentationTimeStamp(sample)
-                    guard time < end else { videoDone = true; input.markAsFinished(); return nil }
-                    let source = CIImage(cvPixelBuffer: buffer).transformed(by: toneMappedByComposition ? .identity : metadata.transform)
-                    let oriented = source.transformed(by: CGAffineTransform(translationX: -source.extent.minX, y: -source.extent.minY))
-                    let scaled = oriented.transformed(by: CGAffineTransform(scaleX: size.width / oriented.extent.width, y: size.height / oriented.extent.height))
-                    return (scaled, time)
+                    // Read until a frame is ready: up to 4 at the start, while the filter fills its look-ahead.
+                    // The end of the source flushes the filter.
+                    while pending.isEmpty && !sourceDone {
+                        guard let sample = output.copyNextSampleBuffer() else { sourceDone = true; pending += particles?.finish() ?? []; break }
+                        guard let buffer = CMSampleBufferGetImageBuffer(sample) else { throw UnderBlueError.unreadable }
+                        let time = CMSampleBufferGetPresentationTimeStamp(sample)
+                        guard time < end else { sourceDone = true; pending += particles?.finish() ?? []; break }
+                        let source = CIImage(cvPixelBuffer: buffer).transformed(by: toneMappedByComposition ? .identity : metadata.transform)
+                        let oriented = source.transformed(by: CGAffineTransform(translationX: -source.extent.minX, y: -source.extent.minY))
+                        let scaled = oriented.transformed(by: CGAffineTransform(scaleX: size.width / oriented.extent.width, y: size.height / oriented.extent.height))
+                        if let particles {
+                            if let ready = particles.push(scaled, at: time) { pending.append(ready) }
+                        } else { pending.append(ParticleFilter.Frame(image: scaled, time: time)) }
+                    }
+                    guard !pending.isEmpty else { videoDone = true; input.markAsFinished(); return nil }
+                    let next = pending.removeFirst()
+                    return (next.image, next.time)
                 }
                 if let frame {
                     VideoColorPipeline.tag(destination, hdr: hdr, pq: metadata.dynamicRange == .pq)

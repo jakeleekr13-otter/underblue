@@ -7,7 +7,7 @@ These are two measured components for video export: a hardware temporal denoiser
 | File | What it does |
 |---|---|
 | `TemporalDenoiser.swift` | Wraps Apple's `VTTemporalNoiseFilter` (VideoToolbox, iOS 26+). When the device does not support it, frames pass through unchanged. |
-| `ParticleFilter.swift` | Removes small, bright specks that are not in the same place in the neighbouring frames after motion is removed. Our own logic. Motion is estimated by block matching in Metal. |
+| `ParticleFilter.swift` (moved to `UnderBlue/Processing/` on 26 Oct 2026) | Removes small, bright specks that are not in the same place in the neighbouring frames after motion is removed. Our own logic. Motion is estimated by block matching in Metal. |
 
 ### TemporalDenoiser facts (measured on a Mac M3)
 

@@ -22,7 +22,7 @@ guard chainArgs.count >= 4, let s0 = Double(chainArgs[2]), let s1 = Double(chain
 try FileManager.default.createDirectory(atPath: root + "/chain", withIntermediateDirectories: true)
 try await runChain(chainArgs[0], chainArgs[1], s0, s1)
 SWIFT
-swiftc -O -swift-version 6 -o $OUT/chain $OUT/main.swift $P/chain.swift $OUT/renderer.swift $C/TemporalDenoiser.swift $C/ParticleFilter.swift \
+swiftc -O -swift-version 6 -o $OUT/chain $OUT/main.swift $P/chain.swift $OUT/renderer.swift $C/TemporalDenoiser.swift $C/../../UnderBlue/Processing/ParticleFilter.swift \
   $P/ParticleFilterV1.swift $P/common.swift $P/metric.swift ${HT_STUBS:?set HT_STUBS to the videosim stubs.swift} \
   $S/FilterEngine.swift $S/MetalKernels.swift $S/FinishingMath.swift $S/ColorCorrection.swift $S/ColorMath.swift \
   $S/WaterAnalysis.swift $S/FilterSettings.swift $S/DivePreset.swift $S/RestorationPlan.swift $S/RestorationEngine.swift \

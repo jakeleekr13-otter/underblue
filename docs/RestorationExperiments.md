@@ -536,7 +536,7 @@ Kind: measurement. No new removal step is planned yet. Jake asked for this check
 
 ### What we know
 
-- Photos have no particle step. Video has a prototype, `Prototypes/VideoCleanup/ParticleFilter.swift`. It is not wired in.
+- Photos have no particle step. Video has a prototype, `Prototypes/VideoCleanup/ParticleFilter.swift` (since 26 Oct 2026 `UnderBlue/Processing/ParticleFilter.swift`, wired into the exporter but off by default; see D2).
 - Prototype results (Mac M3, 1080p60 clips, measured before colour correction, see its README):
   - It removes 43-71% of the drifting specks on 3 of 4 segments, and 21% on the sparse one.
   - It keeps 99-100% of small subjects and changes under 0.1% of pixels.
@@ -664,7 +664,22 @@ Bench: `particle-bench/chain.swift` (build `build_chain.sh`). Colour is the app'
 - Colour alone already removes most visible specks (S1 145 to 45 per frame, S3 5.5 to 2.4): the water calm smooths them, as D1 found.
 - The other order (colour first) is worse on both segments. The planned order holds.
 - By eye (crops at 2x): every small dark fish in the S3 window stays; the S1 snow window has fewer specks.
-- Not done: the cost on the iPhone, and the wiring into the exporter. The prototype's own numbers (Mac M3): 126-204 fps at 1080p, 63-67 fps at 4K, 3 frames of lag.
+- The prototype's own numbers (Mac M3): 126-204 fps at 1080p, 63-67 fps at 4K, 3 frames of lag.
+
+#### D2 in the exporter (26 Oct 2026): wired, off by default
+- `ParticleFilter.swift` moved to `UnderBlue/Processing/`. `VideoExporter` pushes each frame through it before colour and writes what it returns (3 frames later); the end of the source flushes it. SDR only (HDR unmeasured); off with the Original preset.
+- iPhone 17, device test, Natural Dive 0.8, 10 s (600 frames) each:
+
+| Clip | Filter | Export | Frames per second | Peak memory |
+|---|---|---|---|---|
+| 1080p60 c3 (0-10 s) | off | 32.2 s | 18.7 | 449 MB |
+| 1080p60 c3 (0-10 s) | on | 54.8 s | 11.0 | 1023 MB |
+| 4K60 13832750 (0-10 s) | off | 146.6 s | 4.1 | 1865 MB |
+| 4K60 13832750 (0-10 s) | on | 168.0 s | 3.6 | 1882 MB |
+
+- The filter builds on iOS (its kernels compile from source at run time). Both outputs have 600 frames. With it on, 0.02-0.08% of the pixels change, by 5-15 levels at most (this stretch has few specks).
+- The added time per frame is about the same at 1080p and 4K (36 ms). So it is likely a wait for the GPU in the filter, not the pixel work. Not checked.
+- Decision (Jake, 26 Oct 2026): off by default (`VideoExporter(removesParticles:)` false). Turn it on when the cost is down to about +20% time and +100 MB. Photo particles come first.
 
 ## Not in this plan
 

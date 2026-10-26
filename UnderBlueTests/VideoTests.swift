@@ -21,6 +21,26 @@ final class VideoTests: XCTestCase {
             XCTAssertEqual(result.metadata.duration, metadata.duration, accuracy: 0.06, name)
         }
     }
+    /// The particle filter returns each frame 3 frames later and is flushed at the end (off by default, D2).
+    /// With it on, every frame, the size, the frame rate, the duration and the audio must stay as with it off.
+    func testParticleRemovalKeepsEveryFrameTimingAndAudio() async throws {
+        // Without the filter the "on" export would pass frames straight through and prove nothing.
+        XCTAssertNotNil(ParticleFilter(context: CIContext()), "the particle filter's kernels did not build")
+        for name in ["h264_1080_30_audio", "portrait_audio"] {
+            let url = try fixture(name)
+            let metadata = try await MediaInspector().inspect(url)
+            let settings = FilterSettings(preset: .natural, intensity: 0.8, analysis: .init(redLoss: 0.6))
+            let off = try await VideoExporter(removesParticles: false).export(url: url, metadata: metadata, settings: settings, options: .init()) { _ in }
+            defer { TemporaryFiles.remove(off.url) }
+            let on = try await VideoExporter(removesParticles: true).export(url: url, metadata: metadata, settings: settings, options: .init()) { _ in }
+            defer { TemporaryFiles.remove(on.url) }
+            XCTAssertEqual(on.frames, off.frames, name)
+            XCTAssertEqual(on.metadata.displaySize, off.metadata.displaySize, name)
+            XCTAssertEqual(on.metadata.audioTrackCount, metadata.audioTrackCount, name)
+            XCTAssertEqual(on.metadata.frameRate, metadata.frameRate, accuracy: 0.1, name)
+            XCTAssertEqual(on.metadata.duration, off.metadata.duration, accuracy: 0.001, name)
+        }
+    }
     func testExportedPortraitPixelsMatchSourceOrientation() async throws {
         let url = try fixture("portrait_audio")
         let metadata = try await MediaInspector().inspect(url)

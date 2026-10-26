@@ -9,7 +9,7 @@ What changed:
 - The iPhone app refuses ProRes RAW with its own message. The Mac app lets it through: the macOS decoder runs Apple's RAW processing with default settings (VTDecompressionProperties.h).
 
 Checked so far, on the simulator and the Mac with generated clips only:
-- The curve matches Apple's `AppleLogToLin` LUT at 10 points (`docs/Apple-log`).
+- The curve matches Apple's `AppleLogToLin` LUT at 10 points (`Apple-log/` at the repository root, not in git).
 - Every frame path (AVAssetReader, AVVideoComposition, AVAssetImageGenerator) passes the log signal through unchanged, tagged as sRGB.
 - SDR export of a grey card: black 0.00, 18% grey 0.38, 90% white 0.71 (Log and Log 2). HDR export is HLG and passes `OutputValidator`.
 

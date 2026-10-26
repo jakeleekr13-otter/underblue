@@ -1,6 +1,6 @@
 // The Apple Log decode kernel. AppleLog loads it.
 // The curve is the decoding function of the Apple Log white paper (Sept 2023). Apple Log 2 uses the
-// same curve (Sept 2025 paper). Both papers are in docs/Apple-log.
+// same curve (Sept 2025 paper). Both papers are in Apple-log/ at the repository root (not in git).
 // Input: the log signal P per channel, 0...1. Output: scene-linear light (0.18 = 18% grey card,
 // 12.0 at P = 1), moved into Rec.2020 by the three matrix rows. Negative light is cut to 0.
 #include <CoreImage/CoreImage.h>

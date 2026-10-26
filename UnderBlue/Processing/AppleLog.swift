@@ -3,7 +3,8 @@ import CoreImage
 import CoreImage.CIFilterBuiltins
 import simd
 
-/// Apple Log and Apple Log 2 video. The white papers are in docs/Apple-log.
+/// Apple Log and Apple Log 2 video. The white papers are in Apple-log/ at the repository root. That folder
+/// stays out of git; the papers come from developer.apple.com/download.
 /// No Apple decoder removes the log curve. AVAssetReader, AVVideoComposition and VTPixelTransferSession
 /// all pass the log signal through (measured 25 Oct 2026). Every frame path then hands Core Image the
 /// signal tagged as sRGB. So decode() encodes the image back to sRGB to get the signal, and a Metal

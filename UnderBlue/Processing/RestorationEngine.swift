@@ -323,12 +323,17 @@ final class RestorationEngine: Sendable {
         let mixed = depthBlendKernel.apply(extent: image.extent, arguments: [current, depthAware, depth,
             CIVector(x: CGFloat(weight), y: CGFloat(Self.nearDepth), z: 0, w: 0)])
         let blended = (mixed ?? filter.blend(current, depthAware, amount: weight)).cropped(to: image.extent)
-        let finishedFrame = filter.violetCalm(lifted(blended, subjectLift, filter, share, liftSignal), source: image, calmWeight: calm)
+        let unlifted = filter.violetCalm(blended, source: image, calmWeight: calm)
+        let finishedFrame = subjectLift == nil ? unlifted
+            : filter.violetCalm(lifted(blended, subjectLift, filter, share, liftSignal), source: image, calmWeight: calm)
         // Photos only: video holds one depth per scene, so it never reaches this path, and the flag keeps it out too.
         guard !video else { return finishedFrame }
+        // The step measures the frame before the lift. Measured after it, the lift moved the near mean, and at a subject
+        // strength of 140 % the step switched on for the whole photo: the water turned warm (squid, Intensity 10 %,
+        // Jake, 26 Oct 2026, docs/ManualSubject.md). With no lift the two frames are the same.
         let trust = depthTrust(image, plan: plan, correction: currentValues, filter: filter)
-        return objectColour(finishedFrame, plan: plan, depth: depth, redLoss: settings.analysis.redLoss, context: filter.context,
-                            depthTrust: trust)
+        return objectColour(finishedFrame, measuredOn: unlifted, plan: plan, depth: depth, redLoss: settings.analysis.redLoss,
+                            context: filter.context, depthTrust: trust)
     }
 
     /// The values of the object colour step (docs/RestorationExperiments.md, A2): made from the frame itself, at
@@ -383,20 +388,21 @@ final class RestorationEngine: Sendable {
                                   waterExcess: max(0, water.y - 0.5 * (water.x + water.z)))
     }
 
-    /// Object colour step (UnderBlueObjectColour): reads the frame at depth-map size, makes the values, applies them.
+    /// Object colour step (UnderBlueObjectColour): reads `measuredOn` (default: the frame) at depth-map size, makes the
+    /// values, applies them to the frame.
     /// `depthTrust` (RestorationEngine.depthTrust): below half, depth does not show where the water is (open water), so
     /// step 2 takes the video rule: red by colour distance from the water, not by depth. Sunlit water near the sun read
     /// near (depth 0.69-0.77) on the hammerhead clip stills and turned pink with the depth rule (26 Oct 2026).
-    func objectColour(_ frame: CIImage, plan: RestorationPlan, depth: CIImage, redLoss: Float, context: CIContext,
-                      depthTrust: Float = 1) -> CIImage {
+    func objectColour(_ frame: CIImage, measuredOn measured: CIImage? = nil, plan: RestorationPlan, depth: CIImage,
+                      redLoss: Float, context: CIContext, depthTrust: Float = 1) -> CIImage {
         guard let objectColourKernel else { return frame }
         let dw = plan.depth.width, dh = plan.depth.height
         guard dw > 0, dh > 0, frame.extent.width > 0, frame.extent.height > 0 else { return frame }
-        let pixels = Self.workingPixels(frame, width: dw, height: dh, context: context)
+        let pixels = Self.workingPixels(measured ?? frame, width: dw, height: dh, context: context)
         var values = Self.objectColourValues(pixels: pixels, depth: plan.depth.values, redLoss: redLoss)
         var colourRule: VideoObjectColourValues?
         if depthTrust < 0.5, values.redFromGreen > 0 {
-            // Step 2 by colour, on the frame after step 1's gains.
+            // Step 2 by colour, on the measured frame after step 1's gains.
             let gains = values.gains
             let stepped = pixels.map { FinishingMath.sRGBToRec2020 * (FinishingMath.rec2020ToSRGB * $0 * gains) }
             colourRule = Self.videoObjectColourValues(pixels: stepped, depth: plan.depth.values, redLoss: redLoss)

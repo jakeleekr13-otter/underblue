@@ -253,6 +253,12 @@ actor VideoRestorationAnalyzer {
         generator.maximumSize = CGSize(width: 960, height: 960)
         generator.requestedTimeToleranceBefore = CMTime(seconds: 0.03, preferredTimescale: 600)
         generator.requestedTimeToleranceAfter = CMTime(seconds: 0.03, preferredTimescale: 600)
+        // An Apple Log frame comes out of the generator as the log signal, so it is decoded first.
+        let log = metadata.appleLog
+        func frame(_ cg: CGImage) -> CIImage {
+            let image = CIImage(cgImage: cg)
+            return engine.sdr(log?.decode(image) ?? image)
+        }
 
         // One frame that cannot be read must not stop the whole analysis (code 6, video3, 1 Oct 2026):
         // a failed keyframe is skipped, and only a clip with no readable keyframe fails.
@@ -267,14 +273,14 @@ actor VideoRestorationAnalyzer {
             catch is CancellationError { throw CancellationError() } catch { continue }
             if firstFrame == nil { firstFrame = cg }
             times.append(time)
-            samples.append(engine.analyze(engine.sdr(CIImage(cgImage: cg))))
+            samples.append(engine.analyze(frame(cg)))
         }
         guard let firstFrame else { throw UnderBlueError.unreadable }
         var representativeTime = max(0, videoDuration * 0.5)
         let representative: CGImage
         do { representative = try await generator.image(at: CMTime(seconds: representativeTime, preferredTimescale: 600)).image }
         catch is CancellationError { throw CancellationError() } catch { representative = firstFrame; representativeTime = times[0] }
-        let representativeImage = engine.sdr(CIImage(cgImage: representative))
+        let representativeImage = frame(representative)
         let device = await profiler.profile(representativeImage: representativeImage)
         let source = VideoSourceProfile.make(url: url, metadata: metadata)
         let runtime = RuntimeSystemState.current
@@ -298,7 +304,7 @@ actor VideoRestorationAnalyzer {
                 let cg: CGImage
                 do { cg = try await generator.image(at: CMTime(seconds: times[index], preferredTimescale: 600)).image }
                 catch is CancellationError { throw CancellationError() } catch { restorationFailures += 1; continue }
-                let image = engine.sdr(CIImage(cgImage: cg))
+                let image = frame(cg)
                 do {
                     let depth = try await depthEstimator.monocularDepth(for: image)
                         .resampled(maxDimension: previewPolicy.depthMapMaxDimension)

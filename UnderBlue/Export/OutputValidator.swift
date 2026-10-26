@@ -35,7 +35,7 @@ struct OutputValidator {
                 throw rejected("SDR output isHDR \(result.isHDR) transfer \(String(describing: result.transfer))")
             }
         } else {
-            guard result.dynamicRange == source.dynamicRange, result.bitDepth == 10,
+            guard result.dynamicRange == source.hdrOutputRange, result.bitDepth == 10,
                   result.primaries == AVVideoColorPrimaries_ITU_R_2020,
                   result.matrix == AVVideoYCbCrMatrix_ITU_R_2020 else {
                 throw rejected("HDR output range \(result.dynamicRange) bits \(String(describing: result.bitDepth)) primaries \(String(describing: result.primaries)) matrix \(String(describing: result.matrix))")

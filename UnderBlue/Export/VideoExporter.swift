@@ -40,7 +40,7 @@ actor VideoExporter {
         guard ProcessInfo.processInfo.thermalState != .critical else { throw Failure(kind: .thermal, domain: "UnderBlue", code: 0) }
         try Task.checkCancellation()
         let hdr = options.range == .hdr
-        guard !hdr || (metadata.isHDR && (metadata.dynamicRange == .hlg || metadata.dynamicRange == .pq) && (metadata.bitDepth ?? 0) >= 10) else { throw UnderBlueError.unsupported }
+        guard !hdr || metadata.hdrExportable else { throw UnderBlueError.unsupported }
         let restoration = settings.preset == .original ? nil : restorationAnalysis
         let asset = AVURLAsset(url: url)
         guard let track = try await asset.loadTracks(withMediaType: .video).first else { throw UnderBlueError.unreadable }
@@ -61,7 +61,10 @@ actor VideoExporter {
         }
         let colors = VideoColorPipeline.properties(hdr: hdr, pq: metadata.dynamicRange == .pq)
         let pixelFormat = hdr ? kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange : kCVPixelFormatType_32BGRA
-        let toneMappedByComposition = metadata.isHDR && !hdr
+        // Apple Log is read as decoded 10-bit signal with no colour conversion; AppleLog.decode does the rest.
+        let log = metadata.appleLog
+        let readFormat = log == nil ? pixelFormat : kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange
+        let toneMappedByComposition = metadata.isHDR && !hdr && log == nil
         let output: AVAssetReaderOutput
         if toneMappedByComposition {
             // Apple's compositor can tone-map PQ sources that direct decoder pixel transfer rejects.
@@ -77,9 +80,9 @@ actor VideoExporter {
             composed.videoComposition = AVVideoComposition(configuration: composition)
             output = composed
         } else {
-            var decoderSettings: [String: Any] = [kCVPixelBufferPixelFormatTypeKey as String: pixelFormat,
+            var decoderSettings: [String: Any] = [kCVPixelBufferPixelFormatTypeKey as String: readFormat,
                 kCVPixelBufferIOSurfacePropertiesKey as String: [:]]
-            if !hdr { decoderSettings[AVVideoColorPropertiesKey] = colors }
+            if !hdr && log == nil { decoderSettings[AVVideoColorPropertiesKey] = colors }
             output = AVAssetReaderTrackOutput(track: track, outputSettings: decoderSettings)
         }
         output.alwaysCopiesSampleData = false
@@ -151,7 +154,12 @@ actor VideoExporter {
                         guard let buffer = CMSampleBufferGetImageBuffer(sample) else { throw UnderBlueError.unreadable }
                         let time = CMSampleBufferGetPresentationTimeStamp(sample)
                         guard time < end else { sourceDone = true; pending += particles?.finish() ?? []; break }
-                        let source = CIImage(cvPixelBuffer: buffer).transformed(by: toneMappedByComposition ? .identity : metadata.transform)
+                        var decoded = CIImage(cvPixelBuffer: buffer)
+                        if let log {
+                            decoded = log.decode(decoded)
+                            if !hdr { decoded = engine.sdr(decoded) }
+                        }
+                        let source = decoded.transformed(by: toneMappedByComposition ? .identity : metadata.transform)
                         let oriented = source.transformed(by: CGAffineTransform(translationX: -source.extent.minX, y: -source.extent.minY))
                         let scaled = oriented.transformed(by: CGAffineTransform(scaleX: size.width / oriented.extent.width, y: size.height / oriented.extent.height))
                         if let particles {

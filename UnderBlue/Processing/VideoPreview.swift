@@ -83,17 +83,21 @@ struct VideoPreview {
     /// Reassigning a copied private CI composition does not reliably invalidate AVPlayer's rendered-frame cache.
     func composition(asset: AVAsset, settings: PreviewSettings,
                      analysis: VideoRestorationAnalysis? = nil) async throws -> AVVideoComposition {
+        // An Apple Log frame reaches the filter as the log signal. It is decoded and tone mapped to SDR
+        // the same way as in the export, for both the original and the corrected preview.
+        let log = try await AppleLog.of(asset)
         // nonisolated(nonsending): the non-Sendable asset never leaves the caller's isolation.
         let filtered = try await AVVideoComposition(applyingFiltersTo: asset) { [engine, restorationEngine, diagnosticGate, diagnostics] request in
             let (current, original) = settings.snapshot()
-            guard !original else { return AVCIImageFilteringResult(resultImage: request.sourceImage, ciContext: engine.context) }
-            let fallback = engine.apply(request.sourceImage, settings: current, edgeGuard: false)
+            let source = log.map { engine.sdr($0.decode(request.sourceImage)) } ?? request.sourceImage
+            guard !original else { return AVCIImageFilteringResult(resultImage: source, ciContext: engine.context) }
+            let fallback = engine.apply(source, settings: current, edgeGuard: false)
             guard let moment = analysis?.moment(at: request.compositionTime.seconds) else {
                 return AVCIImageFilteringResult(resultImage: fallback, ciContext: engine.context)
             }
             let output: CIImage
             do {
-                output = try restorationEngine.combined(request.sourceImage, moment: moment,
+                output = try restorationEngine.combined(source, moment: moment,
                                                          settings: current, filter: engine)
             } catch {
                 diagnosticGate.recordRenderFallback(using: diagnostics)
@@ -125,7 +129,8 @@ struct VideoPreview {
     #if DEBUG
     func comparisonPreviews(analysis: VideoRestorationAnalysis, settings: FilterSettings) throws
         -> [VideoDebugVariant: CGImage] {
-        let source = CIImage(cgImage: analysis.representativeFrame)
+        let frame = CIImage(cgImage: analysis.representativeFrame)
+        let source = AppleLog(analysis.sourceProfile.dynamicRange).map { engine.sdr($0.decode(frame)) } ?? frame
         let small = FilterEngine.downscaled(source, maxPixel: 1200)
         let current = engine.apply(small, settings: settings, edgeGuard: false)
         var images: [VideoDebugVariant: CIImage] = [.original: small, .current: current]

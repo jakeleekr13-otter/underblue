@@ -102,12 +102,7 @@ struct PreviewPane: View {
                 Button("Reset") { model.resetSubjects() }
             }
             if subjects.showsStrength {
-                // It scales only the lift on the picked subjects; Intensity stays the base.
-                Text("Subject strength")
-                Slider(value: Binding(get: { Double(subjects.strength) }, set: { model.setSubjectStrength(Float($0)) }),
-                       in: 0...Double(SubjectSelection.maximumStrength), step: 0.05)
-                    .frame(width: 140).accessibilityLabel("Subject strength")
-                Text(Double(subjects.strength), format: .percent.precision(.fractionLength(0))).monospacedDigit()
+                SubjectStrengthSlider(strength: subjects.strength, compact: true) { model.setSubjectStrength($0) }
             }
         }
     }

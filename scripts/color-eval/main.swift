@@ -388,6 +388,12 @@ for name in selected {
         let depth = try await depthEstimator.monocularDepth(for: source)
         depthMap = depth.map
         plan = try waterEstimator.estimate(image: source, depth: depth, legacy: analysis, context: engine.context)
+        if let fitted = plan {
+            var natural = FilterSettings()
+            natural.analysis = analysis
+            plan = WaterModelEstimator.flatteningOpenWater(fitted, image: source,
+                correction: restoration.corrections(settings: natural, plan: fitted).current, filter: engine)
+        }
         // As PhotoProcessor does. The uniform (video) plan below has no mask, as video has none.
         plan?.subjectMask = subjects
         // The subject lift has its own cap (docs/SubjectEmphasis.md, E2), so m5's coral block counts.

@@ -384,6 +384,11 @@ actor PhotoProcessor {
             let depth = try await depthEstimator.estimate(image: source, sourceURL: url)
             try Task.checkCancellation()
             var plan = try waterEstimator.estimate(image: source, depth: depth, legacy: analysis, context: engine.context)
+            var natural = FilterSettings()
+            natural.analysis = analysis
+            plan = WaterModelEstimator.flatteningOpenWater(plan, image: source,
+                                                           correction: restorationEngine.corrections(settings: natural, plan: plan).current,
+                                                           filter: engine)
             plan.subjectMask = subjects
             restorationPlan = plan
             #if DEBUG

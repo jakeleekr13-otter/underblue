@@ -196,3 +196,63 @@ struct WaterModelEstimator {
         SIMD3(value.x.isFinite ? value.x : 0, value.y.isFinite ? value.y : 0, value.z.isFinite ? value.z : 0)
     }
 }
+
+/// Open water whose veil the fit could not measure (jellyfish lake photo, `Tune_26_Oct`, 26 Oct 2026).
+/// The frame is all veil and the veil never levels off with depth, so the fit stops at its 0.9 limit in every channel.
+/// The veil it removes then follows the depth map closely. The depth model drew a slope in plain water (1.0 to 0.53),
+/// so the water came out patchy and a grey band ringed the swimmer. Such water gets the far depth of the open water
+/// (`farWaterPercentile`). Subjects keep their depth, so the pink fins keep their colour. The median depth (0.73) was
+/// tried first: the object colour step reads water as depth above 0.8, so it lost its water and the fins turned
+/// blue-white (hue 30 to 230), and it tints depth 0.6 to 0.9 as near, so the flat water would take the object gains.
+/// The fit itself cannot be trusted either, so the physical restoration is taken away by the same weight. Kept, the
+/// near swimmer and the far water split apart and the glow beside the legs grew (ring minus far water +0.20 L; the
+/// source has +0.10). Without it the glow is +0.10, the water hue spans 197 to 214, and the fins stay pink (hue 40). A fit below the limit in any channel is left as it is:
+/// in 57 test photos only this one had all three channels at the limit (one or two channels: 25 photos).
+extension WaterModelEstimator {
+    /// The smallest fitted veil channel over which the flattening turns on. The nearest other test photo, 8682
+    /// (0.856), got scattered pixel jumps from a weight of 0.04 with 0.85 to 0.9, so the ramp starts at 0.88.
+    static let unsaturatedVeil: ClosedRange<Float> = 0.88...0.9
+    /// The water share over which a pixel counts as open water. The fins and legs read 0.75 (median), the water 0.99 or more.
+    static let flatWaterShare: ClosedRange<Float> = 0.9...0.98
+    /// The open water's depth that all of it gets.
+    static let farWaterPercentile: Float = 0.9
+
+    static func flatteningWeight(_ plan: RestorationPlan) -> Float {
+        smoothstep(unsaturatedVeil, plan.backscatterInfinity.min())
+    }
+
+    /// `waterShare` is the share map (alpha of FilterEngine.waterShare) at the depth map's size.
+    static func flatteningOpenWater(_ plan: RestorationPlan, waterShare: [Float]) -> RestorationPlan {
+        let weight = flatteningWeight(plan)
+        guard weight > 0, waterShare.count == plan.depth.values.count else { return plan }
+        let open = zip(waterShare, plan.depth.values).filter { $0.0 >= flatWaterShare.upperBound }.map(\.1).sorted()
+        // Too little open water to measure: nothing to flatten.
+        guard Float(open.count) >= Float(waterShare.count) * SubjectTiers.minimumOpenWaterShare, !open.isEmpty else { return plan }
+        let water = open[min(open.count - 1, Int(Float(open.count - 1) * farWaterPercentile))]
+        let values = zip(plan.depth.values, waterShare).map { depth, share in
+            depth + (water - depth) * weight * smoothstep(flatWaterShare, share)
+        }
+        guard let flat = try? NormalizedDepthMap(width: plan.depth.width, height: plan.depth.height, values: values) else { return plan }
+        var result = plan.trusting(1 - weight)
+        result.depth = flat
+        return result
+    }
+
+    /// The same on a photo: its water share is made at the depth map's size with `correction` (Natural's).
+    /// Ordinary photos return at once, without the render.
+    static func flatteningOpenWater(_ plan: RestorationPlan, image: CIImage, correction: ColorCorrection,
+                                    filter: FilterEngine) -> RestorationPlan {
+        guard flatteningWeight(plan) > 0, !image.extent.isEmpty else { return plan }
+        let d = plan.depth
+        let small = image.transformed(by: CGAffineTransform(translationX: -image.extent.minX, y: -image.extent.minY)
+            .concatenating(CGAffineTransform(scaleX: CGFloat(d.width) / image.extent.width, y: CGFloat(d.height) / image.extent.height)))
+        guard let share = filter.waterShare(small, correction: correction) else { return plan }
+        let values = SubjectTiers.channel(share, 3, width: d.width, height: d.height, context: filter.context)
+        return flatteningOpenWater(plan, waterShare: values)
+    }
+
+    private static func smoothstep(_ range: ClosedRange<Float>, _ value: Float) -> Float {
+        let t = min(1, max(0, (value - range.lowerBound) / (range.upperBound - range.lowerBound)))
+        return t * t * (3 - 2 * t)
+    }
+}

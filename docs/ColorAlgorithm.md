@@ -412,6 +412,62 @@ Rejected tries:
 - A threshold mask for the local veil (outlier pixels, smoothstep 0.12-0.35 and 0.05-0.18): it made cyan blotches and did not remove the halo.
 - A halo metric (ring versus far water, OKLab) could not tell the clips apart. The halo was judged by eye on enlarged crops of the real iPhone export.
 
+### Camera colour pulses (26 Oct 2026)
+
+Problem: in the napoleon wrasse clip (`DeveloperMedia/tune/video/Tune_26_Oct`) the fish and the sand turned from grey to pink for about 10 frames at 5 s, during playback and in the export. AquaColorFix shows the same.
+
+Cause, measured on the iPhone 17 export:
+
+- The source itself pulses. Its red rose 2.8x (bottom third, linear: 0.028 to 0.076) and came back. Green stayed (0.063 to 0.069).
+- Scene values hold still, so the pulse goes through. After the correction the fish and the sand are almost grey. The same shift then crosses from cyan-grey to pink (OKLab a -0.013 to +0.012).
+- Not the cause: the preview render scale, the device (Mac and iPhone measure the same), or frame-to-frame jitter of the correction (fish jitter 0.0061 against 0.0097 in the source).
+- The clip may have been shot with a red filter: its water b/g is 5.6, against 0.6 to 2.8 on 13 other clips. Not confirmed; the file has no camera metadata.
+
+Fix: `VideoColourTrack`. The analysis reads every frame once and measures its mean colour. Each frame is compared with the median of the frames within 0.5 s on each side. A shorter change is taken out; a longer one (a new scene) stays. Brightness is kept.
+
+- The gains are per channel of Rec. 709, the camera's primaries. Per channel of the Rec. 2020 working space, the fish stayed pink in 8 of 10 frames.
+- Each channel share gets a floor of 0.05 before the ratio. Without it, clips with no red turned noise into gains of 2x and more (4 of 13 clips).
+- A 2% band is taken off every gain. Without it, small gains on keyframes moved the water fit, and a steady clip got 0.9 L brighter.
+- The keyframes of the analysis get the same gains, so a keyframe inside a pulse does not shift its scene.
+- An SDR clip is read in the decoder's own 4:2:0 format and measured on the CPU. HDR and Apple Log clips use Core Image. On the iPhone 17 the pass takes 0.80 s for 17 s of 1080p (BGRA with a GPU read per frame: 2.65 s).
+
+Result:
+
+| Check | Before | After |
+|---|---|---|
+| Napoleon, iPhone export: bottom pulse, max OKLab a,b off the 1 s median | 0.023 | 0.015 |
+| Napoleon, iPhone export: dark 15% (fish), p99 | 0.060 | 0.033 |
+| 13 other clips, Mac render, mean OKLab dE x100 against HEAD | - | 0.00 on 5 clips; 0.01 to 0.38 on 8 clips (largest frame 0.52, `2025-05-03 22.12.02.MOV` at 0 s) |
+
+### Open water the veil fit cannot measure (photos, 26 Oct 2026)
+
+Problem: a jellyfish lake photo (`DeveloperMedia/tune/photo/Tune_26_Oct`, murky green water filling the frame) came out with patchy water (hue 176 to 198), a grey band around the swimmer, and a glow beside the legs.
+
+Cause, measured with the harness:
+
+- The water never levels off with depth, so the backscatter fit stops at its 0.9 limit in all three channels. The veil it removes then follows the depth map closely.
+- The depth model drew a slope in plain water (1.0 on the left to 0.53 on the right).
+- Only this photo of 57 test photos has all three channels at the limit. One or two channels at the limit is common (25 photos), so that is no sign.
+
+Fix: `WaterModelEstimator.flatteningOpenWater`, from `PhotoProcessor.prepare` and the harness. It turns on when the smallest fitted channel is 0.88 to 0.9.
+
+- Open water (water share 0.9 to 0.98 and up) gets the 90th percentile of the open water's depth. Subjects keep their depth.
+- The physical restoration is taken away by the same weight (`RestorationPlan.trusting`).
+
+Tried and changed:
+
+| Try | Result |
+|---|---|
+| One constant depth for the whole photo | Even water, but the pink fins turned blue-white (hue 198) |
+| Water at the median depth (0.73) | Even water, but fins blue-white (hue 230): the object colour step reads water as depth above 0.8 and lost it |
+| Water at the far depth, restoration kept | Fins pink, but the glow beside the legs grew to +0.20 L (source +0.10) |
+| Water at the far depth, restoration off | Fins pink (hue 40), water hue 197 to 214, glow +0.10 |
+| Ramp from 0.85 | Photo 8682 (smallest channel 0.856) got scattered pixel jumps from a weight of 0.04 |
+
+Check: 56 of the 57 renders are byte-identical to HEAD (Mac harness, 640 px). The jellyfish photo is the one that changes.
+
+Still open: 31% of the legs and fins clip (source 23.6%). Not measured: whether it comes from the object colour step's red gain of 1.6.
+
 ## CPU mirrors and tests
 
 The kernels run in Metal. The finishing kernels are in `FinishingKernels.metal`; their CPU mirrors are in `FinishingMath.swift`. The restoration kernels are in `RestorationKernels.metal`, and `RestorationMath` is in `RestorationEngine.swift`. Xcode compiles the `.metal` files into the app's `default.metallib`; `MetalKernels` loads them. The value rules are in `ColorCorrection.swift`: `make()`, its helpers (`SceneFactors`, `baseCastGains`, `presetSaturation`, `waterRules`, `toneRules`, `presetRules`) and the white reference. `ColorMath.swift` holds the colour spaces, the water target and solver, the restoration mirror and the lift curve. The CPU mirrors must give the same result:

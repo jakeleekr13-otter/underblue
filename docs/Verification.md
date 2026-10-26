@@ -434,6 +434,35 @@ Still open:
 - The screenshot source captures still show the old colour output. Capture them again after colour tuning ends.
 - `scripts/generate_localizations.py` is stale. Its output differs from the catalog by about 6,000 lines. Do not run it.
 
+## Camera colour pulse in video (26 Oct 2026)
+
+`VideoColourTrack` takes short colour pulses of the camera out of video frames. See [ColorAlgorithm](ColorAlgorithm.md#camera-colour-pulses-26-oct-2026).
+
+Checked:
+
+- Napoleon clip: iPhone 17 export through `VideoParityTests`, measured and checked by eye (frames 140 to 159).
+- 13 other clips: Mac render (`videosim` built from the tree), against HEAD.
+- Device unit tests: `VideoColourTrackTests`, `VideoRestorationTests`, `VideoSceneTests`, `VideoTests`, `AppleLogTests`, `HDRTests`, `VideoParityTests`.
+
+Open:
+
+- Jake: look at the napoleon preview on the iPhone at 5 s. Frames 150 to 155 keep a faint pink.
+- Time of the pass on a long 4K clip on the iPhone (measured only on 17 s of 1080p).
+- An HDR or Apple Log clip with a real pulse. That path uses Core Image and was not run on such a clip.
+- The largest change on the other clips (`2025-05-03 22.12.02.MOV`, 0 s, dE x100 0.52): not looked at by eye.
+
+## Open water the veil fit cannot measure (26 Oct 2026)
+
+See [ColorAlgorithm](ColorAlgorithm.md#open-water-the-veil-fit-cannot-measure-photos-26-oct-2026).
+
+Checked: Mac harness on the jellyfish photo and on 57 test photos (56 byte-identical to HEAD); device unit tests `RestorationTests`, `PhotoTests`, `SubjectCandidatesTests`.
+
+Open:
+
+- Jake: look at the jellyfish photo on the iPhone. The legs and fins clip more than the source (31% against 23.6%).
+- Jake does not remember the fin colour (pink or pale violet). The fix keeps them warm (hue 40); AquaColorFix shows pale violet.
+- The subject mask misses the swimmer's torso and head (both Vision masks). Not acted on.
+
 ## Final round checklist
 
 1. **Colour scorecard.** The 29 Sep candidate was run as `m5-final2-dev-20260929`; rerun if any

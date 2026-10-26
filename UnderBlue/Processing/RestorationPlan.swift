@@ -74,7 +74,7 @@ struct RestorationPlan: Sendable, Equatable {
     let backscatterInfinity: SIMD3<Float>
     let betaDirect: SIMD3<Float>
     let betaBackscatter: SIMD3<Float>
-    let confidence: Float
+    private(set) var confidence: Float
     let depthConfidence: Float
     let waterFitConfidence: Float
     let temporalConfidence: Float
@@ -200,6 +200,13 @@ extension RestorationPlan {
         var output = limits
         output.maximumOutput = maximumOutput
         return rebuilt(depth: depth, limits: output)
+    }
+
+    /// The same plan with `factor` (0 to 1) of its confidence: less of the physical restoration.
+    func trusting(_ factor: Float) -> RestorationPlan {
+        var copy = self
+        copy.confidence = confidence * min(1, max(0, factor.isFinite ? factor : 0))
+        return copy
     }
 
     /// Copy-and-modify, so any stored value added to RestorationPlan later survives automatically.

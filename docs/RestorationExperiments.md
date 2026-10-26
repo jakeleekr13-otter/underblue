@@ -702,12 +702,12 @@ D1's pair measure (each isolated group of the original, its peak in our output o
 
 Which steps lift the orbs (p2, median ratio): ours 1.52; legacy path 1.41; physical restoration alone 1.07; finished restored path 1.75. Legacy path with one stage off: tone 1.17, water tone 1.19, cast 1.22, local stages 1.28, all finishing off 1.13. So the lift is spread over the contrast and colour steps: it is what the correction does, not one fault. Removal before colour is the way.
 
-First prototype (Python, scratchpad `orbs.py`): on the source luma, peaks of a band filter (Gaussian 3 px minus 10 px) above max(1, 1.2 x local noise) and below 30 levels; in water (colour share 0.6 or more), off the Vision subject mask; a flat ring at 10 px (spread below half the peak); round (half-max region fills 55% or more of its box, 320 px at most). Fill: the mean of a ring at 1.3 x the radius, blended over a soft disc. The filled photo then goes through our harness.
+First prototype (Python, scratch script `orbs.py`, not kept; round 2 onward is in `scripts/photo-orbs/`): on the source luma, peaks of a band filter (Gaussian 3 px minus 10 px) above max(1, 1.2 x local noise) and below 30 levels; in water (colour share 0.6 or more), off the Vision subject mask; a flat ring at 10 px (spread below half the peak); round (half-max region fills 55% or more of its box, 320 px at most). Fill: the mean of a ring at 1.3 x the radius, blended over a soft disc. The filled photo then goes through our harness.
 - Found: p1 48, p2 20, p3 9, p4 16.
 - By eye: filled orbs are gone in our output (p2 upper left, p1 open water), and p1's bubble columns stay.
 - Misses: several faint orbs on p2. Risks: small lone bright dots next to p1's bubble columns, one spot next to a diver's arm, one on p2's wreck.
 
-Rounds 2-5 (26 Oct 2026, scratchpad `orbs2.py`, `orbs_eval.py`). Harness: `HT_EVAL_RENDER_DIR` renders an edited copy of the source with the source's own analysis and plan (`altcombined`), so only the edit differs. Without it the edited copy changed the analysis, and 45% of p2's pixels moved.
+Rounds 2-5 (26 Oct 2026, `scripts/photo-orbs/orbs2.py` and `orbs_eval.py`). Harness: `HT_EVAL_RENDER_DIR` renders an edited copy of the source with the source's own analysis and plan (`altcombined`), so only the edit differs. Without it the edited copy changed the analysis, and 45% of p2's pixels moved.
 
 | Round | Change | Spots removed p1 / p2 / p3 / p4 | By eye |
 |---|---|---|---|

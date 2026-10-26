@@ -57,7 +57,7 @@ final class FilterEngine: Sendable {
         subjectLiftKernel = MetalKernels.color("UnderBlueSubjectLift")
         var calm: [String: CIColorKernel] = [:]
         for name in ["UnderBlueCalmShare", "UnderBlueCalmSpread", "UnderBlueCalmWeight", "UnderBlueCalmPremultiply",
-                     "UnderBlueWaterCalm", "UnderBlueCalmKeep", "UnderBlueVioletCalm"] { calm[name] = MetalKernels.color(name) }
+                     "UnderBlueWaterCalm", "UnderBlueCalmKeep", "UnderBlueVioletCalm", "UnderBlueWaterCore"] { calm[name] = MetalKernels.color(name) }
         calmKernels = calm
     }
 
@@ -114,20 +114,20 @@ final class FilterEngine: Sendable {
         return (out ?? image).cropped(to: image.extent)
     }
 
-    func apply(_ image: CIImage, settings: FilterSettings, edgeGuard: Bool = true) -> CIImage {
+    func apply(_ image: CIImage, settings: FilterSettings, edgeGuard: Bool = true, coresWater: Bool = true) -> CIImage {
         guard settings.preset != .original else { return image }
         return apply(image, correction: .make(analysis: settings.analysis, preset: settings.preset, adjustments: settings.adjustments),
-                     intensity: settings.appliedIntensity, edgeGuard: edgeGuard)
+                     intensity: settings.appliedIntensity, edgeGuard: edgeGuard, coresWater: coresWater)
     }
     /// `violetCalm` false leaves the violet calm to the caller: RestorationEngine.combined runs it once
     /// on the blended output.
     func apply(_ image: CIImage, correction: ColorCorrection, intensity: Float, calmWeight: CIImage? = nil,
-               violetCalm calmsViolet: Bool = true, openWaterRed: Bool = false, edgeGuard: Bool = true) -> CIImage {
+               violetCalm calmsViolet: Bool = true, openWaterRed: Bool = false, edgeGuard: Bool = true, coresWater: Bool = true) -> CIImage {
         let amount = min(1, max(0, intensity.isFinite ? intensity : 0))
         guard amount > 0 else { return image }
         let calm = calmWeight ?? waterCalmWeight(image, correction: correction)
         let shown = blend(image, finishing(image, correction: correction, calmWeight: calm, openWaterRed: openWaterRed,
-                                              edgeGuard: edgeGuard), amount: amount)
+                                              edgeGuard: edgeGuard, coresWater: coresWater), amount: amount)
         return calmsViolet ? violetCalm(shown, source: image, calmWeight: calm) : shown
     }
     /// Violet the correction made loses its chroma; a pixel that was violet in the source keeps it
@@ -153,15 +153,17 @@ final class FilterEngine: Sendable {
     /// `calmWeight` is waterCalmWeight of the source; it defaults to the weight of `image` itself.
     /// `openWaterRed` (video) keeps the red rebuild out of flat open water; see below.
     /// `edgeGuard` keeps the light detail away from strong edges (photos; video passes false). See below.
+    /// `coresWater` takes the weak 3-12 px ripple off the water before colour (waterCore; photos, video passes false).
     /// Blur radius (share of the short side) of the open-water weight that mixes out the rebuilt red.
     static let openWaterBlur: Float = 0.03
     func finishing(_ image: CIImage, correction v: ColorCorrection, reference: CIImage? = nil, calmWeight: CIImage? = nil,
-                   openWaterRed: Bool = false, edgeGuard: Bool = true) -> CIImage {
+                   openWaterRed: Bool = false, edgeGuard: Bool = true, coresWater: Bool = true) -> CIImage {
         guard v != .identity else { return image }
         let side = Float(min(image.extent.width, image.extent.height))
         let short = side.isFinite && side > 0 ? side : 480
         let calm = calmWeight ?? waterCalmWeight(image, correction: v)
-        let calmed = waterCalm(image, weight: calm, short: short)
+        let calmed = coresWater ? waterCore(waterCalm(image, weight: calm, short: short), weight: calm, short: short)
+            : waterCalm(image, weight: calm, short: short)
         var corrected = colorStage(calmed, v)
         // Flat open water gets no rebuilt red. Video has one water colour per scene, but its sunlit
         // surface water is greener than that colour, so the hue gate took it for a subject and turned
@@ -378,6 +380,21 @@ final class FilterEngine: Sendable {
         blur.radius = max(0.5, FinishingMath.calmBlurRadius * short)
         let waterBlur = (blur.outputImage ?? water).cropped(to: image.extent)
         return calm.apply(extent: image.extent, arguments: [image, waterBlur, weight]) ?? image
+    }
+    /// The weak part of the water's 3-12 px ripple comes off, before colour (UnderBlueWaterCore). The tone stage and the
+    /// restored path amplified it into blotches (p3 1.69x, p2 2.16x). A wider calm blur fixed p3 but blurred away a faint
+    /// distant hammerhead, so only the weak band goes. The weight's share (g) says where the water is.
+    private func waterCore(_ image: CIImage, weight: CIImage?, short: Float) -> CIImage {
+        guard let weight, let kernel = calmKernels["UnderBlueWaterCore"] else { return image }
+        func blurred(_ radius: Float) -> CIImage {
+            let blur = CIFilter.gaussianBlur()
+            blur.inputImage = image.clampedToExtent()
+            blur.radius = max(0.5, radius * short)
+            return (blur.outputImage ?? image).cropped(to: image.extent)
+        }
+        let core = CIVector(x: CGFloat(FinishingMath.coreLow), y: CGFloat(FinishingMath.coreHigh), z: CGFloat(FinishingMath.coreStrength), w: 0)
+        return kernel.apply(extent: image.extent, arguments: [image, blurred(FinishingMath.coreFineRadius),
+                                                              blurred(FinishingMath.coreWideRadius), weight, core]) ?? image
     }
     private func colorStage(_ image: CIImage, _ v: ColorCorrection) -> CIImage {
         guard let colorKernel else {

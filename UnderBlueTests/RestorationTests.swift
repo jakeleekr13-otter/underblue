@@ -1604,6 +1604,37 @@ final class RestorationTests: XCTestCase {
         }
     }
 
+    func testWaterCoreTakesOnlyTheWeakRippleInWater() throws {
+        // Water mottling (docs/RestorationExperiments.md): a weak band comes off in water, a strong one (a faint fish) stays,
+        // and nothing changes outside the water.
+        let c = SIMD3<Float>(0.05, 0.15, 0.3), wide = SIMD3<Float>(0.05, 0.15, 0.3)
+        let weak = wide * 1.02, strong = wide * 1.2
+        assertEqual(FinishingMath.waterCore(c, fine: weak, wide: wide, share: 1), c - (weak - wide), accuracy: 1e-6)
+        assertEqual(FinishingMath.waterCore(c, fine: strong, wide: wide, share: 1), c, accuracy: 1e-6)
+        assertEqual(FinishingMath.waterCore(c, fine: weak, wide: wide, share: 0), c, accuracy: 1e-6)
+
+        let engine = FilterEngine()
+        let core = try XCTUnwrap(engine.calmKernelForTesting("UnderBlueWaterCore"))
+        let extent = CGRect(x: 0, y: 0, width: 4, height: 4)
+        func solid(_ c: SIMD3<Float>) -> CIImage {
+            CIImage(color: CIColor(red: CGFloat(c.x), green: CGFloat(c.y), blue: CGFloat(c.z), colorSpace: FilterEngine.workingSpace)!)
+                .cropped(to: extent)
+        }
+        func pixel(_ image: CIImage?) throws -> SIMD3<Float> {
+            var p = [Float](repeating: 0, count: 4)
+            engine.context.render(try XCTUnwrap(image), toBitmap: &p, rowBytes: 16, bounds: CGRect(x: 1, y: 1, width: 1, height: 1),
+                                  format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+            return SIMD3(p[0], p[1], p[2])
+        }
+        let parameters = CIVector(x: CGFloat(FinishingMath.coreLow), y: CGFloat(FinishingMath.coreHigh), z: CGFloat(FinishingMath.coreStrength), w: 0)
+        for fine in [weak, wide * 1.06, strong] {
+            for share: Float in [0, 0.5, 1] {
+                let out = try pixel(core.apply(extent: extent, arguments: [solid(c), solid(fine), solid(wide), solid(.init(0, share, 0)), parameters]))
+                assertEqual(out, FinishingMath.waterCore(c, fine: fine, wide: wide, share: share), accuracy: 0.002)
+            }
+        }
+    }
+
     func testWaterCalmAndKeepKernelsMatchCPUMirror() throws {
         let engine = FilterEngine()
         let calm = try XCTUnwrap(engine.calmKernelForTesting("UnderBlueWaterCalm"))

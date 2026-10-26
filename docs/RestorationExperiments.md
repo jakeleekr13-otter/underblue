@@ -806,7 +806,7 @@ Small fish: the blocker, and the cap:
 
 Open: the cost on the iPhone (20 MP and 48 MP).
 
-### Water mottling (26 Oct 2026, measured; not fixed)
+### Water mottling (26 Oct 2026)
 
 Measure: in water (share 0.8 or more, off edges), the std of the luma band Gaussian 3 px minus 12 px, as a share of the 12 px mean (1920 px). Ratio over the original.
 
@@ -826,7 +826,19 @@ Measure: in water (share 0.8 or more, off edges), the std of the luma band Gauss
   - IMG_7400's rays, DSC03656 and v1_30 looked unchanged at 8.
   - But at 8 a faint distant hammerhead on v3_30 (1920 px) was blurred away: a faint silhouette passes the flatness test. Not kept.
 - Band strength in the source (median / p90 / p99, % of the local mean): p3 flat water 0.50 / 1.24 / 2.15; p2 flat water 0.74 / 2.96 / 8.30; the faint v3 shark 1.12 / 5.32 / 7.85. So a soft threshold near 2-3% would take p3's blotches and keep the shark's body, but thin its faint edges.
-- Next idea, not tried: shrink only the weak part of that band in water (a soft threshold, before colour).
+- Next idea: shrink only the weak part of that band in water (a soft threshold, before colour). Done below.
+
+Fix (Jake chose it, 26 Oct 2026): the water core (`UnderBlueWaterCore`, `FilterEngine.waterCore`, mirror `FinishingMath.waterCore`). Photos only; video passes `coresWater: false`.
+- After the water calm and before colour, the band between a 3/1200 and a 12/1200 blur (share of the short side) comes off in water (the calm weight's water share).
+- Only its weak part comes off: all of it below a relative strength of 0.04 (band luma over wide-blur luma, linear), none above 0.08.
+- Mottling, ours over original: p2 2.16x → 2.09x, p3 1.69x → 0.87x, p4 0.75x → 0.43x.
+- By eye: p3's clouds are gone. The faint v3_30 hammerhead stays as it was. IMG_7400's rays and DSC03656 look unchanged. p2's blotches soften a little; its orbs stay (they are the Labs switch's job).
+- Guards, against the pink-rim fix:
+  - AquaColorFix photo 10.53 → 10.61 (p1 +0.14, p2 +0.11, p4 +0.14); water detail 0.96 → 0.93 of ours over A on p1.
+  - Local contrast falls a little where water fills the frame (r01 4.43 → 4.32, m6 4.17 → 4.04, m5 8.79 → 8.75).
+  - m1 dE 24.6 → 24.5, m6 26.5 → 26.6. Neutral surfaces, black gear, plants and grain are within 0.002 / 1 degree.
+  - The harness `uniform` variant also moved (10.98 → 11.04). It calls combined() without `video: true`, so it is not the real video path here.
+- Cost: two more blurs per finishing call (both paths) on photos. iPhone time unmeasured.
 
 ## Not in this plan
 

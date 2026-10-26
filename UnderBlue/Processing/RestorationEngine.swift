@@ -305,7 +305,7 @@ final class RestorationEngine: Sendable {
         // The tiers and the sharpening follow how much of an object's contrast survives the water.
         let liftSignal = subjectLift == nil ? nil : contrastTransmission(image, plan: plan)
         let current = filter.apply(image, correction: values.current, intensity: amount, calmWeight: calm, violetCalm: false, openWaterRed: video,
-                                   edgeGuard: !video)
+                                   edgeGuard: !video, coresWater: !video)
         let physicallyRestored = try restore(image, plan: plan, liftDark: video)
         // Subject light removal on the restored path only where depth can be trusted. In open water, removing the
         // backscatter steepens the glow around the sun; the glow then reads as "not water", the removal takes its blue,
@@ -314,7 +314,7 @@ final class RestorationEngine: Sendable {
         let constantDepth = (plan.depth.values.max() ?? 0) - (plan.depth.values.min() ?? 0) <= 0.05
         let trust = knownTrust ?? (constantDepth ? 1 : depthTrust(image, plan: plan, correction: values.current, filter: filter))
         let finished = filter.finishing(physicallyRestored, correction: Self.trusting(values.restored, depthTrust: trust), reference: image, calmWeight: calm, openWaterRed: video,
-                                       edgeGuard: !video)
+                                       edgeGuard: !video, coresWater: !video)
         let depthAware = filter.blend(image, finished, amount: amount)
         // Low-confidence fits approach the exact current UnderBlue output. So do the nearest pixels
         // (depth 0 to nearDepth): the restoration leaves them almost as they are, but the restored

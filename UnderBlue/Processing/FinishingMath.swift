@@ -331,6 +331,18 @@ enum FinishingMath {
         return c + (waterBlur - c) * w
     }
     static let calmBlurRadius: Float = 3.0 / 1200, calmWindowRadius: Float = 7.0 / 1200
+    /// Water core (UnderBlueWaterCore), photos: the band between a fine and a wide blur (share of the short side), and
+    /// the relative band strength (luma of the band over luma of the wide blur, linear) below which it comes off (low,
+    /// all of it; high, none). Water mottling, docs/RestorationExperiments.md.
+    static let coreFineRadius: Float = 3.0 / 1200, coreWideRadius: Float = 12.0 / 1200
+    static let coreLow: Float = 0.04, coreHigh: Float = 0.08, coreStrength: Float = 1
+    static func waterCore(_ c: SIMD3<Float>, fine: SIMD3<Float>, wide: SIMD3<Float>, share: Float) -> SIMD3<Float> {
+        let band = fine - wide
+        let relative = abs((band * ColorCorrection.luma).sum()) / max((wide * ColorCorrection.luma).sum(), 1e-4)
+        let t = min(1, max(0, (relative - coreLow) / max(1e-5, coreHigh - coreLow)))
+        let weak = 1 - t * t * (3 - 2 * t)
+        return c - band * (weak * coreStrength * min(1, max(0, share)))
+    }
     /// 0.004 to 0.007 is a middle setting (8 Oct 2026). Now r10's small bubbles keep 75% of their
     /// detail; at 0.005 to 0.009 they kept 65%. Beside the IMG_7260 turtle (8-12 px) the noise is 0.61
     /// L*; it was 1.60 before the calm. Lower settings keep more bubbles and leave more noise at edges.

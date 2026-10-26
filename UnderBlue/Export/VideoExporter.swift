@@ -177,7 +177,7 @@ actor VideoExporter {
                     // an iPhone 17 and the system ended the app. With the pool the footprint stays near 230 MB.
                     var renderFellBack = false
                     try autoreleasepool {
-                        let fallback = engine.apply(frame.0, settings: settings, edgeGuard: false)
+                        let fallback = engine.apply(frame.0, settings: settings, edgeGuard: false, coresWater: false)
                         let corrected: CIImage
                         if let moment = restoration?.moment(at: frame.1.seconds) {
                             do {

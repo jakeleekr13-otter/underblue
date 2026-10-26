@@ -1,3 +1,4 @@
+import CoreImage
 import SwiftUI
 import XCTest
 @testable import UnderBlue
@@ -81,6 +82,79 @@ final class ManualSubjectTests: XCTestCase {
         XCTAssertNil(point(50, 10, PreviewZoom()), "above the image")
         let zoomed = PreviewZoom(scale: 2, offset: CGSize(width: 10, height: 0))
         XCTAssertEqual(point(50, 50, zoomed), CGPoint(x: 0.45, y: 0.5), "panned right by 10 pt at 2x: the centre shows x 0.45")
+    }
+
+    /// A 20 x 20 frame in the working space, row 0 on top: `near` colour in the top half, `far` in the bottom half.
+    private func scene(near: SIMD3<Float>, far: SIMD3<Float>) -> CIImage {
+        var rgba = [Float]()
+        for y in 0..<20 { for _ in 0..<20 { let c = y < 10 ? near : far; rgba += [c.x, c.y, c.z, 1] } }
+        return CIImage(bitmapData: rgba.withUnsafeBytes { Data($0) }, bytesPerRow: 20 * 16, size: CGSize(width: 20, height: 20),
+                       format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+    }
+
+    private func pixels(_ image: CIImage, _ engine: FilterEngine) -> [Float] {
+        var out = [Float](repeating: 0, count: 20 * 20 * 4)
+        engine.context.render(image, toBitmap: &out, rowBytes: 20 * 16, bounds: CGRect(x: 0, y: 0, width: 20, height: 20),
+                              format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+        return out
+    }
+
+    /// Near (depth 0.1) in the top half, far (0.95) in the bottom half, as `scene`.
+    private func splitPlan() throws -> RestorationPlan {
+        let values = (0..<400).map { $0 < 200 ? Float(0.1) : 0.95 }
+        let map = try NormalizedDepthMap(width: 20, height: 20, values: values)
+        return RestorationPlan(depth: map, depthSource: .monocular,
+            depthStatistics: .init(minimum: 0.1, maximum: 0.95, median: 0.5), backscatterInfinity: .init(0.043, 0.086, 0.121),
+            betaDirect: .init(1.2, 0.6, 0.4), betaBackscatter: .init(1.2, 1.6, 1.6), confidence: 0.8, limits: .init(),
+            transmissionFloorPixelPercentage: 0, maximumGainPixelPercentage: 0)
+    }
+
+    /// The object colour step (A2) sets one gain for the whole photo from what it measures. It must measure the
+    /// frame before the subject lift: at 140 % the lift switched it on, and the water turned warm (squid, 26 Oct 2026).
+    func testObjectColourStepTakesItsValuesFromTheMeasuredFrame() throws {
+        let engine = FilterEngine(), restoration = RestorationEngine()
+        let water = SIMD3<Float>(0.05, 0.14, 0.13)
+        let tinted = scene(near: SIMD3(0.20, 0.30, 0.28), far: water)   // objects lean to the water: the step is on
+        let warm = scene(near: SIMD3(0.30, 0.22, 0.15), far: water)     // a warm reef: the step is off
+        let plan = try splitPlan()
+        let depth = CIImage(bitmapData: plan.depth.values.withUnsafeBytes { Data($0) }, bytesPerRow: 20 * 4,
+                            size: CGSize(width: 20, height: 20), format: .Rf, colorSpace: nil)
+        let own = restoration.objectColour(tinted, plan: plan, depth: depth, redLoss: 0, context: engine.context)
+        XCTAssertNotEqual(pixels(own, engine), pixels(tinted, engine), "measured on itself, the tinted frame gets the step")
+        let measuredWarm = restoration.objectColour(tinted, measuredOn: warm, plan: plan, depth: depth, redLoss: 0, context: engine.context)
+        XCTAssertEqual(pixels(measuredWarm, engine), pixels(tinted, engine), "measured on a frame with no step, nothing changes")
+    }
+
+    /// The subject strength changes the subject only. At the slider's top, every pixel outside the mask matches the
+    /// photo with no lift, through the whole photo path.
+    func testFullSubjectStrengthLeavesEverythingOutsideTheMask() throws {
+        let engine = FilterEngine(), restoration = RestorationEngine()
+        // Blue water and a dark subject at Intensity 10 %, like the squid. Before the fix the lift moved the water here
+        // by about 0.057 (found by a sweep of near and water colours, 26 Oct 2026).
+        let image = scene(near: SIMD3(0.10, 0.10, 0.20), far: SIMD3(0.02, 0.08, 0.16))
+        let plan = try splitPlan()
+        // The subject is the whole near half, so the lift moves the near mean the step measures.
+        var values = [Float](repeating: 0, count: 400)
+        for y in 0..<10 { for x in 0..<20 { values[y * 20 + x] = 1 } }
+        var lift = SubjectLift(mask: SubjectMask(width: 20, height: 20, values: values))
+        lift.tier2 = 0; lift.tier3 = 0
+        var settings = FilterSettings(); settings.intensity = 0.1
+        let plain = pixels(try restoration.combined(image, plan: plan, settings: settings, filter: engine), engine)
+        for k: Float in [1, SubjectSelection.maximumStrength] {
+            let strong = try XCTUnwrap(lift.scaled(k))
+            let out = pixels(try restoration.combined(image, plan: plan, settings: settings, filter: engine, subjectLift: strong), engine)
+            var inside: Float = 0
+            for i in 0..<400 {
+                let d = (0..<3).map { abs(out[i * 4 + $0] - plain[i * 4 + $0]) }.max() ?? 0
+                if values[i] > 0 { inside = max(inside, d); continue }
+                // The far half, clear of the mask's 1-cell ramp.
+                let x = i % 20, y = i / 20
+                guard y > 10 else { continue }
+                // 1e-3: two render graphs round differently in half floats (about 2e-4 seen). The bug moved the water by 0.03 and more.
+                XCTAssertEqual(d, 0, accuracy: 1e-3, "strength \(k): pixel \(x),\(y) outside the subject changed")
+            }
+            XCTAssertGreaterThan(inside, 1e-3, "strength \(k) changes the subject")
+        }
     }
 
     func testPressedMasksBecomeGroupsInPressOrder() throws {

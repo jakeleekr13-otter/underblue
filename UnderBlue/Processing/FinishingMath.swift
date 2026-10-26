@@ -336,12 +336,17 @@ enum FinishingMath {
     /// all of it; high, none). Water mottling, docs/RestorationExperiments.md.
     static let coreFineRadius: Float = 3.0 / 1200, coreWideRadius: Float = 12.0 / 1200
     static let coreLow: Float = 0.04, coreHigh: Float = 0.08, coreStrength: Float = 1
-    static func waterCore(_ c: SIMD3<Float>, fine: SIMD3<Float>, wide: SIMD3<Float>, share: Float) -> SIMD3<Float> {
+    /// The core keeps away from subjects: the water share blurred at `coreAroundRadius` (3 times the wide blur, so the
+    /// whole wide window) must reach `coreOpenFrom` and above. Below it the wide blur holds a subject.
+    static let coreAroundRadius: Float = 36.0 / 1200, coreOpenFrom: Float = 0.9
+    static func waterCore(_ c: SIMD3<Float>, fine: SIMD3<Float>, wide: SIMD3<Float>, share: Float, around: Float = 1) -> SIMD3<Float> {
         let band = fine - wide
         let relative = abs((band * ColorCorrection.luma).sum()) / max((wide * ColorCorrection.luma).sum(), 1e-4)
         let t = min(1, max(0, (relative - coreLow) / max(1e-5, coreHigh - coreLow)))
         let weak = 1 - t * t * (3 - 2 * t)
-        return c - band * (weak * coreStrength * min(1, max(0, share)))
+        let o = min(1, max(0, (around - coreOpenFrom) / max(1e-5, 1 - coreOpenFrom)))
+        let open = o * o * (3 - 2 * o)
+        return c - band * (weak * coreStrength * min(1, max(0, share)) * open)
     }
     /// 0.004 to 0.007 is a middle setting (8 Oct 2026). Now r10's small bubbles keep 75% of their
     /// detail; at 0.005 to 0.009 they kept 65%. Beside the IMG_7260 turtle (8-12 px) the noise is 0.61

@@ -388,15 +388,17 @@ final class FilterEngine: Sendable {
     /// distant hammerhead, so only the weak band goes. The weight's share (g) says where the water is.
     private func waterCore(_ image: CIImage, weight: CIImage?, short: Float) -> CIImage {
         guard let weight, let kernel = calmKernels["UnderBlueWaterCore"] else { return image }
-        func blurred(_ radius: Float) -> CIImage {
+        func blurred(_ input: CIImage, _ radius: Float) -> CIImage {
             let blur = CIFilter.gaussianBlur()
-            blur.inputImage = image.clampedToExtent()
+            blur.inputImage = input.clampedToExtent()
             blur.radius = max(0.5, radius * short)
-            return (blur.outputImage ?? image).cropped(to: image.extent)
+            return (blur.outputImage ?? input).cropped(to: image.extent)
         }
-        let core = CIVector(x: CGFloat(FinishingMath.coreLow), y: CGFloat(FinishingMath.coreHigh), z: CGFloat(FinishingMath.coreStrength), w: 0)
-        return kernel.apply(extent: image.extent, arguments: [image, blurred(FinishingMath.coreFineRadius),
-                                                              blurred(FinishingMath.coreWideRadius), weight, core]) ?? image
+        let core = CIVector(x: CGFloat(FinishingMath.coreLow), y: CGFloat(FinishingMath.coreHigh), z: CGFloat(FinishingMath.coreStrength),
+                            w: CGFloat(FinishingMath.coreOpenFrom))
+        return kernel.apply(extent: image.extent, arguments: [image, blurred(image, FinishingMath.coreFineRadius),
+                                                              blurred(image, FinishingMath.coreWideRadius), weight,
+                                                              blurred(weight, FinishingMath.coreAroundRadius), core]) ?? image
     }
     /// Pixel count above which a render is cut into pieces (materializedIfLarge). 20 and 24 MP stay one graph.
     static let materializeAbove = 30_000_000

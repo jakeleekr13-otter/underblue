@@ -1633,6 +1633,8 @@ final class RestorationTests: XCTestCase {
         assertEqual(FinishingMath.waterCore(c, fine: weak, wide: wide, share: 1), c - (weak - wide), accuracy: 1e-6)
         assertEqual(FinishingMath.waterCore(c, fine: strong, wide: wide, share: 1), c, accuracy: 1e-6)
         assertEqual(FinishingMath.waterCore(c, fine: weak, wide: wide, share: 0), c, accuracy: 1e-6)
+        // Next to a subject (the wide window not all water) nothing comes off.
+        assertEqual(FinishingMath.waterCore(c, fine: weak, wide: wide, share: 1, around: 0.85), c, accuracy: 1e-6)
 
         let engine = FilterEngine()
         let core = try XCTUnwrap(engine.calmKernelForTesting("UnderBlueWaterCore"))
@@ -1647,11 +1649,15 @@ final class RestorationTests: XCTestCase {
                                   format: .RGBAf, colorSpace: FilterEngine.workingSpace)
             return SIMD3(p[0], p[1], p[2])
         }
-        let parameters = CIVector(x: CGFloat(FinishingMath.coreLow), y: CGFloat(FinishingMath.coreHigh), z: CGFloat(FinishingMath.coreStrength), w: 0)
+        let parameters = CIVector(x: CGFloat(FinishingMath.coreLow), y: CGFloat(FinishingMath.coreHigh), z: CGFloat(FinishingMath.coreStrength),
+                                  w: CGFloat(FinishingMath.coreOpenFrom))
         for fine in [weak, wide * 1.06, strong] {
             for share: Float in [0, 0.5, 1] {
-                let out = try pixel(core.apply(extent: extent, arguments: [solid(c), solid(fine), solid(wide), solid(.init(0, share, 0)), parameters]))
-                assertEqual(out, FinishingMath.waterCore(c, fine: fine, wide: wide, share: share), accuracy: 0.002)
+                for around: Float in [0.8, 0.95, 1] {
+                    let out = try pixel(core.apply(extent: extent, arguments: [solid(c), solid(fine), solid(wide), solid(.init(0, share, 0)),
+                                                                                solid(.init(0, around, 0)), parameters]))
+                    assertEqual(out, FinishingMath.waterCore(c, fine: fine, wide: wide, share: share, around: around), accuracy: 0.002)
+                }
             }
         }
     }

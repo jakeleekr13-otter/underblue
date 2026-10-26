@@ -839,6 +839,11 @@ Fix (Jake chose it, 26 Oct 2026): the water core (`UnderBlueWaterCore`, `FilterE
   - m1 dE 24.6 → 24.5, m6 26.5 → 26.6. Neutral surfaces, black gear, plants and grain are within 0.002 / 1 degree.
   - The harness `uniform` variant also moved (10.98 → 11.04). It calls combined() without `video: true`, so it is not the real video path here.
 - Cost: two more blurs per finishing call (both paths) on photos. iPhone time unmeasured.
+- Edge fix (Jake, 26 Oct 2026: subjects got rims again; m5 an aura, the napoleon wrasse a dark rim, rings around small fish). Next to a subject the 12 px blur holds the subject, so the water took its light or its dark. The core now runs only where the water share blurred at 36/1200 reaches 0.9 or more.
+  - Largest change against no core: O2 47 → 7, m5 255 → 132 (p99 4 → 1). O4/m6 small-fish areas: p99 9 → 7.
+  - By eye, O2's fin blob is gone, and O2 matches the build from the morning of 26 Oct.
+  - Mottling: p3 1.03x (no core 1.69x), p2 2.10x. AquaColorFix photo 10.61 → 10.58.
+  - The manta edge's stair steps in O4 are in the source itself (JPEG blocks), not from the pipeline.
 
 ## Not in this plan
 

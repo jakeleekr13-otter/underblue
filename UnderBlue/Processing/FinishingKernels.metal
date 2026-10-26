@@ -322,13 +322,17 @@ static float calmGamma(float3 c) {
 
 // Water core (FilterEngine.waterCore, FinishingMath.waterCore): in water the weak part of the band between two blurs
 // (fine minus wide) comes off, before colour. The tone stage and the restored path would amplify it into blotches.
-// A stronger band (a faint fish or diver) stays. weight.g is the water share; core = (low, high, strength).
-[[stitchable]] float4 UnderBlueWaterCore(coreimage::sample_t source, coreimage::sample_t fine, coreimage::sample_t wide, coreimage::sample_t weight, float4 core) {
+// A stronger band (a faint fish or diver) stays. weight.g is the water share; around.g the share blurred wide, so the core
+// keeps away from subjects: next to one the wide blur holds the subject, and the water got its light or its dark (an aura
+// around m5's coral, a dark rim on the napoleon wrasse, rings around small fish; Jake, 26 Oct 2026).
+// core = (low, high, strength, the blurred share where the core starts).
+[[stitchable]] float4 UnderBlueWaterCore(coreimage::sample_t source, coreimage::sample_t fine, coreimage::sample_t wide, coreimage::sample_t weight, coreimage::sample_t around, float4 core) {
     const float3 luma = float3(0.2126f, 0.7152f, 0.0722f);
     const float3 band = fine.rgb - wide.rgb;
     const float relative = fabs(dot(band, luma)) / max(dot(wide.rgb, luma), 1e-4f);
     const float weak = 1.0f - smoothstep(core.x, max(core.y, core.x + 1e-5f), relative);
-    const float3 out = source.rgb - band * (weak * core.z * clamp(weight.g, 0.0f, 1.0f));
+    const float open = smoothstep(core.w, 1.0f, around.g);
+    const float3 out = source.rgb - band * (weak * core.z * clamp(weight.g, 0.0f, 1.0f) * open);
     return all(isfinite(out)) ? float4(out, source.a) : source;
 }
 

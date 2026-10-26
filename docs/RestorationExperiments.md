@@ -681,6 +681,34 @@ Bench: `particle-bench/chain.swift` (build `build_chain.sh`). Colour is the app'
 - The added time per frame is about the same at 1080p and 4K (36 ms). So it is likely a wait for the GPU in the filter, not the pixel work. Not checked.
 - Decision (Jake, 26 Oct 2026): off by default (`VideoExporter(removesParticles:)` false). Turn it on when the cost is down to about +20% time and +100 MB. Photo particles come first.
 
+### D3 — photo particles (started 26 Oct 2026)
+
+Jake (26 Oct 2026): photo particles matter more than video. Photos he gave: `licese-free-images/candidates/pexels-carlos-jamaica-173742194-11061223.jpg` (p1, divers and bubble columns), `licese-free-images/joan-li-Cua2o7Yc8YM-unsplash.jpg` (p2, wreck in blue water), `eval/real/IMG_7260.JPG` (p3 = r08, turtle), `eval/real/IMG_7262.JPG` (p4 = r14, batfish).
+
+What the photos show (1920 px renders, 100% crops):
+- The main type is the soft round orb: out-of-focus backscatter, about 10-15 px across at 1920 px, a few levels brighter than the water. p2 and p1 have them.
+- p1's bubble columns are bright, sharp, clustered groups. They must stay.
+- p3 has thin diagonal streaks (about 20-30 px long, 1-2 px wide). Our output widens and softens them; about as visible.
+- Our water shows a cloudy, blotchy texture on p2, p3 and p4; on p2 the blotches look like more orbs. Not checked.
+
+D1's pair measure (each isolated group of the original, its peak in our output over its peak in the original):
+
+| Photo | Groups | Median ratio | p90 |
+|---|---|---|---|
+| p1 | 604 | 0.98 | 1.22 |
+| p2 | 40 | 1.52 | 1.79 |
+| p3 | 25 | 0.44 | 1.35 |
+| p4 | 60 | 0.33 | 1.32 |
+
+Which steps lift the orbs (p2, median ratio): ours 1.52; legacy path 1.41; physical restoration alone 1.07; finished restored path 1.75. Legacy path with one stage off: tone 1.17, water tone 1.19, cast 1.22, local stages 1.28, all finishing off 1.13. So the lift is spread over the contrast and colour steps: it is what the correction does, not one fault. Removal before colour is the way.
+
+First prototype (Python, scratchpad `orbs.py`): on the source luma, peaks of a band filter (Gaussian 3 px minus 10 px) above max(1, 1.2 x local noise) and below 30 levels; in water (colour share 0.6 or more), off the Vision subject mask; a flat ring at 10 px (spread below half the peak); round (half-max region fills 55% or more of its box, 320 px at most). Fill: the mean of a ring at 1.3 x the radius, blended over a soft disc. The filled photo then goes through our harness.
+- Found: p1 48, p2 20, p3 9, p4 16.
+- By eye: filled orbs are gone in our output (p2 upper left, p1 open water), and p1's bubble columns stay.
+- Misses: several faint orbs on p2. Risks: small lone bright dots next to p1's bubble columns, one spot next to a diver's arm, one on p2's wreck.
+
+Next: better recall on faint orbs, with checks for subjects and bubbles kept; then a kernel on the photo path before colour, and its cost.
+
 ## Not in this plan
 
 - A particle remover for photos. D measures first.

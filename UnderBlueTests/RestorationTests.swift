@@ -1187,6 +1187,19 @@ final class RestorationTests: XCTestCase {
         XCTAssertNil(RestorationEngine.videoObjectColourValues(pixels: Array(pixels.prefix(250)), depth: Array(depth.prefix(250)), redLoss: 0.6))
     }
 
+    func testDepthTrustFollowsTheAgreementOfDepthAndColour() {
+        // A reef frame: the far half is water by both depth and colour. Full trust.
+        let depth = (0..<400).map { Float($0 % 20) / 19 }
+        let agree = depth.map { $0 > 0.5 ? Float(0.95) : 0.1 }
+        XCTAssertEqual(RestorationEngine.depthTrust(depth: depth, share: agree), 1, accuracy: 1e-6)
+        // Open water: colour calls almost everything water, and depth invents a gradient. No trust.
+        let open = depth.indices.map { Float(0.9 + 0.05 * Double(($0 * 7) % 3) / 2) }
+        XCTAssertEqual(RestorationEngine.depthTrust(depth: depth, share: open), 0, accuracy: 1e-6)
+        // A flat depth map or a flat share carries no layout: no trust.
+        XCTAssertEqual(RestorationEngine.depthTrust(depth: [Float](repeating: 0.5, count: 400), share: agree), 0)
+        XCTAssertEqual(RestorationEngine.depthTrust(depth: depth, share: [Float](repeating: 1, count: 400)), 0)
+    }
+
     func testVideoObjectColourValuesMixLikeTheSceneFade() {
         typealias V = RestorationEngine.VideoObjectColourValues
         let a = V(waterAB: SIMD2(-0.05, -0.05), waterExcess: 0.02, redFromGreen: 2)

@@ -472,9 +472,9 @@ Cost on iPhone: one map at depth-map size and one small blur. Depth and the Visi
   - r15: Jake accepted the diver on 20 Oct 2026.
 - So the water tone, white reference and local veil switches have no visible target. B2 stops here; the depth trust rule is recorded for later use.
 
-## Pink ring around the sun (measured 25 Oct 2026, not fixed)
+## Pink ring around the sun (measured 25 Oct 2026, fixed 26 Oct 2026)
 
-Seen on the Tune_25_Oct clip stills v1 and v3 (hammerheads, sun in frame). It was there before A2.
+Seen on the Tune_25_Oct clip stills v1 and v3 (hammerheads, sun in frame). The 25 Oct note said it was there before A2. That was wrong; see "Cause and fix" below.
 
 Measure: median OKLab a (x1000; negative = green, toward 0 = less green, then pink) by distance from the sun, as a share of the width. A share of "pink" pixels (hue 300-40) read 0% on these frames, so it misses the faint ring. On DSC03656 it caught pink coral instead.
 
@@ -489,6 +489,25 @@ Measure: median OKLab a (x1000; negative = green, toward 0 = less green, then pi
 - v3_30: the same pattern, weaker (photo -90 against legacy -94 at 0.05-0.15).
 - Neither path alone makes it. The legacy filter with any one stage switched off stays at -68 to -70. So the shift comes from the combination: most likely the finishing step on the physically restored image (`filter.finishing(physicallyRestored, …)`), which no variant shows on its own. Not checked yet.
 - Next: render that finished restored path as its own variant, and switch its stages off one at a time.
+
+### Cause and fix (26 Oct 2026)
+- Harness: `HT_EVAL_RESTORED_ABLATE=1` adds `finrest` (the finished restored path alone) and `rab_<stage>` (one stage off in the restored values). v1_30 near the sun: legacy -74, finished restored -72, combined -10. So the shift comes after the two paths meet.
+- Pre-A2 sources (09c99b4): v1_30 combined -72, v1_70 -75. **A2 makes the pink on v1.** v3 reads -90 before and after, so v3's look is a separate matter (below).
+- Mechanism: A2 step 2 adds red where depth reads near. In open water depth invents a layout: by the sun it read 0.69-0.77, so the sunlit water got red. The video rule (colour weight) left it as it was (-63 before and after).
+- Fix: photo step 2 uses the depth trust rule (B2). Below a trust of 0.5 it takes the video rule (red by colour distance from the water) on the frame after step 1. Step 1 keeps its own gates, so O6's chart fix stays.
+- Result: v1_30 -72, v1_70 -75 near the sun, as before A2. The guards are unchanged to the last digit: m5 11.0, m6 26.5, O6 chart 0.010, AquaColorFix 10.53 (pairs 1-6), grain, plants, black gear.
+
+### The sharp edge of the bright area (Jake, 26 Oct 2026: brightness is fine, the edge is too sharp)
+- First tried the brightness: our sunlit water is about +0.08 L brighter, but across the whole water, not only near the sun. The fall-off from the sun keeps the original's shape. Keeping each water pixel's luminance, then its OKLab L, after the water tone changed it by 0.02 at most. Reverted.
+- The edge is a chroma step. v3_70 chroma by distance from the sun (share of width 0.10 / 0.20 / 0.25 / 0.30 / 0.40): original 0.154 / 0.152 / 0.146 / 0.145 / 0.136, ours 0.099 / 0.100 / 0.111 / 0.122 / 0.099. A pale disc inside a bluer ring. With the red rebuild off, the legacy path reads 0.124 flat.
+- Cause: green and blue both clip in the blown-out disc (17-21% of v3), so their ratio reads 1 and the rebuild's hue gate opens fully there. The ratio drops quickly where the clipping ends, which draws the ring.
+- Ruled out: the "brighter than the water" test (waterLit 0: no change), and the video open-water rule for photos (`openWaterRed`'s rebuild part: no change).
+- Fix (`UnderBlueFinishColor`, mirror `FinishingMath.color`): the rebuild fades out as the smaller of the source's green and blue goes from 0.7 to 1.
+  - Fading on the brightest channel instead put new steps into v1, whose blue clips alone (v1_70 photo 0.043 to 0.092 across the edge).
+  - Fade start: 0.6 left the m5 chart a little less grey; 0.8 brought a dip back on v3. 0.7 is between.
+- Result, v3_70 chroma at the same distances: photo 0.133 / 0.129 / 0.124 / 0.129 / 0.107, video 0.132 / 0.128 / 0.121 / 0.123 / 0.111. v1 is unchanged.
+- Guards, against the state before: r14 sand grain 1.72x to 1.61x (video 1.59x to 1.32x); m5 chart grey row photo 0.009 to 0.010, video 0.043 to 0.055 (Sea-thru 0.079). The rest is unchanged.
+- By eye: v3_70's disc is cyan like the original, with a much softer edge. A faint pinkish rim stays at the outer edge on v3_30 (photo) and at the lower edge of v1's bright area. Not fixed.
 
 ### Too-bright sunlit areas in clips (Jake, 25 Oct 2026: "the bright parts are too bright and do not blend naturally")
 
@@ -508,7 +527,7 @@ Measured on the same stills, 960 px. OKLab L median by distance from the sun (sh
 - v1: we lift the sunlit water by about 0.10 L, so the area near the sun turns flat and whitish.
 - v3: the source is already blown out (17.5-21.5% clipped). We keep the flat plateau, and it ends in a 0.09 drop instead of a soft fall-off.
 - The photo path (`combined`) matches the video path within 0.02 here.
-- Cause not checked. Look at it together with the pink ring: both sit in the same sunlit area. Candidates: the tone curve and mid lift on bright water, the highlight shoulder, and the shadow/highlight filter.
+- Followed up on 26 Oct 2026: see "The sharp edge of the bright area" above.
 
 ## Stage D — floating particles
 

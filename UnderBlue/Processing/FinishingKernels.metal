@@ -75,7 +75,12 @@ using namespace metal;
     const float hue = smoothstep(red.y, red.z, greenBlue) * (1.0f - smoothstep(1.35f, 2.2f, greenBlue));
     const float subject = smoothstep(red.w, red.w + 0.3f, c.r / max(c.g, 1e-4f));
     // Rebuilt red stops at shape.z times green, so grey subjects stay grey.
-    c.r += min(max(red.x, 0.0f) * c.g * hue * (0.6f + 0.4f * subject), max(0.0f, c.g * shape.z - c.r));
+    // Where green and blue both clip in the source, their ratio reads 1 whatever the colour was, so the gate opened
+    // fully on the blown-out disc around the sun and drew a sharp ring where the clipping ended (hammerhead clips,
+    // 26 Oct 2026). The rebuild fades out as both near clipping, which follows the light's own soft fall-off. Blue
+    // alone clipping (deep blue water) keeps it: fading on the brightest channel put new steps into that water.
+    const float unclipped = 1.0f - smoothstep(0.7f, 1.0f, min(input.g, input.b));
+    c.r += min(max(red.x, 0.0f) * c.g * hue * (0.6f + 0.4f * subject) * unclipped, max(0.0f, c.g * shape.z - c.r));
     float surface = (1.0f - waterLike * (1.0f - bright))
         * smoothstep(0.04f, 0.16f, dot(input, float3(0.2126f, 0.7152f, 0.0722f)));
     surface *= 1.0f - smoothstep(0.8f, 0.9f, dot(input, float3(-0.124550f, 1.132900f, -0.008349f)));

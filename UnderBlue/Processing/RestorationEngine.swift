@@ -305,6 +305,7 @@ final class RestorationEngine: Sendable {
         // water tone turned the unrestored cyan green (28 Sep 2026, O3: hue 150 -> 200).
         // A constant-depth plan (video, one depth per scene) keeps one weight for the frame.
         let weight = values.restored.physicalWeight
+        let currentValues = values.current
         let values = plan.depth.values
         guard let nearest = values.min(), let farthest = values.max(), farthest - nearest > 0.05,
               let depthBlendKernel else {
@@ -318,7 +319,9 @@ final class RestorationEngine: Sendable {
         let finishedFrame = filter.violetCalm(lifted(blended, subjectLift, filter, share, liftSignal), source: image, calmWeight: calm)
         // Photos only: video holds one depth per scene, so it never reaches this path, and the flag keeps it out too.
         guard !video else { return finishedFrame }
-        return objectColour(finishedFrame, plan: plan, depth: depth, redLoss: settings.analysis.redLoss, context: filter.context)
+        let trust = depthTrust(image, plan: plan, correction: currentValues, filter: filter)
+        return objectColour(finishedFrame, plan: plan, depth: depth, redLoss: settings.analysis.redLoss, context: filter.context,
+                            depthTrust: trust)
     }
 
     /// The values of the object colour step (docs/RestorationExperiments.md, A2): made from the frame itself, at
@@ -374,20 +377,61 @@ final class RestorationEngine: Sendable {
     }
 
     /// Object colour step (UnderBlueObjectColour): reads the frame at depth-map size, makes the values, applies them.
-    func objectColour(_ frame: CIImage, plan: RestorationPlan, depth: CIImage, redLoss: Float, context: CIContext) -> CIImage {
+    /// `depthTrust` (RestorationEngine.depthTrust): below half, depth does not show where the water is (open water), so
+    /// step 2 takes the video rule: red by colour distance from the water, not by depth. Sunlit water near the sun read
+    /// near (depth 0.69-0.77) on the hammerhead clip stills and turned pink with the depth rule (26 Oct 2026).
+    func objectColour(_ frame: CIImage, plan: RestorationPlan, depth: CIImage, redLoss: Float, context: CIContext,
+                      depthTrust: Float = 1) -> CIImage {
         guard let objectColourKernel else { return frame }
         let dw = plan.depth.width, dh = plan.depth.height
         guard dw > 0, dh > 0, frame.extent.width > 0, frame.extent.height > 0 else { return frame }
         let pixels = Self.workingPixels(frame, width: dw, height: dh, context: context)
-        let values = Self.objectColourValues(pixels: pixels, depth: plan.depth.values, redLoss: redLoss)
-        guard values.strength > 0 || values.redFromGreen > 0 else { return frame }
+        var values = Self.objectColourValues(pixels: pixels, depth: plan.depth.values, redLoss: redLoss)
+        var colourRule: VideoObjectColourValues?
+        if depthTrust < 0.5, values.redFromGreen > 0 {
+            // Step 2 by colour, on the frame after step 1's gains.
+            let gains = values.gains
+            let stepped = pixels.map { FinishingMath.sRGBToRec2020 * (FinishingMath.rec2020ToSRGB * $0 * gains) }
+            colourRule = Self.videoObjectColourValues(pixels: stepped, depth: plan.depth.values, redLoss: redLoss)
+            values.redFromGreen = 0
+        }
+        guard values.strength > 0 || values.redFromGreen > 0 else {
+            return colourRule.map { videoObjectColour(frame, values: $0) } ?? frame
+        }
         func row(_ m: simd_float3x3, _ i: Int) -> CIVector { CIVector(x: CGFloat(m[0][i]), y: CGFloat(m[1][i]), z: CGFloat(m[2][i]), w: 0) }
         let to = FinishingMath.rec2020ToSRGB, from = FinishingMath.sRGBToRec2020
         let output = objectColourKernel.apply(extent: frame.extent, arguments: [frame, depth,
             row(to, 0), row(to, 1), row(to, 2), row(from, 0), row(from, 1), row(from, 2),
             CIVector(x: CGFloat(values.gains.x), y: CGFloat(values.gains.y), z: CGFloat(values.gains.z), w: CGFloat(values.redFromGreen)),
             CIVector(x: CGFloat(FinishingMath.objectNearFull), y: CGFloat(FinishingMath.objectNearNone), z: CGFloat(values.waterExcess), w: 0)])
-        return (output ?? frame).cropped(to: frame.extent)
+        let stepOne = (output ?? frame).cropped(to: frame.extent)
+        return colourRule.map { videoObjectColour(stepOne, values: $0) } ?? stepOne
+    }
+
+    /// How far the depth map can be trusted as a water map (docs/RestorationExperiments.md, B2): the correlation of
+    /// depth with the colour water share at depth-map size. Where they agree on the layout (reef, wreck, diver: 0.65
+    /// to 0.91) depth is right; in open water depth invents a layout (r13 0.11, clip stills -0.40 to 0.36).
+    static func depthTrust(depth: [Float], share: [Float]) -> Float {
+        guard depth.count == share.count, depth.count > 100 else { return 0 }
+        let n = Float(depth.count)
+        let md = depth.reduce(0, +) / n, ms = share.reduce(0, +) / n
+        var sdd: Float = 0, sss: Float = 0, sds: Float = 0
+        for (d, w) in zip(depth, share) where d.isFinite && w.isFinite {
+            sdd += (d - md) * (d - md); sss += (w - ms) * (w - ms); sds += (d - md) * (w - ms)
+        }
+        guard sdd > 1e-6, sss > 1e-6 else { return 0 }
+        let t = min(1, max(0, (sds / (sdd * sss).squareRoot() - FinishingMath.depthTrustLow) / (FinishingMath.depthTrustHigh - FinishingMath.depthTrustLow)))
+        return t * t * (3 - 2 * t)
+    }
+
+    /// depthTrust for a frame: the colour water share made on the frame scaled to the depth map, so it costs one small render.
+    func depthTrust(_ image: CIImage, plan: RestorationPlan, correction: ColorCorrection, filter: FilterEngine) -> Float {
+        let dw = plan.depth.width, dh = plan.depth.height
+        guard dw > 0, dh > 0, !image.extent.isEmpty,
+              let share = filter.waterShare(FilterEngine.downscaled(image, maxPixel: CGFloat(max(dw, dh)) * 2), correction: correction)
+        else { return 0 }
+        let shares = Self.workingPixels(share, width: dw, height: dh, context: filter.context).map(\.x)
+        return Self.depthTrust(depth: plan.depth.values, share: shares)
     }
 
     /// The frame scaled to `width` x `height`, as linear Rec.2020 pixels (row 0 on top, as the depth map).

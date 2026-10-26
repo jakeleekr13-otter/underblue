@@ -47,7 +47,9 @@ enum FinishingMath {
         let greenBlue = c.y / max(c.z, 1e-4)
         let hue = smoothstep(v.redGateLow, v.redGateHigh, greenBlue) * (1 - smoothstep(1.35, 2.2, greenBlue))
         let subject = smoothstep(v.subjectRed, v.subjectRed + 0.3, c.x / max(c.y, 1e-4))
-        let rebuilt = max(v.redRebuild, 0) * c.y * hue * (0.6 + 0.4 * subject)
+        // No rebuild where green and blue both clip in the source (UnderBlueFinishColor).
+        let unclipped = 1 - smoothstep(0.7, 1, min(input.y, input.z))
+        let rebuilt = max(v.redRebuild, 0) * c.y * hue * (0.6 + 0.4 * subject) * unclipped
         c.x += min(rebuilt, max(0, c.y * v.redCeiling - c.x))
         if v.referenceStrength > 0 {
             let shown = pointwiseMax(display(referenceInput ?? input), .zero) * v.referenceGains
@@ -261,6 +263,10 @@ enum FinishingMath {
     /// the water's 99th-percentile change is 1.2 dE76 at most on the test stills, and the O4/m6 reef keeps most of the
     /// photo rule's red (hue 114 against 108). Step 1 stays off in video: on the video path it greyed v5_70.
     static let objectWaterDistanceLow: Float = 0.05, objectWaterDistanceHigh: Float = 0.10
+    /// Depth trust (RestorationEngine.depthTrust): correlation of depth with the colour water share, none at the low
+    /// end, full at the high end. Measured 25 Oct 2026: 0.65 to 0.91 where depth separates subject and water, -0.40
+    /// to 0.36 in open water.
+    static let depthTrustLow: Float = 0.45, depthTrustHigh: Float = 0.6
     /// Object colour constants (docs/RestorationExperiments.md, A2, 25 Oct 2026). Water sits at depth 0.97 or more in
     /// every test photo; the O4 reef spans 0 to 0.96. objectRedK x redLoss is the red from green.
     static let objectNearFull: Float = 0.6, objectNearNone: Float = 0.9, objectRedK: Float = 3

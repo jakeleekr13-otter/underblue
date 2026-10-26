@@ -709,7 +709,7 @@ What the photos show (1920 px renders, 100% crops):
 - The main type is the soft round orb: out-of-focus backscatter, about 10-15 px across at 1920 px, a few levels brighter than the water. p2 and p1 have them.
 - p1's bubble columns are bright, sharp, clustered groups. They must stay.
 - p3 has thin diagonal streaks (about 20-30 px long, 1-2 px wide). Our output widens and softens them; about as visible.
-- Our water shows a cloudy, blotchy texture on p2, p3 and p4; on p2 the blotches look like more orbs. Not checked.
+- Our water shows a cloudy, blotchy texture on p2, p3 and p4; on p2 the blotches look like more orbs. Checked on 26 Oct 2026 (below, "Water mottling").
 
 D1's pair measure (each isolated group of the original, its peak in our output over its peak in the original):
 
@@ -805,6 +805,28 @@ Small fish: the blocker, and the cap:
 - Finds at 8: p1-p4 20/46/13/13; O1-O6 23/0/8/12/18/1.
 
 Open: the cost on the iPhone (20 MP and 48 MP).
+
+### Water mottling (26 Oct 2026, measured; not fixed)
+
+Measure: in water (share 0.8 or more, off edges), the std of the luma band Gaussian 3 px minus 12 px, as a share of the 12 px mean (1920 px). Ratio over the original.
+
+| Path | p2 | p3 | p4 |
+|---|---|---|---|
+| ours (photo) | 2.16x | 1.69x | 0.75x |
+| legacy path | 1.80x | 1.18x | 0.79x |
+| legacy path, tone stage off | 1.07x | 0.89x | 0.92x |
+| finished restored path alone | 5.83x | 2.33x | 0.53x |
+
+- Two sources:
+  - The tone stage (S-curve around the scene median) amplifies small brightness changes, because the water sits near the median.
+  - The restored path makes them larger again. Removing the backscatter leaves less light, so the same unevenness becomes a larger share of it.
+- p4 (deep dark water) is not mottled.
+- Tried: a wider water calm blur (`calmBlurRadius` 3 → 8 or 12 / 1200 of the short side).
+  - p3 1.69x → 1.01x (8) / 0.67x (12). p2 2.16x → 1.98x / 1.65x.
+  - IMG_7400's rays, DSC03656 and v1_30 looked unchanged at 8.
+  - But at 8 a faint distant hammerhead on v3_30 (1920 px) was blurred away: a faint silhouette passes the flatness test. Not kept.
+- Band strength in the source (median / p90 / p99, % of the local mean): p3 flat water 0.50 / 1.24 / 2.15; p2 flat water 0.74 / 2.96 / 8.30; the faint v3 shark 1.12 / 5.32 / 7.85. So a soft threshold near 2-3% would take p3's blotches and keep the shark's body, but thin its faint edges.
+- Next idea, not tried: shrink only the weak part of that band in water (a soft threshold, before colour).
 
 ## Not in this plan
 

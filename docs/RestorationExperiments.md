@@ -707,7 +707,28 @@ First prototype (Python, scratchpad `orbs.py`): on the source luma, peaks of a b
 - By eye: filled orbs are gone in our output (p2 upper left, p1 open water), and p1's bubble columns stay.
 - Misses: several faint orbs on p2. Risks: small lone bright dots next to p1's bubble columns, one spot next to a diver's arm, one on p2's wreck.
 
-Next: better recall on faint orbs, with checks for subjects and bubbles kept; then a kernel on the photo path before colour, and its cost.
+Rounds 2-5 (26 Oct 2026, scratchpad `orbs2.py`, `orbs_eval.py`). Harness: `HT_EVAL_RENDER_DIR` renders an edited copy of the source with the source's own analysis and plan (`altcombined`), so only the edit differs. Without it the edited copy changed the analysis, and 45% of p2's pixels moved.
+
+| Round | Change | Spots removed p1 / p2 / p3 / p4 | By eye |
+|---|---|---|---|
+| 2 | Sizes 2, 3, 4.5 px; threshold 2.5 x the local band spread; no bubble clusters | 310 / 190 / 91 / 87 | Flat patches on p1's reef, small bubbles erased |
+| 3 | Sizes 3, 4.5, 6.5 px; smooth background (ring spread at most 2 x the noise) | 129 / 98 / 57 / 44 | p2's water clean; p1's reef still patched |
+| 4 | Soft, not sharp (fine band at most 0.6 x the peak); depth must read far where depth is trusted | 37 / 64 / 15 / 10 | p1's bubbles all kept; one reef patch left |
+| 5 | Subtract only the smooth bump (per channel, Gaussian minus the ring mean) instead of a flat fill | 37 / 64 / 15 / 10 | No patch: the texture under a spot stays. p2's visible orbs gone, one faint one left |
+
+Round 5, scored on our output (orbs counted with the round 4 rules, water only, off the subject mask):
+
+| Photo | Orbs in ours | With the bump subtracted | Pixels changed > 3 |
+|---|---|---|---|
+| p1 | 63 | 40 | 4.98% |
+| p2 | 55 | 27 | 5.61% |
+| p3 | 9 | 12 | 0.13% |
+| p4 | 25 | 18 | 0.14% |
+
+- "Pixels changed" is mostly a 1-3 level reshuffle of the noise by the local steps (the difference map shows it as fine grain), not visible.
+- Depth trust (B2 rule) on these photos: p1 0.00, p2 0.00, p3 1.00, p4 1.00. So the depth gate protects p3 and p4 only; p1's reef is kept by the soft and smooth tests and by the bump subtraction.
+
+Next: the app. Plan: detect on the source at 1920 px (blurs on the GPU, the spot tests on the CPU), build the bump correction at that size, scale it up and subtract it from the source before colour. The analysis and the plan stay on the original. Photos only, preview and export alike, once per photo. Then the cost on the iPhone (20 MP and 48 MP).
 
 ## Not in this plan
 

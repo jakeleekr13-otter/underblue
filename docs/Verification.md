@@ -2,6 +2,23 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## Apple Log and ProRes RAW (26 Oct 2026, branch `apple-log`)
+
+What changed:
+- Apple Log and Apple Log 2 clips are decoded with the white paper curve (`AppleLog.swift`, `AppleLogKernels.metal`). Export, preview and analysis all decode. HDR export of a log clip writes HLG.
+- The iPhone app refuses ProRes RAW with its own message. The Mac app lets it through: the macOS decoder runs Apple's RAW processing with default settings (VTDecompressionProperties.h).
+
+Checked so far, on the simulator and the Mac with generated clips only:
+- The curve matches Apple's `AppleLogToLin` LUT at 10 points (`docs/Apple-log`).
+- Every frame path (AVAssetReader, AVVideoComposition, AVAssetImageGenerator) passes the log signal through unchanged, tagged as sRGB.
+- SDR export of a grey card: black 0.00, 18% grey 0.38, 90% white 0.71 (Log and Log 2). HDR export is HLG and passes `OutputValidator`.
+
+Still open:
+- Real clips: Apple Log ProRes (iPhone 15 Pro or later), Apple Log 2 in ProRes and in HEVC (iPhone 17 Pro). Check the tags, the look and the HDR export.
+- Look: 18% grey ends at 709 code 0.39. Apple's Rec. 709 LUT puts it at 0.53, so our mid-tones are darker before the colour correction. Judge on real footage.
+- ProRes RAW on the Mac: no sample yet (iPhone 17 Pro with external storage). Check that frames arrive developed, their colour tags, and the export.
+- The preview compositor encodes Rec. 709 with gamma 1.961 and the export render with 2.4. The same frame reads 0.31 in the preview and 0.38 in the export. This applies to every video, not only log. Not checked on a display.
+
 ## m5 white band at the top (25 Oct 2026, iPhone, `main`)
 
 Jake saw a white band along the top of m5 (`DeveloperMedia/eval/market/raw/m5.png`). He used the iPhone app built from `main`.

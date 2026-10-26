@@ -11,7 +11,7 @@ enum Operation: String, Codable, Sendable {
 
 struct Failure: Error, Codable, Sendable, Equatable {
     enum Kind: String, Codable, Sendable {
-        case cancelled, storage, permission, network, unreadable, unsupported, temporarilyUnavailable
+        case cancelled, storage, permission, network, unreadable, unsupported, proResRAW, temporarilyUnavailable
         case exportFailed, invalidOutput, trialUnavailable, storeUnavailable, thermal, memoryPressure
         case restorationFallback
     }
@@ -27,6 +27,7 @@ struct Failure: Error, Codable, Sendable, Equatable {
         case .network: String(localized: "This item may need to download from iCloud. Check your connection and try again.")
         case .unreadable: String(localized: "This media couldn’t be opened. Try another photo or video.")
         case .unsupported: String(localized: "This media format isn’t supported on this device.")
+        case .proResRAW: String(localized: "UnderBlue can’t edit ProRes RAW video. Record in ProRes or HEVC instead.")
         case .temporarilyUnavailable: String(localized: "The media service is temporarily busy. Wait a moment and try again.")
         case .exportFailed: String(localized: "The export couldn’t finish. Please try again.")
         case .invalidOutput: String(localized: "The exported file didn’t pass our quality checks. Nothing was saved.")
@@ -76,6 +77,7 @@ struct Failure: Error, Codable, Sendable, Equatable {
             switch appError {
             case .unreadable: kind = .unreadable
             case .unsupported: kind = .unsupported
+            case .proResRAW: kind = .proResRAW
             case .exportFailed: kind = .exportFailed
             case .permission: kind = .permission
             case .storage: kind = .storage

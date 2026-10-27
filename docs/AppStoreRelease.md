@@ -7,7 +7,7 @@ Last reviewed: 2026-10-27
 iPhone only. The Mac targets stay at 1.0 (1).
 
 - 1.1.6 (12) shipped on 26 Oct 2026. Its release note is in `AppStoreMetadata.md`.
-- 1.1.7 (13) is archived on this Mac and not uploaded. New since 1.1.6: less flicker in videos when the camera colour or brightness jumps, and even open water in murky photos.
+- 1.1.7 (13) is uploaded (Jake, 27 Oct 2026). New since 1.1.6: less flicker in videos when the camera colour or brightness jumps, and even open water in murky photos.
 - Release note: `AppStoreMetadata.md`, "What's New (1.1.7)". Checks: `Verification.md`, 26 and 27 Oct 2026.
 - Not fixed: the first 2 s of the napoleon clip stay pink (`Roadmap.md` 3.5).
 

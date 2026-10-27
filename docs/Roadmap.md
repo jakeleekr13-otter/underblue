@@ -6,7 +6,7 @@ This page only collects open work. Each row points to the document that holds th
 
 ## Where we are (27 Oct 2026)
 
-- iPhone 1.1.6 (12) shipped on 26 Oct 2026 (Jake). 1.1.7 (13) is next.
+- iPhone 1.1.6 (12) shipped on 26 Oct 2026 (Jake). 1.1.7 (13) is uploaded (Jake, 27 Oct 2026).
 - `main` is pushed. Changes since 1.1.6:
   - camera colour and brightness pulses in video ([ColorAlgorithm](ColorAlgorithm.md))
   - even water in murky open water photos
@@ -20,7 +20,7 @@ This page only collects open work. Each row points to the document that holds th
 | # | Work | State | Source |
 |---|---|---|---|
 | 1.1 | Release notes for 1.1.7: only the changes since 1.1.6 | Jake approved the English text (27 Oct). | [AppStoreMetadata](AppStoreMetadata.md) |
-| 1.2 | Upload the 1.1.7 archive | Waits for Jake. | — |
+| 1.2 | Upload the 1.1.7 archive | Done (Jake, 27 Oct 2026). | — |
 | 1.3 | Press-and-hold subject pick on the iPhone (U6) | Open. Jake checks. | [ManualSubject](ManualSubject.md) |
 | 1.4 | Labs orb switch: export takes about 4.5 s longer when on | Measured, not explained. Labs only, off by default. | [Verification](Verification.md) |
 | 1.5 | Jake's iPhone checks: jellyfish legs and fins clip 31% (source 23.6%); napoleon clip at 6.7 s, the red rise is smaller, not gone; shallow-water shark photo (3 Oct); subject strength slider drag | Open. Jake checks. If the slider still lags, cache the frame before the lift. | [Verification](Verification.md), [ManualSubject](ManualSubject.md) |

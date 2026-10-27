@@ -1,8 +1,17 @@
 # App Store release checklist
 
-Last reviewed: 2026-10-23
+Last reviewed: 2026-10-27
 
-## Current release: iPhone 1.1.4 (build 10), 23 Oct 2026
+## Current release: iPhone 1.1.7 (build 13), 27 Oct 2026
+
+iPhone only. The Mac targets stay at 1.0 (1).
+
+- 1.1.6 (12) shipped on 26 Oct 2026. Its release note is in `AppStoreMetadata.md`.
+- 1.1.7 (13) is archived on this Mac and not uploaded. New since 1.1.6: less flicker in videos when the camera colour or brightness jumps, and even open water in murky photos.
+- Release note: `AppStoreMetadata.md`, "What's New (1.1.7)". Checks: `Verification.md`, 26 and 27 Oct 2026.
+- Not fixed: the first 2 s of the napoleon clip stay pink (`Roadmap.md` 3.5).
+
+## iPhone 1.1.4 (build 10), 23 Oct 2026 (history)
 
 iPhone only. The Mac targets stay at 1.0 (1) and were not checked for this build.
 

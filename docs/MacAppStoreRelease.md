@@ -151,6 +151,25 @@ Source: the guidelines page, read on 20 Oct 2026 up to character 100000 of 11442
 | 2.1(b) IAP visible | Open. The review notes must name the menu item (see Part C). |
 | 2.1(a) no placeholders | Pass for the icon: the final Icon Composer icon since 24 Oct 2026. |
 
+## Hardening
+
+Jake (26 Oct 2026): do this before the next Mac build. Mac App Store binaries have no encryption. On this Mac, Magnet and Input Recorder had 0 `LC_ENCRYPTION` load commands. So a download alone exposes the binary and `default.metallib`.
+
+Steps:
+
+1. Build a real archive (Mac). Measure `strings`, `nm` and the metallib.
+2. Set Release `SWIFT_REFLECTION_METADATA_LEVEL = none`. Test SwiftUI, `@Observable` and Codable after the change.
+3. Rename the stitchable kernels and their arguments to meaningless names. The math stays in the IR (AIR). Only the meaning is hidden.
+
+Measured on the iPhone 1.1.7 (13) archive (27 Oct 2026). The Mac archive is not measured yet.
+
+| Check | Result |
+|---|---|
+| `nm -U` (defined symbols) | 1 (`__mh_execute_header`). The archive strips symbols. The 23 Oct Release build had 374 `ColorCorrection` symbols; the archive has 0. |
+| Swift field names (`waterRedness`, `redCeiling`, `violetGuard`, `physicalWeight`, `lightGradient`) | All 5 are in the binary. `__swift5_reflstr` is 9,816 bytes, `__swift5_fieldmd` 13,540 bytes. Step 2 is still needed. |
+| `default.metallib` (183,700 bytes) | Kernel names (`UnderBlueRestoration`, `UnderBlueFinishColor`) and argument names (`betaDirect`, `betaBackscatter`, `recoverability`, `backscatter`) are in it. Step 3 is still needed. |
+| `LC_ENCRYPTION_INFO_64` | `cryptid 0` in the archive. The App Store copy was not checked. |
+
 ## Open items for Jake
 
 1. Approve the English metadata draft (part 2 of 3 next, then part 3).

@@ -23,6 +23,8 @@ This page only collects open work. Each row points to the document that holds th
 | 1.2 | Upload the 1.1.7 archive | Waits for Jake. | — |
 | 1.3 | Press-and-hold subject pick on the iPhone (U6) | Open. Jake checks. | [ManualSubject](ManualSubject.md) |
 | 1.4 | Labs orb switch: export takes about 4.5 s longer when on | Measured, not explained. Labs only, off by default. | [Verification](Verification.md) |
+| 1.5 | Jake's iPhone checks: jellyfish legs and fins clip 31% (source 23.6%); napoleon clip at 6.7 s, the red rise is smaller, not gone; shallow-water shark photo (3 Oct); subject strength slider drag | Open. Jake checks. If the slider still lags, cache the frame before the lift. | [Verification](Verification.md), [ManualSubject](ManualSubject.md) |
+| 1.6 | Offer code redemption: in the app, by URL while the app is closed, and an invalid code | Open. By hand with a sandbox offer code. | [Verification](Verification.md) |
 
 ## 2. Mac app 1.0 release (next)
 
@@ -30,7 +32,7 @@ Order matters. The hardening changes the binary, so it comes before the archive 
 
 | # | Work | State | Source |
 |---|---|---|---|
-| 2.1 | Hardening: archive, measure `strings`/`nm`/metallib, turn off Swift reflection names, rename Metal kernels | Jake: do it before the next Mac build. | memory `reverse-engineering-hardening` |
+| 2.1 | Hardening: archive, measure `strings`/`nm`/metallib, turn off Swift reflection names, rename Metal kernels | Jake: do it before the next Mac build. The iPhone 1.1.7 archive is measured: the archive strips symbols; field names and Metal names stay. | [MacAppStoreRelease](MacAppStoreRelease.md#hardening) |
 | 2.2 | Mac archive, then signed-build checks: folder write after relaunch, Finder share menu, Pro after relaunch, Restore Purchase | Open. | [MacAppStoreRelease](MacAppStoreRelease.md) |
 | 2.3 | Labs orb switch redraws the Mac preview | Jake: check before the Mac archive. | [Verification](Verification.md) |
 | 2.4 | Metadata parts 2 and 3, IAP display name and description | Waits for Jake's review. | [MacAppStoreRelease](MacAppStoreRelease.md) |
@@ -47,6 +49,7 @@ Order matters. The hardening changes the binary, so it comes before the archive 
 | 3.3 | Preview and export use different gamma (1.961 and 2.4) | The same frame reads 0.31 and 0.38. Not checked on a display. | [Verification](Verification.md) |
 | 3.4 | Particle filter for video | Off by default. Jake: record only for now. Turn on at about +20% time and +100 MB. | [RestorationExperiments](RestorationExperiments.md) D2 |
 | 3.5 | Napoleon clip, first 2 s: the fish is pink, then grey at 1.5 s | Jake saw it (27 Oct). Old behaviour. The clip starts facing the surface, and the water holds red until 1.4 s. The analysis made two one-keyframe scenes (0 s, 1.06 s). The colour track cannot fix a start state. Jake: ship 1.1.7 without it. | [ColorAlgorithm](ColorAlgorithm.md) |
+| 3.6 | Preview speed on older iPhones and on a hot iPhone (thermal state 2 or higher) | Not measured. The 30 M px/s budget comes from one iPhone 17. | [Verification](Verification.md) |
 
 ## 4. Photo quality (open, no plan yet)
 
@@ -64,6 +67,7 @@ Order matters. The hardening changes the binary, so it comes before the archive 
 | 5.1 | LUT presets (fixed pool, auto pick) | Jake is not sure it is needed (26 Oct). Nothing built. | [LUTPresets](LUTPresets.md) |
 | 5.2 | iPhone Duo, stage 2 | Waits for Xcode 27.1. | [iPhoneDuoSupportPlan](iPhoneDuoSupportPlan.md) |
 | 5.3 | ProRAW 48 MP and many 48 MP photos in one batch | Jake: accepted as open (26 Oct). | [Verification](Verification.md) |
+| 5.4 | "Changes waiting for the final round" (5 commits) | The list dates from 29 Sep. Not updated since. Jake: run the round, or close the list. | [Verification](Verification.md) |
 
 Decided against for now (Jake): finishing an export in the background, a call during export (follows the background rule), and Android.
 
@@ -71,5 +75,5 @@ Decided against for now (Jake): finishing an export in the background, a call du
 
 1. Section 1: ship 1.1.7. Most of it is Jake's steps.
 2. Section 2: the Mac release. The app is built, and the Mac price is the higher one ([MacApp](MacApp.md)).
-3. Section 3, starting with 3.2 when real Log clips exist.
+3. Section 3, starting with 3.3: users see one picture and save another. It needs only a check on a display. 3.2 waits for real Log clips.
 4. Sections 4 and 5 only when a real photo or a user asks for it.

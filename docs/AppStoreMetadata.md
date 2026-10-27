@@ -180,6 +180,34 @@ UnderBlue está pensada para los recuerdos del buceo recreativo. No es una herra
 
 **Spanish (Spain):** buceo,submarinismo,snorkel,fotosub,submarino,fotos,vídeo,arrecife,coral,corregir,filtro,restaurar (98 bytes)
 
+## What's New (1.1.7)
+
+**English:** Videos flicker less when the camera's colour or brightness jumps for a moment. In murky photos, open water now looks even, with no patches or halo around the subject.
+
+**Korean:** 카메라의 색이나 밝기가 잠깐 튈 때 동영상이 덜 깜빡입니다. 탁한 물 사진에서 열린 물이 이제 고르게 보이며, 얼룩이나 피사체 주변 후광이 생기지 않습니다.
+
+**Japanese:** カメラの色や明るさが一瞬変わるときの、ビデオのちらつきが少なくなりました。濁った水の写真では、開けた水がむらなく見え、まだらや被写体のまわりの光の輪が出なくなりました。
+
+**Simplified Chinese:** 当相机的颜色或亮度瞬间跳变时，视频闪烁更少。在浑浊水域的照片中，开阔水体现在看起来均匀，不再出现斑块或主体周围的光晕。
+
+**Traditional Chinese:** 當相機的色彩或亮度瞬間跳動時，影片閃爍更少。在混濁水域的照片中，開闊水體現在看起來均勻，不再出現斑塊或主體周圍的光暈。
+
+**Spanish (Spain):** Los vídeos parpadean menos cuando el color o el brillo de la cámara cambian un instante. En las fotos con agua turbia, el agua abierta ahora se ve uniforme, sin manchas ni halo alrededor del sujeto.
+
+## What's New (1.1.6)
+
+**English:** More natural colour on nearby reefs and subjects, smoother water, and a softer edge around the sun. Bright sand no longer looks blotchy. Large photos up to 48 MP now export reliably, and 20 MP photos export about twice as fast. Apple Log videos are now supported. New in Labs: remove backscatter spots, and press and hold to pick a subject.
+
+**Korean:** 가까운 산호초와 피사체의 색이 더 자연스러워졌고, 물은 더 매끄럽게, 태양 주변의 경계는 더 부드럽게 보입니다. 밝은 모래가 얼룩져 보이던 문제도 고쳤습니다. 최대 48MP의 큰 사진도 안정적으로 내보내고, 20MP 사진은 약 두 배 빠르게 내보냅니다. 이제 Apple Log 동영상을 지원합니다. 실험실 새 기능: 부유물 점 지우기, 피사체를 길게 눌러 선택하기.
+
+**Japanese:** 近くのサンゴ礁や被写体の色がより自然になり、水はより滑らかに、太陽のまわりの境目はより柔らかくなりました。明るい砂がまだらに見える問題も直しました。最大48MPの大きな写真も安定して書き出せるようになり、20MPの写真は約2倍速く書き出せます。Apple Logのビデオに対応しました。ラボの新機能：浮遊物の丸い点を消す、被写体を長押しして選ぶ。
+
+**Simplified Chinese:** 近处珊瑚礁和主体的色彩更加自然，水体更加平滑，太阳周围的边缘也更加柔和。修复了明亮沙地看起来斑驳的问题。最高 48MP 的大尺寸照片现在可以稳定导出，20MP 照片的导出速度提升约一倍。现已支持 Apple Log 视频。实验室新功能：去除悬浮颗粒光斑，长按主体即可选择。
+
+**Traditional Chinese:** 近處珊瑚礁和主體的色彩更加自然，水體更加平滑，太陽周圍的邊緣也更加柔和。修正了明亮沙地看起來斑駁的問題。最高 48MP 的大尺寸照片現在可以穩定匯出，20MP 照片的匯出速度提升約一倍。現已支援 Apple Log 影片。實驗室新功能：去除懸浮顆粒光斑，長按主體即可選擇。
+
+**Spanish (Spain):** Color más natural en arrecifes y sujetos cercanos, agua más uniforme y un borde más suave alrededor del sol. La arena clara ya no se ve con manchas. Las fotos grandes de hasta 48 MP ahora se exportan de forma fiable, y las de 20 MP se exportan aproximadamente el doble de rápido. Ahora se admiten vídeos Apple Log. Novedades en Laboratorio: quitar manchas de partículas y mantener pulsado un sujeto para elegirlo.
+
 ## What's New (1.1.4)
 
 **English:** Faster, more reliable video export with fewer rings around fish, and more natural reef colours in JPEG photos.

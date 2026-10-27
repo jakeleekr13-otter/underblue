@@ -85,9 +85,8 @@ actor VideoExporter {
             if !hdr && log == nil { decoderSettings[AVVideoColorPropertiesKey] = colors }
             output = AVAssetReaderTrackOutput(track: track, outputSettings: decoderSettings)
         }
-        output.alwaysCopiesSampleData = false
         guard reader.canAdd(output) else { throw UnderBlueError.unsupported }
-        reader.add(output)
+        let source = reader.outputProvider(for: output)
         let videoSettings: [String: Any] = [AVVideoCodecKey: AVVideoCodecType.hevc, AVVideoWidthKey: Int(size.width),
             AVVideoHeightKey: Int(size.height), AVVideoColorPropertiesKey: colors,
             AVVideoCompressionPropertiesKey: VideoColorPipeline.compression(hdr: hdr, bitrate: bitrate, frameRate: metadata.frameRate)]
@@ -100,128 +99,119 @@ actor VideoExporter {
         input.mediaTimeScale = timescale
         writer.movieTimeScale = timescale
         guard writer.canAdd(input) else { throw UnderBlueError.unsupported }
-        writer.add(input)
-        let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [
+        guard let attributes = CVPixelBufferCreationAttributes(CVPixelBufferAttributes(rawAttributes: [
             kCVPixelBufferPixelFormatTypeKey as String: pixelFormat,
             kCVPixelBufferWidthKey as String: Int(size.width), kCVPixelBufferHeightKey as String: Int(size.height),
-            kCVPixelBufferIOSurfacePropertiesKey as String: [:], kCVPixelBufferMetalCompatibilityKey as String: true])
+            kCVPixelBufferIOSurfacePropertiesKey as String: [String: Int](), kCVPixelBufferMetalCompatibilityKey as String: true]))
+        else { throw UnderBlueError.exportFailed }
+        let sink = writer.inputPixelBufferReceiver(for: input, pixelBufferAttributes: attributes)
+        let end = CMTime(seconds: duration, preferredTimescale: timescale)
+        reader.timeRange = CMTimeRange(start: .zero, end: end)
+        let loopStartedAt = Date()
+        var frames = 0
         // Keep every audio track, retaining original compressed samples and their timestamps.
-        var audio: [(AVAssetReaderTrackOutput, AVAssetWriterInput)] = []
+        // Each audio track feeds the writer from its own task, as the receivers need: the writer interleaves the tracks,
+        // so a video append can wait until audio arrives. The tasks run on this actor, so nothing leaves its isolation;
+        // they take turns with the video loop at each await. A task group body could not use the writer (Swift 6 region
+        // isolation). An audio task waits for `open`: a provider read before the reader starts ends the app (27 Oct 2026).
+        var gates: [AsyncStream<Void>.Continuation] = []
+        var audioTasks: [Task<Void, any Error>] = []
+        defer { for task in audioTasks { task.cancel() } }
         for audioTrack in try await asset.loadTracks(withMediaType: .audio) {
             let format = try await audioTrack.load(.formatDescriptions).first
             let audioOutput = AVAssetReaderTrackOutput(track: audioTrack, outputSettings: nil)
-            audioOutput.alwaysCopiesSampleData = false
             let audioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: nil, sourceFormatHint: format)
             guard reader.canAdd(audioOutput), writer.canAdd(audioInput) else { throw UnderBlueError.unsupported }
-            reader.add(audioOutput); writer.add(audioInput)
-            audio.append((audioOutput, audioInput))
+            let audioSource = reader.outputProvider(for: audioOutput)
+            let audioSink = writer.inputReceiver(for: audioInput)
+            let (ready, open) = AsyncStream<Void>.makeStream()
+            gates.append(open)
+            audioTasks.append(Task {
+                for await _ in ready {}
+                // Cancelled before the reader started (the video side failed): reading now would end the app.
+                try Task.checkCancellation()
+                while let sample = try await audioSource.next() {
+                    try Task.checkCancellation()
+                    if sample.sampleCount > 0 { try await audioSink.append(sample) }
+                }
+                audioSink.finish()
+            })
         }
-        let end = CMTime(seconds: duration, preferredTimescale: timescale)
-        reader.timeRange = CMTimeRange(start: .zero, end: end)
-        guard writer.startWriting() else { throw writer.error ?? UnderBlueError.exportFailed }
+        try writer.start()
         writer.startSession(atSourceTime: .zero)
-        guard reader.startReading() else { throw reader.error ?? UnderBlueError.unreadable }
-        let loopStartedAt = Date()
+        try reader.start()
+        for gate in gates { gate.finish() }
         // The particle filter returns each frame 3 frames later; `pending` holds what is ready to write.
         // Nil (HDR, Original, or kernels that failed to build) passes every frame straight through.
         let particles = removesParticles && !hdr && settings.preset != .original ? ParticleFilter(context: engine.context) : nil
         var pending: [ParticleFilter.Frame] = []
         var sourceDone = false
-        var videoDone = false
-        var audioDone = Set<Int>()
-        var frames = 0
         var recordedRenderFallback = false
         var lastProgress = -1.0
-        var lastActivity = Date()
-        while !videoDone || audioDone.count < audio.count {
+        guard let pool = sink.pixelBufferPool else { throw UnderBlueError.exportFailed }
+        while true {
             try Task.checkCancellation()
             if frames % 30 == 0, ProcessInfo.processInfo.thermalState == .critical { throw Failure(kind: .thermal, domain: "UnderBlue", code: 0) }
             guard writer.status == .writing, reader.status != .failed else { throw writer.error ?? reader.error ?? UnderBlueError.exportFailed }
-            var advanced = false
-            var destination: CVPixelBuffer?
-            if !videoDone && input.isReadyForMoreMediaData {
-                guard let pool = adaptor.pixelBufferPool else { throw UnderBlueError.exportFailed }
-                let allocation = CVPixelBufferPoolCreatePixelBufferWithAuxAttributes(nil, pool,
-                    [kCVPixelBufferPoolAllocationThresholdKey: 6] as CFDictionary, &destination)
-                guard allocation == kCVReturnSuccess || allocation == kCVReturnWouldExceedAllocationThreshold else { throw UnderBlueError.exportFailed }
-            }
-            if !videoDone && input.isReadyForMoreMediaData, let destination {
-                let frame: (CIImage, CMTime)? = try autoreleasepool {
-                    // Read until a frame is ready: up to 4 at the start, while the filter fills its look-ahead.
-                    // The end of the source flushes the filter.
-                    while pending.isEmpty && !sourceDone {
-                        guard let sample = output.copyNextSampleBuffer() else { sourceDone = true; pending += particles?.finish() ?? []; break }
-                        guard let buffer = CMSampleBufferGetImageBuffer(sample) else { throw UnderBlueError.unreadable }
-                        let time = CMSampleBufferGetPresentationTimeStamp(sample)
-                        guard time < end else { sourceDone = true; pending += particles?.finish() ?? []; break }
-                        var decoded = CIImage(cvPixelBuffer: buffer)
-                        if let log {
-                            decoded = log.decode(decoded)
-                            if !hdr { decoded = engine.sdr(decoded) }
-                        }
-                        let source = decoded.transformed(by: toneMappedByComposition ? .identity : metadata.transform)
-                        let oriented = source.transformed(by: CGAffineTransform(translationX: -source.extent.minX, y: -source.extent.minY))
-                        let scaled = oriented.transformed(by: CGAffineTransform(scaleX: size.width / oriented.extent.width, y: size.height / oriented.extent.height))
-                        if let particles {
-                            if let ready = particles.push(scaled, at: time) { pending.append(ready) }
-                        } else { pending.append(ParticleFilter.Frame(image: scaled, time: time)) }
-                    }
-                    guard !pending.isEmpty else { videoDone = true; input.markAsFinished(); return nil }
-                    let next = pending.removeFirst()
-                    return (next.image, next.time)
-                }
-                if let frame {
-                    VideoColorPipeline.tag(destination, hdr: hdr, pq: metadata.dynamicRange == .pq)
-                    // One autorelease pool per frame. Without it the memory grew about 3.7 MB per frame with the
-                    // restoration on (flat with preset Original): the 31 s whale shark clip (931 frames) passed 3 GB on
-                    // an iPhone 17 and the system ended the app. With the pool the footprint stays near 230 MB.
-                    var renderFellBack = false
-                    try autoreleasepool {
-                        let image = restoration?.stabilised(frame.0, at: frame.1.seconds) ?? frame.0
-                        let fallback = engine.apply(image, settings: settings, edgeGuard: false, coresWater: false)
-                        let corrected: CIImage
-                        if let moment = restoration?.moment(at: frame.1.seconds) {
-                            do {
-                                corrected = try restorationEngine.combined(image, moment: moment, settings: settings,
-                                                                            filter: engine, preservesHDR: hdr)
-                            } catch {
-                                corrected = fallback
-                                renderFellBack = true
-                            }
-                        } else { corrected = fallback }
-                        engine.context.render(corrected, to: destination, bounds: CGRect(origin: .zero, size: size),
-                                              colorSpace: VideoColorPipeline.colorSpace(hdr: hdr, pq: metadata.dynamicRange == .pq))
-                        guard adaptor.append(destination, withPresentationTime: frame.1) else { throw writer.error ?? UnderBlueError.exportFailed }
-                    }
-                    if renderFellBack, !recordedRenderFallback, let diagnostics {
-                        recordedRenderFallback = true
-                        await diagnostics.record(.restorationFallback(.videoRender), operation: .videoRestoration)
-                    }
-                    frames += 1
-                    if frames.isMultiple(of: 300) { engine.context.clearCaches() }
-                }
-                advanced = true
-                if let pts = frame?.1.seconds {
-                    let fraction = min(0.99, max(0, pts / duration))
-                    if fraction - lastProgress >= 0.01 { lastProgress = fraction; await progress(fraction) }
-                }
-            }
-            for (index, pair) in audio.enumerated() where !audioDone.contains(index) && pair.1.isReadyForMoreMediaData {
+            // Read until a frame is ready: up to 4 at the start, while the filter fills its look-ahead.
+            // The end of the source flushes the filter.
+            while pending.isEmpty && !sourceDone {
+                guard let sample = try await source.next() else { sourceDone = true; pending += particles?.finish() ?? []; break }
+                let time = sample.presentationTimeStamp
+                guard time < end else { sourceDone = true; pending += particles?.finish() ?? []; break }
                 try autoreleasepool {
-                    if let sample = pair.0.copyNextSampleBuffer() {
-                        if CMSampleBufferGetNumSamples(sample) > 0 {
-                            guard pair.1.append(sample) else { throw writer.error ?? UnderBlueError.exportFailed }
-                        }
-                    } else { pair.1.markAsFinished(); audioDone.insert(index) }
+                    guard var decoded = sample.withUnsafeSampleBuffer({ CMSampleBufferGetImageBuffer($0).map { CIImage(cvPixelBuffer: $0) } })
+                    else { throw UnderBlueError.unreadable }
+                    if let log {
+                        decoded = log.decode(decoded)
+                        if !hdr { decoded = engine.sdr(decoded) }
+                    }
+                    let source = decoded.transformed(by: toneMappedByComposition ? .identity : metadata.transform)
+                    let oriented = source.transformed(by: CGAffineTransform(translationX: -source.extent.minX, y: -source.extent.minY))
+                    let scaled = oriented.transformed(by: CGAffineTransform(scaleX: size.width / oriented.extent.width, y: size.height / oriented.extent.height))
+                    if let particles {
+                        if let ready = particles.push(scaled, at: time) { pending.append(ready) }
+                    } else { pending.append(ParticleFilter.Frame(image: scaled, time: time)) }
                 }
-                advanced = true
             }
-            if advanced { lastActivity = Date() }
-            else {
-                guard Date().timeIntervalSince(lastActivity) < 30 else { throw UnderBlueError.exportFailed }
-                try await Task.sleep(for: .milliseconds(2))
+            guard !pending.isEmpty else { break }
+            let frame = pending.removeFirst()
+            let destination = try await Self.buffer(from: pool)
+            destination.withUnsafeBuffer { VideoColorPipeline.tag($0, hdr: hdr, pq: metadata.dynamicRange == .pq) }
+            // One autorelease pool per frame. Without it the memory grew about 3.7 MB per frame with the
+            // restoration on (flat with preset Original): the 31 s whale shark clip (931 frames) passed 3 GB on
+            // an iPhone 17 and the system ended the app. With the pool the footprint stays near 230 MB.
+            var renderFellBack = false
+            autoreleasepool {
+                let image = restoration?.stabilised(frame.image, at: frame.time.seconds) ?? frame.image
+                let fallback = engine.apply(image, settings: settings, edgeGuard: false, coresWater: false)
+                let corrected: CIImage
+                if let moment = restoration?.moment(at: frame.time.seconds) {
+                    do {
+                        corrected = try restorationEngine.combined(image, moment: moment, settings: settings,
+                                                                    filter: engine, preservesHDR: hdr)
+                    } catch {
+                        corrected = fallback
+                        renderFellBack = true
+                    }
+                } else { corrected = fallback }
+                destination.withUnsafeBuffer {
+                    engine.context.render(corrected, to: $0, bounds: CGRect(origin: .zero, size: size),
+                                          colorSpace: VideoColorPipeline.colorSpace(hdr: hdr, pq: metadata.dynamicRange == .pq))
+                }
             }
+            try await sink.append(CVReadOnlyPixelBuffer(destination), with: frame.time)
+            if renderFellBack, !recordedRenderFallback, let diagnostics {
+                recordedRenderFallback = true
+                await diagnostics.record(.restorationFallback(.videoRender), operation: .videoRestoration)
+            }
+            frames += 1
+            if frames.isMultiple(of: 300) { engine.context.clearCaches() }
+            let fraction = min(0.99, max(0, frame.time.seconds / duration))
+            if fraction - lastProgress >= 0.01 { lastProgress = fraction; await progress(fraction) }
         }
+        sink.finish()
+        for task in audioTasks { try await task.value }
         let frameLoopSeconds = Date().timeIntervalSince(loopStartedAt)
         try Task.checkCancellation()
         guard frames > 0, reader.status != .failed else { throw reader.error ?? UnderBlueError.unreadable }
@@ -238,6 +228,17 @@ actor VideoExporter {
         succeeded = true
         return VideoExportResult(url: target, metadata: result, frames: frames,
                                  elapsedSeconds: Date().timeIntervalSince(startedAt), frameLoopSeconds: frameLoopSeconds)
+    }
+
+    /// A buffer for the next frame. At most 6 frames wait in the encoder: past that the pool gives none, and the frame
+    /// waits for one, as before the receiver API. Any other pool error fails the export.
+    private static func buffer(from pool: CVMutablePixelBuffer.Pool) async throws -> CVMutablePixelBuffer {
+        while true {
+            do { return try pool.makeMutablePixelBuffer(.init(allocationThreshold: 6)) }
+            catch let error as NSError where error.code == Int(kCVReturnWouldExceedAllocationThreshold) {
+                try await Task.sleep(for: .milliseconds(2))
+            }
+        }
     }
 
     /// Free memory that Core Image must leave alone. The rest of an export (decoder, encoder, frame buffers)

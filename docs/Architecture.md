@@ -23,6 +23,8 @@ All targets build in Swift 6 language mode with approachable concurrency on. App
 | A pure static helper on a SwiftUI view is `nonisolated`. | A view is main-actor; the helper reads no state, so tests and other actors can call it. |
 | Shared state read on another thread uses `Synchronization` (`Mutex`, `Atomic`), never a raw pointer. | `FootprintSampler` replaced two raw-pointer samplers in the probe tests: a data race. |
 | An `@MainActor` XCTest class overrides `setUp() async throws` and `tearDown() async throws`. | The synchronous overrides are nonisolated and cannot touch main-actor properties. |
+| Video is read and written with the receiver API: `outputProvider(for:)` and `next()`, `inputPixelBufferReceiver(for:)` and `inputReceiver(for:)` with `append`, `start()`. No `copyNextSampleBuffer`, `isReadyForMoreMediaData` or pixel buffer adaptor. | The old calls are deprecated in iOS 27 and macOS 27. The new ones exist since 26, the deployment target, so no availability check is needed. |
+| In `VideoExporter` each audio track feeds the writer from its own `Task` on the exporter actor. It waits for the reader to start. | The writer interleaves tracks, so a video `append` can wait for audio. A provider read before `reader.start()` ends the app. A task group body could not use the writer under Swift 6 region isolation. |
 
 Large engine files are split into extensions by stage, for example `RestorationEngine+ObjectColour.swift` and `FilterEngine+WaterCalm.swift`. A member another file needs loses `private`, with a comment that names the file. `MacModel.swift` stays one file: a split would make about 20 private members visible to the whole module.
 

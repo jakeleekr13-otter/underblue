@@ -7,15 +7,19 @@ import CoreImage
 /// on: the grey fish and the sand turned pink for those frames (AquaColorFix shows the same).
 /// Each frame's mean colour is compared with the median of the frames around it (`window`). A change
 /// that lasts shorter than half the window is taken out; a longer one, as a new scene, stays.
-/// Brightness is kept: only the colour balance of the frame moves.
+/// Brightness is tracked the same way. The colour alone left the clip's first second pulsing: the frame
+/// brightness rose and fell by 10% every 0.4 s with the red (Jake saw it, 27 Oct 2026).
 /// The gains are per channel of Rec. 709, the camera's own primaries. Per channel of the Rec. 2020 working
 /// space they took out only part of the pulse: the fish stayed pink in 8 of 10 frames (26 Oct 2026).
 struct VideoColourTrack: Sendable, Equatable {
     let times: [Double]
     let gains: [SIMD3<Float>]
 
-    /// Seconds, centred on the frame.
-    static let window: Double = 1
+    /// Seconds, centred on the frame, for the colour. 1 s kept the napoleon clip's 0.8 s red rise at 6.1 s:
+    /// fish and sand turned pink (27 Oct 2026).
+    static let window: Double = 2
+    /// Seconds for the brightness. At 2 s a real 1 s exposure change of a manta clip was lifted by 2.3 L and looked hazy.
+    static let brightnessWindow: Double = 1
     /// Added to each channel's share of the luminance before the ratio. Without it a channel near zero
     /// (blue water with no red at all) turns noise into gains of 2x and more: four of the test clips did.
     /// With it those clips stay within 2% and the napoleon pulse is still taken out (26 Oct 2026).
@@ -37,27 +41,29 @@ struct VideoColourTrack: Sendable, Equatable {
     /// The gains for frames at `times` with mean colours `means` (linear Rec. 709), in time order.
     static func make(times: [Double], means: [SIMD3<Float>]) -> VideoColourTrack? {
         guard times.count == means.count, times.count > 2 else { return nil }
-        let shares = means.map { mean -> SIMD3<Float>? in
-            let y = (mean * luminance).sum()
+        let levels = means.map { ($0 * luminance).sum() }
+        let shares = means.indices.map { index -> SIMD3<Float>? in
+            let mean = means[index], y = levels[index]
             guard y > 1e-5, mean.x.isFinite, mean.y.isFinite, mean.z.isFinite else { return nil }
             return mean / y
         }
         var gains: [SIMD3<Float>] = []
         gains.reserveCapacity(times.count)
-        var low = 0, high = 0
+        var low = 0, high = 0, near = 0, far = 0
         for index in times.indices {
             while times[low] < times[index] - window / 2 { low += 1 }
             while high + 1 < times.count && times[high + 1] <= times[index] + window / 2 { high += 1 }
+            while times[near] < times[index] - brightnessWindow / 2 { near += 1 }
+            while far + 1 < times.count && times[far + 1] <= times[index] + brightnessWindow / 2 { far += 1 }
             guard let share = shares[index] else { gains.append(SIMD3(repeating: 1)); continue }
-            let around = shares[low...high].compactMap { $0 }
-            func median(_ channel: Int) -> Float {
-                let sorted = around.map { $0[channel] }.sorted()
-                return sorted[sorted.count / 2]
-            }
-            let target = SIMD3(median(0), median(1), median(2))
+            let measured = (low...high).filter { shares[$0] != nil }
+            func median(_ values: [Float]) -> Float { values.sorted()[values.count / 2] }
+            let target = SIMD3(median(measured.map { shares[$0]![0] }), median(measured.map { shares[$0]![1] }),
+                               median(measured.map { shares[$0]![2] }))
             var gain = (target + floor) / (share + floor)
-            // Same luminance after the gain.
+            // Same luminance after the colour gain, then the median luminance of the window.
             gain /= (share * gain * luminance).sum()
+            gain *= median((near...far).filter { shares[$0] != nil }.map { levels[$0] }) / levels[index]
             gains.append(gain.x.isFinite && gain.y.isFinite && gain.z.isFinite ? gain : SIMD3(repeating: 1))
         }
         return VideoColourTrack(times: times, gains: gains)
@@ -108,29 +114,31 @@ struct VideoColourTrack: Sendable, Equatable {
             ? [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange]
             : [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
                kCVPixelBufferWidthKey as String: width, kCVPixelBufferHeightKey as String: height])
-        output.alwaysCopiesSampleData = false
         guard reader.canAdd(output) else { return nil }
-        reader.add(output)
-        guard reader.startReading() else { return nil }
+        let source = reader.outputProvider(for: output)
+        do { try reader.start() } catch { return nil }
         defer { reader.cancelReading() }
         var times: [Double] = [], means: [SIMD3<Float>] = []
         var pixel = [Float](repeating: 0, count: 4)
-        while let sample = output.copyNextSampleBuffer() {
+        while let sample = try await source.next() {
             try Task.checkCancellation()
-            let time = CMSampleBufferGetPresentationTimeStamp(sample).seconds
-            guard time.isFinite, time <= duration, let buffer = CMSampleBufferGetImageBuffer(sample) else { continue }
-            if let frame {
+            let time = sample.presentationTimeStamp.seconds
+            guard time.isFinite, time <= duration else { continue }
+            // Nil: no image in the sample (skipped). A nil mean: the CPU mean failed, so there is no track.
+            let read: SIMD3<Float>?? = sample.withUnsafeSampleBuffer { sampleBuffer in
+                guard let buffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return nil }
+                guard let frame else { return .some(mean(ycbcr: buffer)) }
                 autoreleasepool {
                     let image = frame(CIImage(cvPixelBuffer: buffer))
                     let mean = image.applyingFilter("CIAreaAverage", parameters: [kCIInputExtentKey: CIVector(cgRect: image.extent)])
                     context.render(mean, toBitmap: &pixel, rowBytes: 16, bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
                                    format: .RGBAf, colorSpace: linear709)
                 }
-                means.append(SIMD3(pixel[0], pixel[1], pixel[2]))
-            } else {
-                guard let mean = mean(ycbcr: buffer) else { return nil }
-                means.append(mean)
+                return SIMD3(pixel[0], pixel[1], pixel[2])
             }
+            guard let read else { continue }
+            guard let mean = read else { return nil }
+            means.append(mean)
             times.append(time)
         }
         guard reader.status == .completed else { return nil }

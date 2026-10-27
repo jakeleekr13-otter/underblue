@@ -45,18 +45,13 @@ struct OutputValidator {
         guard let track = try await asset.loadTracks(withMediaType: .video).first else { throw rejected("no video track") }
         let reader = try AVAssetReader(asset: asset)
         let output = AVAssetReaderTrackOutput(track: track, outputSettings: nil)
-        reader.add(output)
-        guard reader.startReading() else { throw rejected("read-back did not start: \(String(describing: reader.error))") }
+        let samples = reader.outputProvider(for: output)
+        do { try reader.start() } catch { throw rejected("read-back did not start: \(String(describing: reader.error ?? error))") }
         defer { if reader.status == .reading { reader.cancelReading() } }
         var count = 0
-        while true {
+        while let sample = try await samples.next() {
             try Task.checkCancellation()
-            let hasFrame: Bool = autoreleasepool {
-                guard let sample = output.copyNextSampleBuffer() else { return false }
-                count += CMSampleBufferGetNumSamples(sample)
-                return true
-            }
-            if !hasFrame { break }
+            count += sample.sampleCount
         }
         guard reader.status == .completed, count == expectedFrames else {
             throw rejected("frames read back \(count) vs written \(expectedFrames), reader status \(reader.status.rawValue)")
@@ -66,10 +61,10 @@ struct OutputValidator {
         let decoder = try AVAssetReader(asset: asset)
         let decoded = AVAssetReaderTrackOutput(track: track, outputSettings: [
             kCVPixelBufferPixelFormatTypeKey as String: result.isHDR ? kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange : kCVPixelFormatType_32BGRA])
-        decoder.add(decoded)
-        guard decoder.startReading() else { throw rejected("decode did not start: \(String(describing: decoder.error))") }
+        let frames = decoder.outputProvider(for: decoded)
+        do { try decoder.start() } catch { throw rejected("decode did not start: \(String(describing: decoder.error ?? error))") }
         defer { decoder.cancelReading() }
-        guard let sample = decoded.copyNextSampleBuffer(), CMSampleBufferGetImageBuffer(sample) != nil else {
+        guard let sample = try await frames.next(), sample.withUnsafeSampleBuffer({ CMSampleBufferGetImageBuffer($0) != nil }) else {
             throw rejected("first frame did not decode")
         }
         return result

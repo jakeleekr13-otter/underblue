@@ -423,7 +423,7 @@ Cause, measured on the iPhone 17 export:
 - Not the cause: the preview render scale, the device (Mac and iPhone measure the same), or frame-to-frame jitter of the correction (fish jitter 0.0061 against 0.0097 in the source).
 - The clip may have been shot with a red filter: its water b/g is 5.6, against 0.6 to 2.8 on 13 other clips. Not confirmed; the file has no camera metadata.
 
-Fix: `VideoColourTrack`. The analysis reads every frame once and measures its mean colour. Each frame is compared with the median of the frames within 0.5 s on each side. A shorter change is taken out; a longer one (a new scene) stays. Brightness is kept.
+Fix: `VideoColourTrack`. The analysis reads every frame once and measures its mean colour. Each frame is compared with the median of the frames within 0.5 s on each side. Since 27 Oct 2026 the colour uses 1 s on each side (see below). A shorter change is taken out; a longer one (a new scene) stays. Since 27 Oct 2026 the same is done for brightness (see below).
 
 - The gains are per channel of Rec. 709, the camera's primaries. Per channel of the Rec. 2020 working space, the fish stayed pink in 8 of 10 frames.
 - Each channel share gets a floor of 0.05 before the ratio. Without it, clips with no red turned noise into gains of 2x and more (4 of 13 clips).
@@ -438,6 +438,50 @@ Result:
 | Napoleon, iPhone export: bottom pulse, max OKLab a,b off the 1 s median | 0.023 | 0.015 |
 | Napoleon, iPhone export: dark 15% (fish), p99 | 0.060 | 0.033 |
 | 13 other clips, Mac render, mean OKLab dE x100 against HEAD | - | 0.00 on 5 clips; 0.01 to 0.38 on 8 clips (largest frame 0.52, `2025-05-03 22.12.02.MOV` at 0 s) |
+
+#### Brightness pulses (27 Oct 2026)
+
+Problem: Jake still saw the napoleon clip flicker in its first second, after the colour fix.
+
+Cause, measured on the iPhone 17 export:
+
+- The source brightness rises and falls about every 0.4 s, with the red. The colour fix kept each frame's brightness, so this pulse went through.
+- The pulse is not the same across the frame. The fish pulses more than the frame mean, and the top is out of phase. So one gain per frame cannot take all of it out.
+
+Fix: the frame gain also moves the frame's luminance to the median luminance of the window. A slow change (a ramp, a new scene) keeps its brightness. The 2% band applies as before.
+
+Result, 0 to 1 s: largest deviation from each region's own 1 s median, in %, linear luminance:
+
+| Region | Source | Before | After |
+|---|---|---|---|
+| Fish | 24.4 | 25.3 | 18.1 |
+| Water at the bottom | 10.5 | 10.8 | 6.4 |
+| Top | 13.5 | 10.1 | 10.9 |
+| Whole frame | 10.6 | 13.7 | 4.0 |
+
+- The fish keeps a pulse of its own, as in the source. A gain per region could take it out, but it risks patches around moving subjects. Not done.
+- 14 clips, Mac render against the colour fix only: 57 photos byte-identical. Mean OKLab dE x100 is 0.00 to 0.18 on 13 clips and 0.29 on the napoleon clip.
+- Largest frame on another clip: `VID_20230118_095241_0018.MP4` at 37.5 s, dE x100 2.67. Before, a pale patch sat at the top. Now the top is cyan, as in the source.
+
+#### A 2 s window for the colour (27 Oct 2026)
+
+Problem: Jake saw the sand turn pink at 6.7 s in the napoleon clip, and the pink reached the fish.
+
+Cause: the source red rises for about 0.8 s (6.1 to 6.9 s). The fish red rises 3.7x, the sand red 1.8x. With a 1 s window a change of 0.8 s counts as lasting, so it stayed. The export before this work shows the same values.
+
+Fix: the colour uses a 2 s window, so changes up to 1 s are taken out. The brightness keeps a 1 s window. A 2 s brightness window failed on a manta clip (`2025-05-03 22.12.02.MOV`, 4.5 s). The camera changed its exposure for 1 s, and the frame rose by 2.3 L and looked hazy.
+
+Result, napoleon clip, iPhone 17 export, 5.4 to 7.0 s, range of red/blue (linear):
+
+| Region | 1 s window | 2 s colour window |
+|---|---|---|
+| Sand (bottom quarter) | 0.534 to 0.709 | 0.551 to 0.673 |
+| Fish | 0.157 to 0.306 | 0.179 to 0.287 |
+
+- The rise is smaller, not gone. The frames just before it turn slightly redder, because the window now holds part of the rise.
+- 0 to 1 s brightness stays as with the 1 s window (whole frame 3.7%, fish 17.6%).
+- 14 clips, Mac render against the 1 s window: 57 photos byte-identical. Mean OKLab dE x100 is 0.00 to 0.21 on 13 clips, 0.34 on the napoleon clip. The largest other frame (`2025-05-03 22.12.02.MOV` at 0.5 s, 0.80) looks the same by eye.
+- Not fixed: the first 2 s of the napoleon clip. The fish is pink, then grey at 1.5 s. The clip starts facing the surface, and the water holds red until 1.4 s. So there is no earlier colour to go back to. See the [Roadmap](Roadmap.md) 3.5.
 
 ### Open water the veil fit cannot measure (photos, 26 Oct 2026)
 

@@ -13,12 +13,23 @@ final class VideoColourTrackTests: XCTestCase {
         let track = try XCTUnwrap(VideoColourTrack.make(times: times, means: means))
         let corrected = means[45] * track.gain(at: times[45])
         XCTAssertEqual(ratio(corrected), ratio(water), accuracy: 0.1 * ratio(water))
-        // Brightness is kept.
+        // The pulse's brightness goes too.
         let y = { (c: SIMD3<Float>) in (c * VideoColourTrack.luminance).sum() }
-        XCTAssertEqual(y(corrected), y(means[45]), accuracy: 1e-4)
+        XCTAssertEqual(y(corrected), y(water), accuracy: 1e-4)
         // Steady frames are left as they are.
         for g in [track.gain(at: times[5]), track.gain(at: times[80])] {
             XCTAssertEqual(g.x, 1, accuracy: 1e-4); XCTAssertEqual(g.y, 1, accuracy: 1e-4); XCTAssertEqual(g.z, 1, accuracy: 1e-4)
+        }
+    }
+
+    /// The napoleon wrasse clip's first second (27 Oct 2026): the frame brightness rises 25% for 4 frames, every 12 frames.
+    func testShortBrightnessPulseIsTakenOut() throws {
+        let water = SIMD3<Float>(0.028, 0.063, 0.475)
+        let means = times.indices.map { $0 % 12 >= 8 ? water * 1.25 : water }
+        let track = try XCTUnwrap(VideoColourTrack.make(times: times, means: means))
+        let y = { (c: SIMD3<Float>) in (c * VideoColourTrack.luminance).sum() }
+        for index in times.indices {
+            XCTAssertEqual(y(means[index] * track.gain(at: times[index])) / y(water), 1, accuracy: 0.01)
         }
     }
 

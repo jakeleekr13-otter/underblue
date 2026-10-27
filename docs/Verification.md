@@ -463,7 +463,33 @@ Open:
 - Jake does not remember the fin colour (pink or pale violet). The fix keeps them warm (hue 40); AquaColorFix shows pale violet.
 - The subject mask misses the swimmer's torso and head (both Vision masks). Not acted on.
 
-## Final round checklist
+## Brightness pulse in video (27 Oct 2026)
+
+`VideoColourTrack` now also takes short brightness pulses out. See [ColorAlgorithm](ColorAlgorithm.md#brightness-pulses-27-oct-2026).
+
+Checked:
+
+- Napoleon clip: iPhone 17 export, brightness per region over the first second; frames 140 to 159 by eye (same as before).
+- 14 clips, Mac render against the colour fix only: 57 photos byte-identical; the largest frame looked at by eye.
+- Unit tests: `VideoColourTrackTests` with a new brightness pulse case.
+- The 2 s colour window: the napoleon clip at 5.4 to 7.0 s on the iPhone; 14 clips on the Mac against the 1 s window.
+- Full test runs before the 2 s colour window: iPhone 17 unit tests 288 passed (PurchaseTests and VideoParityTests left out); Mac tests 21 passed with the Thread Sanitizer.
+
+Open:
+
+- Jake: look at the first second and at 6.7 s of the napoleon clip on the iPhone. The fish keeps part of its own pulse (18% against 24% in the source). The 6.7 s red rise is smaller, not gone.
+- The first 2 s of the napoleon clip stay pink. Not fixed in 1.1.7 (Roadmap 3.5).
+
+## Reader and writer on the receiver API (27 Oct 2026)
+
+The video export, the output check and the colour pass read and write with the receiver API. The old calls are deprecated in iOS 27. See [Architecture](Architecture.md).
+
+Checked on the iPhone 17 with `VideoParityTests`, against the build before the change:
+
+- SDR exports of 4 clips (an HLG clip, the napoleon clip, a 58 s clip, a 4K 60 fps clip): decoded video frames and audio packets are identical.
+- HDR export of the HLG clip: frames differ as much as two runs of the old build differ from each other (57 of 150 frames). The new run matched the second old run exactly. 10-bit HEVC encoding is not repeatable here.
+- Speed, 4K 60 fps clip, 770 frames, both runs at thermal state 2: old 228.17 s, new 213.47 s. An earlier set of runs varied by about 25% from run to run.
+
 
 1. **Colour scorecard.** The 29 Sep candidate was run as `m5-final2-dev-20260929`; rerun if any
    colour source changes. Check every guard in [the harness README](../scripts/color-eval/README.md#guards-used-for-tuning),

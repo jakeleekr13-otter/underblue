@@ -129,40 +129,38 @@ final class AppleLogTests: XCTestCase {
             AVVideoWidthKey: width, AVVideoHeightKey: height, AVVideoColorPropertiesKey: colors,
             AVVideoCompressionPropertiesKey: [AVVideoProfileLevelKey: kVTProfileLevel_HEVC_Main10_AutoLevel,
                                               AVVideoAverageBitRateKey: 20_000_000]])
-        let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: nil)
-        writer.add(input)
-        guard writer.startWriting() else { throw writer.error ?? UnderBlueError.exportFailed }
+        let receiver = writer.inputPixelBufferReceiver(for: input, pixelBufferAttributes: nil)
+        try writer.start()
         writer.startSession(atSourceTime: .zero)
         for index in 0..<4 {
-            var created: CVPixelBuffer?
-            CVPixelBufferCreate(nil, width, height, kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange,
-                                [kCVPixelBufferIOSurfacePropertiesKey: [:]] as CFDictionary, &created)
-            guard let buffer = created else { throw UnderBlueError.exportFailed }
-            CVPixelBufferLockBaseAddress(buffer, [])
-            let luma = CVPixelBufferGetBaseAddressOfPlane(buffer, 0)!, lumaRow = CVPixelBufferGetBytesPerRowOfPlane(buffer, 0)
-            let chroma = CVPixelBufferGetBaseAddressOfPlane(buffer, 1)!, chromaRow = CVPixelBufferGetBytesPerRowOfPlane(buffer, 1)
-            for row in 0..<height {
-                let line = (luma + row * lumaRow).assumingMemoryBound(to: UInt16.self)
-                // Grey: Y' equals the signal; 10-bit video range, stored in the top bits.
-                for x in 0..<width { line[x] = UInt16((64 + 876 * patches[x * 3 / width]).rounded()) << 6 }
+            let frame = try CVMutablePixelBuffer(try XCTUnwrap(CVPixelBufferCreationAttributes(CVPixelBufferAttributes(rawAttributes: [
+                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange,
+                kCVPixelBufferWidthKey as String: width, kCVPixelBufferHeightKey as String: height,
+                kCVPixelBufferIOSurfacePropertiesKey as String: [String: Int]()]))))
+            frame.withUnsafeBuffer { buffer in
+                CVPixelBufferLockBaseAddress(buffer, [])
+                let luma = CVPixelBufferGetBaseAddressOfPlane(buffer, 0)!, lumaRow = CVPixelBufferGetBytesPerRowOfPlane(buffer, 0)
+                let chroma = CVPixelBufferGetBaseAddressOfPlane(buffer, 1)!, chromaRow = CVPixelBufferGetBytesPerRowOfPlane(buffer, 1)
+                for row in 0..<height {
+                    let line = (luma + row * lumaRow).assumingMemoryBound(to: UInt16.self)
+                    // Grey: Y' equals the signal; 10-bit video range, stored in the top bits.
+                    for x in 0..<width { line[x] = UInt16((64 + 876 * patches[x * 3 / width]).rounded()) << 6 }
+                }
+                for row in 0..<height / 2 {
+                    let line = (chroma + row * chromaRow).assumingMemoryBound(to: UInt16.self)
+                    for x in 0..<width { line[x] = 512 << 6 }
+                }
+                CVPixelBufferUnlockBaseAddress(buffer, [])
+                CVBufferSetAttachment(buffer, kCVImageBufferYCbCrMatrixKey, kCVImageBufferYCbCrMatrix_ITU_R_2020, .shouldPropagate)
+                CVBufferSetAttachment(buffer, kCVImageBufferLogTransferFunctionKey, format == .log
+                    ? kCVImageBufferLogTransferFunction_AppleLog : kCVImageBufferLogTransferFunction_AppleLog2, .shouldPropagate)
+                if format == .log {
+                    CVBufferSetAttachment(buffer, kCVImageBufferColorPrimariesKey, kCVImageBufferColorPrimaries_ITU_R_2020, .shouldPropagate)
+                }
             }
-            for row in 0..<height / 2 {
-                let line = (chroma + row * chromaRow).assumingMemoryBound(to: UInt16.self)
-                for x in 0..<width { line[x] = 512 << 6 }
-            }
-            CVPixelBufferUnlockBaseAddress(buffer, [])
-            CVBufferSetAttachment(buffer, kCVImageBufferYCbCrMatrixKey, kCVImageBufferYCbCrMatrix_ITU_R_2020, .shouldPropagate)
-            CVBufferSetAttachment(buffer, kCVImageBufferLogTransferFunctionKey, format == .log
-                ? kCVImageBufferLogTransferFunction_AppleLog : kCVImageBufferLogTransferFunction_AppleLog2, .shouldPropagate)
-            if format == .log {
-                CVBufferSetAttachment(buffer, kCVImageBufferColorPrimariesKey, kCVImageBufferColorPrimaries_ITU_R_2020, .shouldPropagate)
-            }
-            while !input.isReadyForMoreMediaData { try await Task.sleep(for: .milliseconds(2)) }
-            guard adaptor.append(buffer, withPresentationTime: CMTime(value: CMTimeValue(index), timescale: 30)) else {
-                throw writer.error ?? UnderBlueError.exportFailed
-            }
+            try await receiver.append(CVReadOnlyPixelBuffer(frame), with: CMTime(value: CMTimeValue(index), timescale: 30))
         }
-        input.markAsFinished()
+        receiver.finish()
         await writer.finishWriting()
         guard writer.status == .completed else { throw writer.error ?? UnderBlueError.exportFailed }
         return url
@@ -171,15 +169,20 @@ final class AppleLogTests: XCTestCase {
     /// The red channel, 0...1, at the centre of each patch in the first frame.
     static func patchValues(_ output: AVAssetReaderOutput, asset: AVAsset) async throws -> [Float] {
         let reader = try AVAssetReader(asset: asset)
-        reader.add(output)
-        guard reader.startReading(), let sample = output.copyNextSampleBuffer(),
-              let buffer = CMSampleBufferGetImageBuffer(sample) else { throw reader.error ?? UnderBlueError.unreadable }
+        let frames = reader.outputProvider(for: output)
+        try reader.start()
         defer { reader.cancelReading() }
-        CVPixelBufferLockBaseAddress(buffer, .readOnly)
-        defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
-        let width = CVPixelBufferGetWidth(buffer), height = CVPixelBufferGetHeight(buffer)
-        let row = CVPixelBufferGetBaseAddress(buffer)! + (height / 2) * CVPixelBufferGetBytesPerRow(buffer)
-        let pixels = row.assumingMemoryBound(to: UInt8.self)
-        return (0..<3).map { Float(pixels[(width * (2 * $0 + 1) / 6) * 4 + 2]) / 255 }
+        guard let sample = try await frames.next() else { throw reader.error ?? UnderBlueError.unreadable }
+        let values: [Float]? = sample.withUnsafeSampleBuffer { sampleBuffer in
+            guard let buffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return nil }
+            CVPixelBufferLockBaseAddress(buffer, .readOnly)
+            defer { CVPixelBufferUnlockBaseAddress(buffer, .readOnly) }
+            let width = CVPixelBufferGetWidth(buffer), height = CVPixelBufferGetHeight(buffer)
+            let row = CVPixelBufferGetBaseAddress(buffer)! + (height / 2) * CVPixelBufferGetBytesPerRow(buffer)
+            let pixels = row.assumingMemoryBound(to: UInt8.self)
+            return (0..<3).map { Float(pixels[(width * (2 * $0 + 1) / 6) * 4 + 2]) / 255 }
+        }
+        guard let values else { throw UnderBlueError.unreadable }
+        return values
     }
 }

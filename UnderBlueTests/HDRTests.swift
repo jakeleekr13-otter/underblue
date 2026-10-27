@@ -29,11 +29,12 @@ final class HDRTests: XCTestCase {
             let asset = AVURLAsset(url: result.url)
             let track = try await asset.loadTracks(withMediaType: .video)[0]
             let reader = try AVAssetReader(asset: asset)
-            let output = AVAssetReaderTrackOutput(track: track, outputSettings: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange])
-            reader.add(output); XCTAssertTrue(reader.startReading())
+            let frames = reader.outputProvider(for: AVAssetReaderTrackOutput(track: track,
+                outputSettings: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange]))
+            try reader.start()
             defer { reader.cancelReading() }
-            let buffer = try XCTUnwrap(output.copyNextSampleBuffer().flatMap { CMSampleBufferGetImageBuffer($0) })
-            let image = CIImage(cvPixelBuffer: buffer)
+            let sample = try await frames.next()
+            let image = try XCTUnwrap(sample?.withUnsafeSampleBuffer { CMSampleBufferGetImageBuffer($0).map { CIImage(cvPixelBuffer: $0) } })
             let maxPixel = image.applyingFilter("CIAreaMaximum", parameters: [kCIInputExtentKey: CIVector(cgRect: image.extent)])
             var values = [Float](repeating: 0, count: 4)
             FilterEngine().context.render(maxPixel, toBitmap: &values, rowBytes: 16, bounds: CGRect(x: 0, y: 0, width: 1, height: 1), format: .RGBAf, colorSpace: FilterEngine.workingSpace)

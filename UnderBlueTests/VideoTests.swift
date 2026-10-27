@@ -78,12 +78,12 @@ final class VideoTests: XCTestCase {
             let asset = AVURLAsset(url: url)
             let track = try await asset.loadTracks(withMediaType: .video)[0]
             let reader = try AVAssetReader(asset: asset)
-            let output = AVAssetReaderTrackOutput(track: track, outputSettings: nil)
-            reader.add(output); XCTAssertTrue(reader.startReading())
+            let samples = reader.outputProvider(for: AVAssetReaderTrackOutput(track: track, outputSettings: nil))
+            try reader.start()
             var times: [Double] = []
-            while let sample = output.copyNextSampleBuffer() {
+            while let sample = try await samples.next() {
                 // Container marker buffers carry no media samples and can have invalid/rounded time.
-                if CMSampleBufferGetNumSamples(sample) > 0 { times.append(CMSampleBufferGetPresentationTimeStamp(sample).seconds) }
+                if sample.sampleCount > 0 { times.append(sample.presentationTimeStamp.seconds) }
             }
             return times.sorted()
         }
@@ -102,24 +102,22 @@ final class VideoTests: XCTestCase {
             AVVideoWidthKey: 320, AVVideoHeightKey: 180])
         input.mediaTimeScale = 60000
         writer.movieTimeScale = 60000
-        writer.add(input)
-        let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-            kCVPixelBufferWidthKey as String: 320, kCVPixelBufferHeightKey as String: 180])
-        XCTAssertTrue(writer.startWriting())
+        let receiver = writer.inputPixelBufferReceiver(for: input, pixelBufferAttributes: try XCTUnwrap(CVPixelBufferCreationAttributes(
+            CVPixelBufferAttributes(rawAttributes: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+                                                    kCVPixelBufferWidthKey as String: 320, kCVPixelBufferHeightKey as String: 180]))))
+        try writer.start()
         writer.startSession(atSourceTime: .zero)
         let frames = 60
         for index in 0..<frames {
-            while !input.isReadyForMoreMediaData { try await Task.sleep(for: .milliseconds(2)) }
-            var buffer: CVPixelBuffer?
-            CVPixelBufferPoolCreatePixelBuffer(nil, try XCTUnwrap(adaptor.pixelBufferPool), &buffer)
-            let frame = try XCTUnwrap(buffer)
-            CVPixelBufferLockBaseAddress(frame, [])
-            memset(CVPixelBufferGetBaseAddress(frame), Int32(40 + index), CVPixelBufferGetDataSize(frame))
-            CVPixelBufferUnlockBaseAddress(frame, [])
-            XCTAssertTrue(adaptor.append(frame, withPresentationTime: CMTime(value: CMTimeValue(index * 1001), timescale: 60000)))
+            let frame = try XCTUnwrap(receiver.pixelBufferPool).makeMutablePixelBuffer()
+            frame.withUnsafeBuffer { buffer in
+                CVPixelBufferLockBaseAddress(buffer, [])
+                memset(CVPixelBufferGetBaseAddress(buffer), Int32(40 + index), CVPixelBufferGetDataSize(buffer))
+                CVPixelBufferUnlockBaseAddress(buffer, [])
+            }
+            try await receiver.append(CVReadOnlyPixelBuffer(frame), with: CMTime(value: CMTimeValue(index * 1001), timescale: 60000))
         }
-        input.markAsFinished()
+        receiver.finish()
         writer.endSession(atSourceTime: CMTime(value: CMTimeValue((frames - 1) * 1001 + 38), timescale: 60000))
         await writer.finishWriting()
         XCTAssertEqual(writer.status, .completed)
@@ -131,11 +129,11 @@ final class VideoTests: XCTestCase {
         // Decoding skips a frame outside the edit, so it counts the frames a player shows.
         let asset = AVURLAsset(url: result.url)
         let reader = try AVAssetReader(asset: asset)
-        let output = AVAssetReaderTrackOutput(track: try await asset.loadTracks(withMediaType: .video)[0],
-            outputSettings: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA])
-        reader.add(output); XCTAssertTrue(reader.startReading())
+        let decoded = reader.outputProvider(for: AVAssetReaderTrackOutput(track: try await asset.loadTracks(withMediaType: .video)[0],
+            outputSettings: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]))
+        try reader.start()
         var shown = 0
-        while let sample = output.copyNextSampleBuffer() { shown += CMSampleBufferGetNumSamples(sample) }
+        while let sample = try await decoded.next() { shown += sample.sampleCount }
         XCTAssertEqual(shown, frames)
     }
     func testMidExportCancellationCleansPartialFile() async throws {

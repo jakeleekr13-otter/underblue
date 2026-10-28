@@ -32,8 +32,9 @@ An App Store Connect form being complete does not override these.
 
 ## Part A — Can prepare now (no build needed)
 
-- [x] The Mac app record exists in App Store Connect (the IAP below is attached to it). Platform: macOS. I did not see the record. The name actually used is **unverified**.
-  - Name `UnderBlue`. It is already used by the iOS record.
+- [x] The Mac app record exists in App Store Connect (the IAP below is attached to it). Platform: macOS.
+  - Name: `UnderBlue - Underwater Photos` (29 characters; Jake, 28 Oct 2026). The iOS app is `UnderBlue - Underwater photo`.
+  - Rejected name: `UnderBlue for Mac - UW photo`. App Review rejected 1.0 (1) on 27 Oct 2026 under Guideline 5.2.5: "for Mac" in the app name. Do not use Apple product names (Mac, iPhone) in the name or the description.
   - SKU: `UNDERBLUE-MAC-001` (proposed). It cannot change later.
   - Primary language: English (U.S.). Category: Photo & Video.
 - [x] Register the Mac bundle IDs in the Developer portal: app and share extension. Done by Jake; Xcode signing was checked for both targets.
@@ -92,7 +93,7 @@ Not final. Jake asked on 20 Oct for more emphasis on batch jobs. A rewrite is pe
 
 **Description:**
 
-UnderBlue for Mac brings believable colour and clarity back to underwater photos and videos. It works on a whole folder at once.
+UnderBlue brings believable colour and clarity back to underwater photos and videos. It works on a whole folder at once.
 
 Drag in files or folders from Finder. Pick a look. Press Correct. UnderBlue processes the queue and saves each result to the folder you choose.
 
@@ -115,7 +116,7 @@ UnderBlue is made for recreational diving memories. It is not a scientific colou
 
 **Review notes (draft):**
 
-UnderBlue for Mac processes imported photos and videos entirely on the device. No account or cloud service is used. The free trial allows one photo export and one video export limited to the first 10 seconds. Batch processing is a Pro feature. UnderBlue Pro is the non-consumable product `com.underblue.mac.pro`. The output folder is chosen by the user and kept with a security-scoped bookmark. Diagnostics stay on the device and are shared only when the user uses the system share sheet. **Confirm** the trial limits after stage 5.
+UnderBlue processes imported photos and videos entirely on the device. No account or cloud service is used. The free trial allows one photo export and one video export limited to the first 10 seconds. Batch processing is a Pro feature. UnderBlue Pro is the non-consumable product `com.underblue.mac.pro`. The output folder is chosen by the user and kept with a security-scoped bookmark. Diagnostics stay on the device and are shared only when the user uses the system share sheet. **Confirm** the trial limits after stage 5.
 
 Korean text: write after Jake approves the English text.
 

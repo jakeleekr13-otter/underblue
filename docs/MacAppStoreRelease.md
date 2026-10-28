@@ -35,6 +35,7 @@ An App Store Connect form being complete does not override these.
 - [x] The Mac app record exists in App Store Connect (the IAP below is attached to it). Platform: macOS.
   - Name: `UnderBlue - Underwater Photos` (29 characters; Jake, 28 Oct 2026). The iOS app is `UnderBlue - Underwater photo`.
   - Rejected name: `UnderBlue for Mac - UW photo`. App Review rejected 1.0 (1) on 27 Oct 2026 under Guideline 5.2.5: "for Mac" in the app name. Do not use Apple product names (Mac, iPhone) in the name or the description.
+  - Resubmitted on 28 Oct 2026 with the same build, 1.0 (1). Only the metadata changed (Jake).
   - SKU: `UNDERBLUE-MAC-001` (proposed). It cannot change later.
   - Primary language: English (U.S.). Category: Photo & Video.
 - [x] Register the Mac bundle IDs in the Developer portal: app and share extension. Done by Jake; Xcode signing was checked for both targets.

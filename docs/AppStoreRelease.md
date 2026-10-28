@@ -102,6 +102,21 @@ The complete English and Korean descriptions, promotional text, keywords and rev
 - Support email: `support@enheart.me`
 - Privacy email: `privacy@enheart.me`
 
+## Website and Google Search Console (28 Oct 2026)
+
+- Landing page: <https://jakeleekr13-otter.github.io/underblue-support/>. It can be the Marketing URL in App Store Connect. Whether that field is set was not checked.
+- Languages: English at the root, then `/ko/`, `/ja/`, `/zh-hans/`, `/zh-hant/` and `/es/`.
+- The pages are generated. Do not edit them by hand. Edit the store copy in `AppStoreMetadata.md` or `captions.json`, then run this from the `underblue-support` clone:
+  `python3 -I _build/build_landing.py <path to this repo>`
+  - Page titles and the Mac text are in the script itself.
+  - The script also rewrites `sitemap.xml`.
+  - GitHub Pages does not publish `_build/`.
+- The App Store badge links to the iPhone app (`id6815881625`). The Mac section says "coming soon" until `MAC_APP_STORE` is set in the script.
+- Search Console:
+  - The property is the URL prefix above. A Domain property is not possible on github.io.
+  - It is verified by `google98d8e981a7645ba2.html` at the site root. Never delete that file.
+  - The sitemap was submitted on 28 Oct 2026. After the submit, the status read "Couldn't fetch".
+
 Both pages are publicly available over HTTPS. Their email addresses are clickable `mailto:` links. The repository's `main` branch blocks force pushes and deletion; only the owner has direct repository access.
 
 ## App Privacy declaration

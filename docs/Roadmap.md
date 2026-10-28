@@ -1,6 +1,6 @@
 # UnderBlue roadmap
 
-Status: draft, updated 27 Oct 2026 for iPhone 1.1.7 (13). Nothing here is decided unless a line says "Jake".
+Status: draft, updated 28 Oct 2026 (website); 27 Oct 2026 for iPhone 1.1.7 (13). Nothing here is decided unless a line says "Jake".
 
 This page only collects open work. Each row points to the document that holds the details.
 
@@ -14,6 +14,7 @@ This page only collects open work. Each row points to the document that holds th
   - the reader/writer move to the receiver API
 - The Mac app 1.0 (1) is built, but not released ([MacApp](MacApp.md), [MacAppStoreRelease](MacAppStoreRelease.md)).
 - The restoration run is done for photos ([RestorationExperiments](RestorationExperiments.md)).
+- 28 Oct 2026: the website has landing pages in six languages, and Google Search Console is set up ([AppStoreRelease](AppStoreRelease.md#website-and-google-search-console-28-oct-2026)).
 
 ## 1. Ship iPhone 1.1.7 (now)
 
@@ -39,6 +40,7 @@ Order matters. The hardening changes the binary, so it comes before the archive 
 | 2.5 | Japanese and Chinese text: ship as is, or get a native review | Jake decides. | [MacAppStoreRelease](MacAppStoreRelease.md) |
 | 2.6 | Thin bright or dark lines on some edges (turtle, clownfish) | Softer since `ad6ab7f`, not gone. | [MacApp](MacApp.md) |
 | 2.7 | Memory on 8 GB Macs and long 4K video | Not measured. | [MacApp](MacApp.md) |
+| 2.8 | After the release: Mac App Store link on the website (`MAC_APP_STORE`) | Open. The site says "coming soon" until then. | [MacAppStoreRelease](MacAppStoreRelease.md) |
 
 ## 3. Video quality (after the Mac release)
 

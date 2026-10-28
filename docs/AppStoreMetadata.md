@@ -265,6 +265,8 @@ The optional promoted-IAP image is not used. Leave **App Store Image** empty and
 
 ## Public URLs
 
+**Website:** https://jakeleekr13-otter.github.io/underblue-support/ (six languages; built from this file, see AppStoreRelease.md)
+
 **Support:** https://jakeleekr13-otter.github.io/underblue-support/support/
 
 **Privacy Policy:** https://jakeleekr13-otter.github.io/underblue-support/privacy/

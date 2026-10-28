@@ -43,6 +43,9 @@ An App Store Connect form being complete does not override these.
 - [ ] Copyright owner and App Review contact. Same as iOS.
 - [ ] App Privacy answers. Copy the iOS answers (see AppStoreRelease.md, "App Privacy declaration"). Check each line against the Mac support process.
 - [ ] Support URL, Privacy Policy URL and emails. Same as iOS. Add one line to the support site: "UnderBlue for Mac".
+- [ ] After the release: put the Mac App Store link on the website.
+  - Set `MAC_APP_STORE` in `underblue-support/_build/build_landing.py`, rebuild and push.
+  - Then the Mac section shows a Mac App Store badge instead of "coming soon" (see AppStoreRelease.md, "Website").
 - [x] Create `com.underblue.mac.pro`: non-consumable. Status "Prepare for Submission". Price 19.99 USD; Jake checked the generated prices. The review screenshot is `AppStoreAssets/IAP/Mac/mac-pro-review-1280x800.png`. Display name and description: not written yet (part 3 of the metadata review).
 - [ ] Draft the metadata (Part C below). Jake reviews the English text.
 - [ ] Decide Family Sharing for the IAP. Default: off, like iOS. It cannot be undone.

@@ -2,6 +2,17 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## Video reef colour: the scene fit (29 Oct 2026, branch `video-reef-colour`)
+
+What changed: each video scene fits its object colour values to the photo rule on its keyframe. So an olive reef turns brown in video, as in photos. Details: [RestorationExperiments](RestorationExperiments.md), "Video reef colour: the scene fit".
+
+Checked on the Mac: 40 stills, the five Tune_25_Oct clips, and a 6 s pan made from O4.
+
+Still open:
+- A real reef clip with an olive reef. None of the test clips has one, so the strong case is checked on stills and on the O4 pan only.
+- Cost on the iPhone: one more 320 px render per scene and settings. Check the first preview frame and a slider drag on a clip with several scenes.
+- A seagrass clip: the plants should move no more than on the photo path.
+
 ## 48 MP photos failed to export on the iPhone (found and fixed 26 Oct 2026)
 
 Measured on the iPhone 17 (iOS 27), Release build, with an 8064 × 6048 JPEG. It is IMG_7400 scaled up, so a synthetic file.

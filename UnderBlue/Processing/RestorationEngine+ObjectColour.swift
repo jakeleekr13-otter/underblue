@@ -92,6 +92,7 @@ extension RestorationEngine {
     /// `waterAB` is the water's OKLab a,b; pixels near that colour get no red, as a frame has no depth map.
     struct VideoObjectColourValues: Sendable, Equatable {
         var waterAB = SIMD2<Float>(0, 0)
+        /// The green excess the red starts above: the water's own, or lower after the scene fit (fittedVideoObjectColourValues).
         var waterExcess: Float = 0
         var redFromGreen: Float = 0
 
@@ -118,6 +119,68 @@ extension RestorationEngine {
         let water = FinishingMath.rec2020ToSRGB * far
         return VideoObjectColourValues(waterAB: SIMD2(lab.y, lab.z), waterExcess: max(0, water.y - 0.5 * (water.x + water.z)),
                                        redFromGreen: FinishingMath.objectRedK * max(0, redLoss))
+    }
+
+    /// The scene fit (docs/RestorationExperiments.md, video reef colour, 29 Oct 2026). With one constant depth the video
+    /// path leaves the water greener and the reef less green than the photo path: on m6 their green excess is 0.035 and
+    /// 0.036 (photo path 0.016 and 0.050). So red above the water's excess added almost none, and the reef stayed olive
+    /// (hue 133; photo 93). Colour alone cannot tell that reef from green seagrass, but the keyframe has a depth map, so
+    /// the photo rule on it shows how much red the scene's objects need.
+    /// `video` is the keyframe through the video path, `photo` through the photo path (its own depth, before the step),
+    /// both linear Rec.2020 at depth-map size. The floor (0 to the water's excess) and a gain (0 to 1) of the video rule
+    /// are fitted to the photo rule's red, least squares over the frame. The colour weight still keeps the water out.
+    static func fittedVideoObjectColourValues(_ values: VideoObjectColourValues, video: [SIMD3<Float>], photo: [SIMD3<Float>],
+                                              depth: [Float], redLoss: Float) -> VideoObjectColourValues {
+        guard video.count == depth.count, photo.count == depth.count, values.redFromGreen > 0 else { return values }
+        let target = objectColourValues(pixels: photo, depth: depth, redLoss: redLoss)
+        func excess(_ s: SIMD3<Float>) -> Float { s.y - 0.5 * (s.x + s.z) }
+        var samples: [(excess: Float, weight: Float, wanted: Float)] = []
+        samples.reserveCapacity(depth.count)
+        for i in depth.indices {
+            let v = video[i], p = photo[i]
+            guard v.x.isFinite, v.y.isFinite, v.z.isFinite, p.x.isFinite, p.y.isFinite, p.z.isFinite else { continue }
+            let t = min(1, max(0, (depth[i] - FinishingMath.objectNearFull) / (FinishingMath.objectNearNone - FinishingMath.objectNearFull)))
+            let near = 1 - t * t * (3 - 2 * t)
+            let wanted = target.redFromGreen * max(0, excess(FinishingMath.rec2020ToSRGB * p * target.gains) - target.waterExcess) * near
+            let s = FinishingMath.rec2020ToSRGB * v
+            samples.append((excess(s), FinishingMath.objectWaterWeight(s, waterAB: values.waterAB), wanted))
+        }
+        var best = (error: Float.infinity, floor: values.waterExcess, gain: Float(1))
+        for step in 0...sceneFitSteps {
+            let floor = values.waterExcess * Float(step) / Float(sceneFitSteps)
+            var uu: Float = 0, uw: Float = 0, ww: Float = 0
+            for x in samples {
+                let u = values.redFromGreen * max(0, x.excess - floor) * x.weight
+                uu += u * u; uw += u * x.wanted; ww += x.wanted * x.wanted
+            }
+            let gain = uu > 1e-12 ? min(1, max(0, uw / uu)) : 0
+            let error = ww - 2 * gain * uw + gain * gain * uu
+            if error < best.error { best = (error, floor, gain) }
+        }
+        return VideoObjectColourValues(waterAB: values.waterAB, waterExcess: best.floor, redFromGreen: values.redFromGreen * best.gain)
+    }
+    /// Floors tried by the scene fit, evenly from 0 to the water's excess.
+    static let sceneFitSteps = 20
+    /// Below this depth trust the photo rule itself takes the colour rule (objectColour), so there is nothing to fit.
+    static let sceneFitTrust: Float = 0.5
+
+    /// One keyframe's video values: `source` with its own depth map `depth`, under the scene's constant-depth `plan`
+    /// and correction `values`. The keyframe goes through the video path for the water, then through the photo path
+    /// (the same plan with the keyframe's depth) for the scene fit.
+    func videoObjectColourValues(keyframe source: CIImage, depth: NormalizedDepthMap, plan: RestorationPlan,
+                                 values: (current: ColorCorrection, restored: ColorCorrection), settings: FilterSettings,
+                                 filter: FilterEngine, depthTrust trust: Float, redLoss: Float) -> VideoObjectColourValues? {
+        guard let videoFrame = try? combined(source, plan: plan, values: values, settings: settings, filter: filter, video: true,
+                                             depthTrust: trust) else { return nil }
+        let video = Self.workingPixels(videoFrame, width: depth.width, height: depth.height, context: filter.context)
+        guard let found = Self.videoObjectColourValues(pixels: video, depth: depth.values, redLoss: redLoss) else { return nil }
+        guard trust >= Self.sceneFitTrust else { return found }
+        var depthPlan = plan
+        depthPlan.depth = depth
+        guard let photoFrame = try? combined(source, plan: depthPlan, values: values, settings: settings, filter: filter,
+                                             depthTrust: trust, measuring: true) else { return found }
+        let photo = Self.workingPixels(photoFrame, width: depth.width, height: depth.height, context: filter.context)
+        return Self.fittedVideoObjectColourValues(found, video: video, photo: photo, depth: depth.values, redLoss: redLoss)
     }
 
     /// Object colour step for video (UnderBlueObjectColourVideo).

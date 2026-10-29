@@ -1191,6 +1191,32 @@ final class RestorationTests: XCTestCase {
         XCTAssertNil(RestorationEngine.videoObjectColourValues(pixels: Array(pixels.prefix(250)), depth: Array(depth.prefix(250)), redLoss: 0.6))
     }
 
+    func testVideoSceneFitFollowsThePhotoRuleOnTheKeyframe() throws {
+        // m6 on the video path (29 Oct 2026): the olive reef's green excess equals the water's (0.050 both here), so the
+        // rule without the fit gives the reef no red. On the photo path the reef has far more excess than the water.
+        let videoWater = SIMD3<Float>(0.05, 0.12, 0.15), videoReef = SIMD3<Float>(0.085, 0.11, 0.06)
+        let photoWater = SIMD3<Float>(0.04, 0.09, 0.16), photoReef = SIMD3<Float>(0.08, 0.15, 0.05)
+        let depth = [Float](repeating: 0.1, count: 200) + [Float](repeating: 0.95, count: 200)
+        let video = [SIMD3<Float>](repeating: videoReef, count: 200) + [SIMD3<Float>](repeating: videoWater, count: 200)
+        let photo = [SIMD3<Float>](repeating: photoReef, count: 200) + [SIMD3<Float>](repeating: photoWater, count: 200)
+        let found = try XCTUnwrap(RestorationEngine.videoObjectColourValues(pixels: video, depth: depth, redLoss: 0.6))
+        func apply(_ v: RestorationEngine.VideoObjectColourValues, _ c: SIMD3<Float>) -> SIMD3<Float> {
+            FinishingMath.objectColourVideo(c, waterAB: v.waterAB, waterExcess: v.waterExcess, redFromGreen: v.redFromGreen)
+        }
+        assertEqual(apply(found, videoReef), videoReef, accuracy: 1e-3)
+        let fitted = RestorationEngine.fittedVideoObjectColourValues(found, video: video, photo: photo, depth: depth, redLoss: 0.6)
+        XCTAssertLessThan(fitted.waterExcess, found.waterExcess)
+        XCTAssertGreaterThan(fitted.redFromGreen, 0)
+        let out = apply(fitted, videoReef)
+        XCTAssertGreaterThan(out.x / out.y, videoReef.x / videoReef.y * 1.2)
+        // The water colour still gets none: its colour weight is 0.
+        assertEqual(apply(fitted, videoWater), videoWater, accuracy: 1e-3)
+        // The photo rule adds no red when the near objects carry no more green than the water (seagrass in green
+        // water): then video adds none either.
+        let flat = [SIMD3<Float>](repeating: photoWater, count: 400)
+        XCTAssertEqual(RestorationEngine.fittedVideoObjectColourValues(found, video: video, photo: flat, depth: depth, redLoss: 0.6).redFromGreen, 0)
+    }
+
     func testDepthTrustFollowsTheAgreementOfDepthAndColour() {
         // A reef frame: the far half is water by both depth and colour. Full trust.
         let depth = (0..<400).map { Float($0 % 20) / 19 }

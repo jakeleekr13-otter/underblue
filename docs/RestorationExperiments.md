@@ -252,6 +252,7 @@ What the analysis gives today: O6 has no white reference (neutral (0, 0, 0), sha
 - Still open: m6's olive reef (needs red from green), and the green water of the sargassum photo (201, Jake's 24 Oct rule). Try 8 does not touch either.
   - Update 26 Oct 2026: the m6 reef box now reads hue 93 on the photo path (A2, C 0.049; Sea-thru 65, source 160), brown-gold by eye. The video path still reads 133 (`videoa2`; 140 without the video step): video has only step 2, and step 2 alone moves it 7 degrees. Step 1 stays off in video (it greyed v5_70).
   - Tried 26 Oct 2026: step 1 in video for scenes whose keyframe depth can be trusted. Reverted. m6 and O4 get no gains (strength 0): the photo's brown comes from step 2's red by depth, which video cannot do without per-pixel depth. v5_30 and v5_70 count as trusted and got strong gains (1.6, 0.89, 0.63), the greying seen before. Video m6 stays olive for now.
+  - Update 29 Oct 2026: video m6 reads hue 98 with the scene fit (see "Video reef colour: the scene fit" below).
 #### A2 step 2: red from green on near subjects (25 Oct 2026)
 
 Jake asked whether O4 can improve. O4 is the m6 scene (the bench maps pair 4 to `market/ref/m6.png`), so it has two independent references: AquaColorFix and Sea-thru. Both agree on three gaps (OKLab L / chroma / hue):
@@ -365,6 +366,53 @@ Rule tried (`a2_proto.red_from_green`): red += k0 × redLoss × green excess × 
   - v4: up to 0.5. v5: up to 0.6 (p99 5.7).
   - Largest frame-to-frame jump in the change: 0.4, so no flicker.
   - No clip has an olive reef like O4, so the strong case is checked on stills only.
+
+#### Video reef colour: the scene fit (29 Oct 2026, branch `video-reef-colour`)
+The video m6/O4 reef stayed olive (hue 133; photo path 93). The 26 Oct note said video needs per-pixel depth. That was only part of it.
+
+Measured on the harness (`HT_EVAL_VIDEO_A2=1`, m6 reef box, linear sRGB green excess G − (R + B)/2):
+
+| Path | Reef excess | Water excess | Reef hue |
+|---|---|---|---|
+| Photo, before A2 | 0.050 | 0.016 | 127 |
+| Video (`videobase`) | 0.036 | 0.035 | 140 |
+
+- With one constant depth (0.92), the water stays greener and the reef less green. Step 2 adds red only above the water's excess, so the reef got almost none.
+- The photo depth rule on the video-path colours also leaves the reef olive (hue 130). So per-pixel depth alone does not fix it.
+- A softer floor per pixel (no floor where the colour is far from the water) gave the reef hue 108. But it turned the green seagrass yellow: pl5 mid 126 → 93, pl6 107 → 87. On video colours, reef and seagrass overlap (hue 140 and 127-131).
+
+Fix: fit the video rule to the photo rule on the scene's keyframe.
+- The keyframe (320 px, depth map 160 px) goes through the video path, as before, and also through the photo path: the scene plan with the keyframe's own depth, before the step.
+- The photo rule on that frame gives each pixel's wanted red.
+- Two values of the video rule are fitted to it, least squares over the frame:
+  - the floor: 21 steps from 0 to the water's excess;
+  - a gain on `redFromGreen`, 0 to 1.
+- The colour weight still keeps the water out. The kernel is unchanged; only the scene values change.
+- Below depth trust 0.5 there is no fit: the photo rule itself uses the colour rule there.
+- Code: `RestorationEngine.fittedVideoObjectColourValues`, `videoObjectColourValues(keyframe:...)`. The harness `videoa2` calls the same function.
+
+Results, 40 images (OKLab chroma / hue of the box median; plant boxes count only plant pixels):
+
+| Box | Video before | Video after | Photo path |
+|---|---|---|---|
+| m6 reef | 0.048 / 132 | 0.040 / 98 | 0.053 / 93 |
+| O4 reef | 0.047 / 131 | 0.040 / 96 | 0.055 / 93 |
+| pl2 kelp blades | 0.044 / 109 | 0.044 / 101 | 0.031 / 103 |
+| pl3 seagrass near | 0.068 / 94 | 0.069 / 93 | 0.062 / 92 |
+| pl5 seagrass near | 0.057 / 127 | 0.056 / 125 | 0.061 / 134 |
+| pl5 seagrass mid | 0.071 / 125 | 0.064 / 115 | 0.073 / 119 |
+| pl6 seagrass, turtle | 0.047 / 107 | 0.045 / 101 | 0.053 / 110 |
+
+- The plants now move about as much as on the photo path (pl5 mid: photo 132 → 119 from A2, video 125 → 115).
+- Change against the video before, mean dE76 / p99 / p99 of the far pixels:
+  - m6 1.73 / 11.8 / 0.0, O4 1.69 / 11.4 / 0.0.
+  - m5 0.73 / 6.2 / 1.0: less red (gain 0.79). Sand and chart grey are unchanged; the sand's pink (hue 358) is older, from the video path.
+  - pl2, pl5, pl6: 0.41-0.55 / 3.9-7.4 / 2.1-2.8.
+  - The other 34 images: 0.30 or less. Open-water photos and clip stills (r01, r07, r10-r14, v1-v3): 0.01 or less.
+- Clips (videosim, the five Tune_25_Oct clips, a frame every 2 s, against `main`): mean dE76 per frame 0.26 or less, frame p99 2.8 or less, largest jump between frames 0.12.
+- O4 as a clip (6 s pan, 1080p): reef hue 127-133 → 94-102 over the clip, water hue 228-232 unchanged, largest jump 0.03. By eye the reef turns brown like the photo and the small fish more orange.
+- Cost: one more 320 px render per scene and settings, cached with the values. Not measured on the iPhone.
+- Tests: `RestorationTests` 89 run, 1 skipped, 0 failed (new: `testVideoSceneFitFollowsThePhotoRuleOnTheKeyframe`). The Mac app builds.
 
 ### A2 — our own estimate rule (only if A1 passes)
 

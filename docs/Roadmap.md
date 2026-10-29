@@ -46,7 +46,7 @@ Order matters. The hardening changes the binary, so it comes before the archive 
 
 | # | Work | State | Source |
 |---|---|---|---|
-| 3.1 | m6 reef stays olive in video (photo is brown) | Tried and reverted on 26 Oct. Video has no per-pixel depth, which the photo fix needs. | [RestorationExperiments](RestorationExperiments.md) |
+| 3.1 | m6 reef stays olive in video (photo is brown) | Fixed on branch `video-reef-colour` (29 Oct): each scene fits the video rule to the photo rule on its keyframe. Video reef hue 132 → 98 (photo 93). Not merged. Open: a real reef clip and the cost on the iPhone. | [RestorationExperiments](RestorationExperiments.md) |
 | 3.2 | Apple Log: real clips (Log ProRes, Log 2 ProRes and HEVC), look of mid-tones | Generated clips only. Needs footage. | [Verification](Verification.md) |
 | 3.3 | Preview and export use different gamma (1.961 and 2.4) | The same frame reads 0.31 and 0.38. Not checked on a display. | [Verification](Verification.md) |
 | 3.4 | Particle filter for video | Off by default. Jake: record only for now. Turn on at about +20% time and +100 MB. | [RestorationExperiments](RestorationExperiments.md) D2 |

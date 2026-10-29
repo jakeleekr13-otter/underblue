@@ -12,7 +12,7 @@ This page only collects open work. Each row points to the document that holds th
   - even water in murky open water photos
   - the engine file split and the concurrency rules ([Architecture](Architecture.md))
   - the reader/writer move to the receiver API
-- The Mac app 1.0 (1) is built, but not released ([MacApp](MacApp.md), [MacAppStoreRelease](MacAppStoreRelease.md)).
+- The Mac app 1.0 (1) is in App Review: rejected on 27 Oct 2026 for "for Mac" in the name (Guideline 5.2.5), resubmitted on 28 Oct 2026 with the same build and a new name ([MacAppStoreRelease](MacAppStoreRelease.md)).
 - The restoration run is done for photos ([RestorationExperiments](RestorationExperiments.md)).
 - 28 Oct 2026: the website has landing pages in six languages, and Google Search Console is set up ([AppStoreRelease](AppStoreRelease.md#website-and-google-search-console-28-oct-2026)).
 

@@ -291,7 +291,8 @@ func fullReference(_ a: [UInt8], _ b: [UInt8], _ w: Int, _ h: Int, into m: inout
 // HT_EVAL_VIDEO_PATH=1 adds `videopath`: combined() as video calls it (video: true), to check a photo-only change leaves it.
 let videoPath = ProcessInfo.processInfo.environment["HT_EVAL_VIDEO_PATH"] == "1"
 // HT_EVAL_VIDEO_A2=1 adds `videobase` (combined() as video calls it, one constant depth) and `videoa2` (videobase plus the
-// object colour step for video). The still plays the scene keyframe: the values come from videobase and the still's depth map.
+// object colour step for video). The still plays the scene keyframe: the values come from videobase and the still's depth map,
+// fitted to the photo path on that depth map (RestorationEngine.fittedVideoObjectColourValues).
 let videoA2 = ProcessInfo.processInfo.environment["HT_EVAL_VIDEO_A2"] == "1"
 // HT_EVAL_RESTORED_ABLATE=1 (sun ring, docs/RestorationExperiments.md) adds `finrest` (the finished restored path alone) and
 // `rab_<stage>`: combined() with one stage off in the restored values only. Needs HT_EVAL_ABLATE=1 for the stage list.
@@ -595,8 +596,10 @@ for name in selected {
             if videoA2, let base = try? restoration.combined(source, plan: uniform, values: restoration.corrections(settings: settings, plan: uniform),
                                                               settings: settings, filter: engine, video: true, depthTrust: sceneTrust) {
                 outputs["videobase"] = base
-                let pixels = RestorationEngine.workingPixels(base, width: plan.depth.width, height: plan.depth.height, context: engine.context)
-                let v = RestorationEngine.videoObjectColourValues(pixels: pixels, depth: plan.depth.values, redLoss: settings.analysis.redLoss)
+                // As the app makes a scene's values: the video path for the water, the photo path on the still's depth for the fit.
+                let v = restoration.videoObjectColourValues(keyframe: source, depth: plan.depth, plan: uniform,
+                                                            values: restoration.corrections(settings: settings, plan: uniform), settings: settings,
+                                                            filter: engine, depthTrust: sceneTrust, redLoss: settings.analysis.redLoss)
                 if ProcessInfo.processInfo.environment["HT_EVAL_LOG"] != nil { print("\(name) video object colour: \(v.map { "\($0)" } ?? "nil")") }
                 outputs["videoa2"] = v.map { restoration.videoObjectColour(base, values: $0) } ?? base
             }

@@ -243,14 +243,7 @@ enum FinishingMath {
     /// colour is from the scene's water (OKLab a,b distance from `waterAB`, objectWaterDistanceLow none, High full).
     static func objectColourVideo(_ c: SIMD3<Float>, waterAB: SIMD2<Float>, waterExcess: Float, redFromGreen: Float) -> SIMD3<Float> {
         let s = rec2020ToSRGB * c
-        let lms = SIMD3<Float>((SIMD3<Float>(0.4122214708, 0.5363325363, 0.0514459929) * s).sum(),
-                               (SIMD3<Float>(0.2119034982, 0.6806995451, 0.1073969566) * s).sum(),
-                               (SIMD3<Float>(0.0883024619, 0.2817188376, 0.6299787005) * s).sum())
-        let q = SIMD3<Float>(cbrt(max(lms.x, 0)), cbrt(max(lms.y, 0)), cbrt(max(lms.z, 0)))
-        let ab = SIMD2<Float>(1.9779984951 * q.x - 2.4285922050 * q.y + 0.4505937099 * q.z,
-                              0.0259040371 * q.x + 0.7827717662 * q.y - 0.8086757660 * q.z)
-        let t = min(1, max(0, (simd_length(ab - waterAB) - objectWaterDistanceLow) / (objectWaterDistanceHigh - objectWaterDistanceLow)))
-        let weight = t * t * (3 - 2 * t)
+        let weight = objectWaterWeight(s, waterAB: waterAB)
         let excess = max(0, s.y - 0.5 * (s.x + s.z) - waterExcess)
         let l0 = (s * ColorCorrection.luma).sum()
         var r = s + SIMD3(redFromGreen * excess * weight, 0, 0)
@@ -258,6 +251,18 @@ enum FinishingMath {
         r = l1 > 1e-6 ? r * (l0 / l1) : s
         let out = sRGBToRec2020 * r
         return out.x.isFinite && out.y.isFinite && out.z.isFinite ? out : c
+    }
+    /// The video step's weight for linear sRGB `s`: its OKLab a,b distance from the scene's water, none at
+    /// objectWaterDistanceLow, full at objectWaterDistanceHigh.
+    static func objectWaterWeight(_ s: SIMD3<Float>, waterAB: SIMD2<Float>) -> Float {
+        let lms = SIMD3<Float>((SIMD3<Float>(0.4122214708, 0.5363325363, 0.0514459929) * s).sum(),
+                               (SIMD3<Float>(0.2119034982, 0.6806995451, 0.1073969566) * s).sum(),
+                               (SIMD3<Float>(0.0883024619, 0.2817188376, 0.6299787005) * s).sum())
+        let q = SIMD3<Float>(cbrt(max(lms.x, 0)), cbrt(max(lms.y, 0)), cbrt(max(lms.z, 0)))
+        let ab = SIMD2<Float>(1.9779984951 * q.x - 2.4285922050 * q.y + 0.4505937099 * q.z,
+                              0.0259040371 * q.x + 0.7827717662 * q.y - 0.8086757660 * q.z)
+        let t = min(1, max(0, (simd_length(ab - waterAB) - objectWaterDistanceLow) / (objectWaterDistanceHigh - objectWaterDistanceLow)))
+        return t * t * (3 - 2 * t)
     }
     /// Video weight: OKLab a,b distance from the scene's water. 0.04 to 0.08 still put red on m5's water; at 0.05 to 0.10
     /// the water's 99th-percentile change is 1.2 dE76 at most on the test stills, and the O4/m6 reef keeps most of the

@@ -32,20 +32,19 @@ extension RestorationEngine {
     }
 
     /// One scene's values with the current settings: its keyframe through the video path, then the far pixels'
-    /// mean. Made from the settings in use, not the analysis', so a slider that moves the water moves the reference too.
+    /// mean, fitted to the photo rule on the same keyframe (videoObjectColourValues(keyframe:)). Made from the settings
+    /// in use, not the analysis', so a slider that moves the water moves the reference too.
     func videoObjectColourValues(_ scene: VideoScene, settings: FilterSettings, filter: FilterEngine,
                                  preservesHDR: Bool) -> VideoObjectColourValues? {
         guard let keyframe = scene.objectKeyframe else { return nil }
         let key = VideoObjectCacheEntry.Key(start: scene.start, end: scene.end, settings: settings, preservesHDR: preservesHDR)
         if let hit = videoObjectCache.withLock({ $0.first { $0.key == key } }) { return hit.values }
-        let source = CIImage(cgImage: keyframe.image)
         let held = VideoSceneMoment(from: scene, to: scene, amount: 0)
-        let values = (try? combined(source, plan: held.plan(), values: held.corrections(settings: settings, engine: self),
-                                    settings: settings, filter: filter, video: true,
-                                    depthTrust: sceneTrust(scene, settings: settings, filter: filter, preservesHDR: preservesHDR))).flatMap {
-            Self.videoObjectColourValues(pixels: Self.workingPixels($0, width: keyframe.depth.width, height: keyframe.depth.height,
-                                                                    context: filter.context),
-                                         depth: keyframe.depth.values, redLoss: scene.analysis.redLoss)
+        let values = (try? held.plan()).flatMap {
+            videoObjectColourValues(keyframe: CIImage(cgImage: keyframe.image), depth: keyframe.depth, plan: $0,
+                                    values: held.corrections(settings: settings, engine: self), settings: settings, filter: filter,
+                                    depthTrust: sceneTrust(scene, settings: settings, filter: filter, preservesHDR: preservesHDR),
+                                    redLoss: scene.analysis.redLoss)
         }
         videoObjectCache.withLock { entries in
             entries.removeAll { $0.key == key }

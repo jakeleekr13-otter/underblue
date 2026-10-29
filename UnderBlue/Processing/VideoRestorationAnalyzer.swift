@@ -28,6 +28,7 @@ actor VideoRestorationAnalyzer {
 
     private let engine = FilterEngine()
     private let waterEstimator = WaterModelEstimator()
+    private let restorationEngine = RestorationEngine()
     private let profiler: DeviceCapabilityProfiler
     private let diagnostics: DiagnosticRecorder?
     private let signposter = OSSignposter(subsystem: "com.underblue.app", category: "video-analysis")
@@ -147,23 +148,30 @@ actor VideoRestorationAnalyzer {
             return try? RestorationPlan.sceneAverage(chosen, keeping: Array(chosen.indices)).sceneLevel()
         }
         let clipKept = WaterAnalysis.sceneInliers(samples)
-        var sceneValues: [(range: Range<Int>, analysis: WaterAnalysis, plan: RestorationPlan?, keyframe: ObjectKeyframe?)] = []
+        var sceneValues: [(range: Range<Int>, analysis: WaterAnalysis, plan: RestorationPlan?, keyframe: ObjectKeyframe?,
+                           measured: [ObjectKeyframe])] = []
         for range in ranges {
             let members = Array(range)
             let kept = WaterAnalysis.sceneInliers(members.map { samples[$0] }).map { members[$0] }
             // The middle kept keyframe that has a fit (and so a depth map).
             let withKeyframe = kept.filter { plans[$0] != nil && objectKeyframes[$0] != nil }
             let keyframe = withKeyframe.isEmpty ? nil : objectKeyframes[withKeyframe[withKeyframe.count / 2]]
-            sceneValues.append((range, WaterAnalysis.sceneMean(samples, keeping: kept), scenePlan(kept), keyframe))
+            sceneValues.append((range, WaterAnalysis.sceneMean(samples, keeping: kept), scenePlan(kept), keyframe,
+                                withKeyframe.compactMap { objectKeyframes[$0] }))
         }
         // A scene whose fits all failed borrows the whole clip's plan. If every fit failed, no scene
         // has a plan and video keeps only the legacy correction.
         var scenes: [VideoScene] = []
+        // Each scene's residual cast is measured on its kept keyframes with the scene plan, as frames render it. A
+        // scene without one keeps the full cast gains.
         if let fallback = scenePlan(clipKept) ?? sceneValues.lazy.compactMap({ $0.plan }).first {
-            scenes = sceneValues.map {
-                VideoScene(start: times[$0.range.lowerBound], end: times[$0.range.upperBound - 1],
-                           analysis: $0.analysis, plan: $0.plan ?? fallback, keyframes: $0.range.count,
-                           objectKeyframe: $0.keyframe)
+            scenes = sceneValues.map { scene in
+                let plan = scene.plan ?? fallback
+                return VideoScene(start: times[scene.range.lowerBound], end: times[scene.range.upperBound - 1],
+                                  analysis: scene.analysis,
+                                  plan: restorationEngine.measuringResidualCast(plan, images: scene.measured.map { CIImage(cgImage: $0.image) },
+                                                                                filter: engine, video: true),
+                                  keyframes: scene.range.count, objectKeyframe: scene.keyframe)
             }
         }
         let environment = aggregate(clipKept.compactMap { plans[$0] })

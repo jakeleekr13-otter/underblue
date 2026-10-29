@@ -414,6 +414,20 @@ Results, 40 images (OKLab chroma / hue of the box median; plant boxes count only
 - Cost: one more 320 px render per scene and settings, cached with the values. Not measured on the iPhone.
 - Tests: `RestorationTests` 89 run, 1 skipped, 0 failed (new: `testVideoSceneFitFollowsThePhotoRuleOnTheKeyframe`). The Mac app builds.
 
+#### Keep colour: the residual cast (29 Oct 2026, branch `keep-colour`)
+Jake: Natural 80 looks a bit washed white on a green-teal clip (`tune/video/Tune_20_Oct/2017-01-08 01.21.36.MOV`).
+- Not a regression: mean L* and chroma are flat from 1.1.3 to 1.1.7 (14 clips).
+- Cause found on the stills: the restored path used the source cast gains. The restoration had already taken part of the cast, so the cast came off twice. c01_9 restored mean chroma: 0.053 before the cast step, 0.008 after it.
+- Fix: the plan carries `residualCast`. It is the share of the source cast left in the restored image, measured on one 640 px render of restore(). The restored path takes the cast gains to this power.
+  - A cast is the mean colour's log channels less their mean. The restored cast is projected on the source cast and clamped to 0-1.
+  - Photos: measured once, after the subject mask. Video: each scene plan, on its kept keyframes, then the mean. One frame's share moved from 0.85 to 0.60 within one scene.
+- Rejected: a fixed power 0.5 (pl1 green water hue 185 → 165, into the green band). Also a plan estimate of the restored mean instead of the render (pl1 → 172).
+- Photo results (42 stills, Natural): c01_9 frame chroma 0.035 → 0.046, pl1 water hue 185 (unchanged), v2 219 → 213, m6/O4 reef hue 93 → 101. AquaColorFix O3 6.22 → 6.69, O4 9.51 → 10.33. Blue water unchanged.
+- Video path on the stills (`videoa2`): c01_9 0.058 → 0.074, water hue 217 → 200. pl1 177 (unchanged), m6 reef 98 → 94.
+- The clip itself (videosim, Natural 80): scene share 0.82, mean chroma 0.0527 → 0.0550, no visible change, no new flicker. The scene mean plan takes less cast than a still's own plan, so the double cast is small here. Jake accepted this result (29 Oct 2026). The clip's remaining washed look has another cause, not found yet. The candidate is redRebuild: off, c01_9 went 0.035 → 0.048.
+- Cost: one 640 px restore render per photo, and one 320 px render per kept keyframe at video analysis. Not measured on the iPhone.
+- Tests: `RestorationTests`, `VideoRestorationTests`, `PresetTests`: 121 run, 2 skipped, 0 failed (new: `testResidualCastKeepsTheCastFromComingOffTwice`).
+
 ### A2 — our own estimate rule (only if A1 passes)
 
 It replaces or extends `redRebuild`. It does not go into the restoration kernel, because the kernel is the optical step.

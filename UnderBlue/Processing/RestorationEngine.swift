@@ -229,4 +229,57 @@ final class RestorationEngine: Sendable {
         (ColorCorrection.make(analysis: settings.analysis, preset: settings.preset, adjustments: settings.adjustments),
          ColorCorrection.make(analysis: settings.analysis, preset: settings.preset, plan: plan, adjustments: settings.adjustments))
     }
+
+    /// The long side of the render that residualCast is measured on.
+    static let residualCastSize: CGFloat = 640
+
+    /// The plan with its residualCast measured on `images`: one small render each through restore(), as combined()
+    /// renders it (`video` lifts dark pixels), and the mean of their shares. A video scene passes its kept keyframes:
+    /// one frame's share moved from 0.85 to 0.60 within one scene (c01 clip at 3 s and 9 s, 29 Oct 2026). The plan
+    /// the images render with must be the one measured. With no measurable image the plan keeps its value (one: the
+    /// full source cast gains).
+    func measuringResidualCast(_ plan: RestorationPlan, images: [CIImage], filter: FilterEngine,
+                               video: Bool = false) -> RestorationPlan {
+        let shares = images.compactMap { image -> Float? in
+            let small = FilterEngine.downscaled(image, maxPixel: Self.residualCastSize)
+            guard let restored = try? restore(small, plan: plan, liftDark: video),
+                  let source = mean(small, filter: filter), let after = mean(restored, filter: filter) else { return nil }
+            return Self.residualCast(source: source, restored: after)
+        }
+        guard !shares.isEmpty else { return plan }
+        var result = plan
+        result.residualCast = shares.reduce(0, +) / Float(shares.count)
+        return result
+    }
+
+    func measuringResidualCast(_ plan: RestorationPlan, image: CIImage, filter: FilterEngine,
+                               video: Bool = false) -> RestorationPlan {
+        measuringResidualCast(plan, images: [image], filter: filter, video: video)
+    }
+
+    /// The share of the source mean's cast that the restored mean still has, 0 to 1. A cast is the colour's log
+    /// channels less their mean (its chromaticity), so a brightness change is no cast. The restored cast is projected
+    /// on the source cast: a cast in another direction is not the one the cast gains remove. A neutral source gives one.
+    static func residualCast(source: SIMD3<Float>, restored: SIMD3<Float>) -> Float {
+        func cast(_ c: SIMD3<Float>) -> SIMD3<Float> {
+            let l = SIMD3(log(max(c.x, 1e-4)), log(max(c.y, 1e-4)), log(max(c.z, 1e-4)))
+            return l - l.sum() / 3
+        }
+        let s = cast(source), r = cast(restored), size = (s * s).sum()
+        guard size > 1e-6 else { return 1 }
+        let share = (s * r).sum() / size
+        return share.isFinite ? min(1, max(0, share)) : 1
+    }
+
+    private func mean(_ image: CIImage, filter: FilterEngine) -> SIMD3<Float>? {
+        let average = CIFilter.areaAverage()
+        average.inputImage = image
+        average.extent = image.extent
+        guard let output = average.outputImage else { return nil }
+        var m = [Float](repeating: 0, count: 4)
+        filter.context.render(output, toBitmap: &m, rowBytes: 16, bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
+                              format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+        let c = SIMD3(m[0], m[1], m[2])
+        return c.x.isFinite && c.y.isFinite && c.z.isFinite ? c : nil
+    }
 }

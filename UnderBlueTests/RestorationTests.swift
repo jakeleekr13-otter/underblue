@@ -1879,6 +1879,47 @@ final class RestorationTests: XCTestCase {
         }
     }
 
+    func testResidualCastKeepsTheCastFromComingOffTwice() throws {
+        // The restored image keeps only a share of the source cast (RestorationPlan.residualCast). The restored path
+        // takes the source cast gains to that power. With the full gains the c01 clip went grey-white (29 Oct 2026).
+        let source = SIMD3<Float>(0.05, 0.12, 0.10)
+        func share(_ restored: SIMD3<Float>) -> Float { RestorationEngine.residualCast(source: source, restored: restored) }
+        XCTAssertEqual(share(source), 1, accuracy: 1e-5)
+        XCTAssertEqual(share(source * 2.5), 1, accuracy: 1e-5, "brightness is no cast")
+        XCTAssertEqual(share(SIMD3(repeating: 0.1)), 0, accuracy: 1e-5)
+        XCTAssertEqual(share(SIMD3(sqrt(source.x * 0.09), sqrt(source.y * 0.09), sqrt(source.z * 0.09))), 0.5, accuracy: 1e-4)
+        XCTAssertEqual(share(SIMD3(0.01 / source.x, 0.01 / source.y, 0.01 / source.z)), 0, "a cast past grey clamps to zero")
+        XCTAssertEqual(RestorationEngine.residualCast(source: SIMD3(repeating: 0.2), restored: source), 1, "a neutral source keeps the gains")
+
+        // make(): the restored gains are the full gains to the plan's share. The current path keeps the full gains.
+        let analysis = scene(water: .init(0.04, 0.12, 0.10), mid: 0.13)
+        var plan = try makePlan(depth: 0.6, confidence: 0.8)
+        let full = ColorCorrection.make(analysis: analysis, preset: .natural, plan: plan).castGains
+        XCTAssertGreaterThan(abs(full.x - 1), 0.01)
+        plan.residualCast = 0.5
+        assertEqual(ColorCorrection.make(analysis: analysis, preset: .natural, plan: plan).castGains,
+                    SIMD3(sqrt(full.x), sqrt(full.y), sqrt(full.z)), accuracy: 1e-5)
+        assertEqual(ColorCorrection.make(analysis: analysis, preset: .natural).castGains, full, accuracy: 1e-6)
+
+        // Measured on a render: the share of a flat image's restored colour.
+        let engine = FilterEngine(), restoration = RestorationEngine()
+        plan.residualCast = 1
+        let image = CIImage(color: CIColor(red: 0.05, green: 0.12, blue: 0.10, colorSpace: FilterEngine.workingSpace)!)
+            .cropped(to: CGRect(x: 0, y: 0, width: 32, height: 32))
+        var px = [Float](repeating: 0, count: 4)
+        engine.context.render(try restoration.restore(image, plan: plan), toBitmap: &px, rowBytes: 16,
+                              bounds: CGRect(x: 16, y: 16, width: 1, height: 1), format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+        let measured = restoration.measuringResidualCast(plan, image: image, filter: engine).residualCast
+        XCTAssertEqual(measured, share(SIMD3(px[0], px[1], px[2])), accuracy: 1e-3)
+        XCTAssertLessThan(measured, 0.99)
+
+        // Scene plans carry it: the mean of the kept plans, and a mix between two scenes.
+        var other = plan
+        plan.residualCast = 0.4; other.residualCast = 0.8
+        XCTAssertEqual(try RestorationPlan.sceneAverage([plan, other], keeping: [0, 1]).residualCast, 0.6, accuracy: 1e-5)
+        XCTAssertEqual(try plan.mixed(with: other, amount: 0.25).residualCast, 0.5, accuracy: 1e-5)
+    }
+
     private func makePlan(depth: Float, confidence: Float) throws -> RestorationPlan {
         let map = try NormalizedDepthMap(width: 2, height: 2, values: .init(repeating: depth, count: 4))
         return RestorationPlan(depth: map, depthSource: .monocular,

@@ -390,6 +390,7 @@ actor PhotoProcessor {
                                                            correction: restorationEngine.corrections(settings: natural, plan: plan).current,
                                                            filter: engine)
             plan.subjectMask = subjects
+            plan = restorationEngine.measuringResidualCast(plan, image: source, filter: engine)
             restorationPlan = plan
             #if DEBUG
             logger.debug("Binf=(\(plan.backscatterInfinity.x),\(plan.backscatterInfinity.y),\(plan.backscatterInfinity.z)) betaD=(\(plan.betaDirect.x),\(plan.betaDirect.y),\(plan.betaDirect.z)) betaB=(\(plan.betaBackscatter.x),\(plan.betaBackscatter.y),\(plan.betaBackscatter.z)) confidence=\(plan.confidence) floorPixels=\(plan.transmissionFloorPixelPercentage)% maxGainPixels=\(plan.maximumGainPixelPercentage)%")

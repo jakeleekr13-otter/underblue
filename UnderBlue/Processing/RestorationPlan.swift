@@ -91,6 +91,12 @@ struct RestorationPlan: Sendable, Equatable {
     /// The subject lift, when the photo path built one. Video plans leave it nil, so video is
     /// unchanged until its own check runs (docs/SubjectEmphasis.md).
     var subjectLift: SubjectLift?
+    /// The share of the source cast left in the restored image (RestorationEngine.residualCast), 0 to 1. The restored
+    /// path takes the source cast gains to this power: they were made for the source, and the restoration already took
+    /// part of the cast. With the full gains the cast came off twice and green-teal water went grey-white (c01 clip,
+    /// chroma 0.035; 0.046 with the measured share, 29 Oct 2026). A plan estimate of the restored mean instead of the
+    /// render took pl1's green water to hue 172, into the green band. One means the full gains (not measured).
+    var residualCast: Float = 1
 
     init(depth: NormalizedDepthMap, depthSource: DepthSource, depthStatistics: DepthStatistics,
          backscatterInfinity: SIMD3<Float>, betaDirect: SIMD3<Float>, betaBackscatter: SIMD3<Float>,
@@ -164,6 +170,7 @@ extension RestorationPlan {
                                temporalConfidence: mean { $0.temporalConfidence },
                                channelRecoverability: mean { $0.channelRecoverability })
         plan.veilLevel = mean { $0.veilLevel }
+        plan.residualCast = mean { $0.residualCast }
         return plan
     }
 }

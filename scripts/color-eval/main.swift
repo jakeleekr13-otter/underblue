@@ -397,6 +397,8 @@ for name in selected {
         }
         // As PhotoProcessor does. The uniform (video) plan below has no mask, as video has none.
         plan?.subjectMask = subjects
+        // As PhotoProcessor does, after the mask (restore reads it).
+        if let p = plan { plan = restoration.measuringResidualCast(p, image: source, filter: engine) }
         // The subject lift has its own cap (docs/SubjectEmphasis.md, E2), so m5's coral block counts.
         liftMask = await subjectMask(source, cap: SubjectMask.liftMaximumShare)
         // HT_EVAL_PRESS="x,y[+x,y...]" (docs/ManualSubject.md, R6): the lift mask from a press at x,y (top left, 0-1),
@@ -587,7 +589,9 @@ for name in selected {
         if ProcessInfo.processInfo.environment["HT_EVAL_SIGNAL"] == "1", let signal = restoration.contrastTransmission(source, plan: plan) {
             outputs["signal"] = signal
         }
-        if let uniform = try? plan.withUniformDepth() {
+        if let flat = try? plan.withUniformDepth() {
+            // As a video scene: its own residual cast, measured through the video restore (VideoRestorationAnalyzer).
+            let uniform = restoration.measuringResidualCast(flat, image: source, filter: engine, video: true)
             // As a video scene: trust from the still's own depth map (RestorationEngine.sceneTrust uses the keyframe's).
             let sceneTrust = restoration.depthTrust(source, plan: plan, correction: restoration.corrections(settings: settings, plan: uniform).current, filter: engine)
             // The video entry point (correction values passed in), as video frames are rendered.

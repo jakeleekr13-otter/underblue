@@ -2,7 +2,7 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
-## Video reef colour: the scene fit (29 Oct 2026, branch `video-reef-colour`)
+## Video reef colour: the scene fit (29 Oct 2026, merged to `main`)
 
 What changed: each video scene fits its object colour values to the photo rule on its keyframe. So an olive reef turns brown in video, as in photos. Details: [RestorationExperiments](RestorationExperiments.md), "Video reef colour: the scene fit".
 

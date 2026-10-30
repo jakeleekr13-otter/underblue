@@ -57,6 +57,7 @@ extension RestorationPlan {
             temporalConfidence: mix(temporalConfidence, other.temporalConfidence),
             channelRecoverability: mix(channelRecoverability, other.channelRecoverability))
         plan.veilLevel = mix(veilLevel, other.veilLevel)
+        plan.residualCast = mix(residualCast, other.residualCast)
         return plan
     }
 }

@@ -117,6 +117,12 @@ struct ColorCorrection: Sendable, Equatable {
         v.lightGradient = light.isFinite ? light * light * (3 - 2 * light) : 0
         v.neutralGains = whiteReference(analysis, correction: v, plan: plan)
         referenceAdaptation(&v, analysis: analysis, plan: plan, scene: scene)
+        // The restored image keeps only part of the source cast (RestorationPlan.residualCast). The rules above
+        // still read the full gains: that is how this was measured (29 Oct 2026).
+        if let plan {
+            let k = plan.residualCast
+            v.castGains = SIMD3(pow(max(v.castGains.x, 0), k), pow(max(v.castGains.y, 0), k), pow(max(v.castGains.z, 0), k))
+        }
         return v.sanitized()
     }
 

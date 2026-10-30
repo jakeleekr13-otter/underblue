@@ -10,9 +10,19 @@ enum VideoColorPipeline {
          AVVideoTransferFunctionKey: hdr ? (pq ? AVVideoTransferFunction_SMPTE_ST_2084_PQ : AVVideoTransferFunction_ITU_R_2100_HLG) : AVVideoTransferFunction_ITU_R_709_2,
          AVVideoYCbCrMatrixKey: hdr ? AVVideoYCbCrMatrix_ITU_R_2020 : AVVideoYCbCrMatrix_ITU_R_709_2]
     }
+    /// The colour space a frame is rendered into. SDR takes the space CoreVideo reads the Rec. 709 tags as. Core Image
+    /// decodes the source with it (gamma 1.961), and the preview compositor encodes with it. CGColorSpace.itur_709
+    /// encodes with 2.4, so the SDR export came out brighter than its source and the preview: grey 0.50 -> 0.56, even
+    /// with the Original preset (30 Oct 2026).
     static func colorSpace(hdr: Bool, pq: Bool = false) -> CGColorSpace {
-        CGColorSpace(name: hdr ? (pq ? CGColorSpace.itur_2100_PQ : CGColorSpace.itur_2100_HLG) : CGColorSpace.itur_709)!
+        hdr ? CGColorSpace(name: pq ? CGColorSpace.itur_2100_PQ : CGColorSpace.itur_2100_HLG)! : sdrSpace
     }
+    private static let sdrSpace: CGColorSpace = {
+        let tags = [kCVImageBufferColorPrimariesKey: kCVImageBufferColorPrimaries_ITU_R_709_2,
+                    kCVImageBufferTransferFunctionKey: kCVImageBufferTransferFunction_ITU_R_709_2,
+                    kCVImageBufferYCbCrMatrixKey: kCVImageBufferYCbCrMatrix_ITU_R_709_2] as CFDictionary
+        return CVImageBufferCreateColorSpaceFromAttachments(tags)?.takeRetainedValue() ?? CGColorSpace(name: CGColorSpace.itur_709)!
+    }()
     static func compression(hdr: Bool, bitrate: Int, frameRate: Float) -> [String: Any] {
         var settings: [String: Any] = [AVVideoAverageBitRateKey: bitrate,
             AVVideoExpectedSourceFrameRateKey: frameRate, AVVideoAllowFrameReorderingKey: false,

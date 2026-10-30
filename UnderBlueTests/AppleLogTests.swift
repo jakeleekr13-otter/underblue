@@ -63,7 +63,8 @@ final class AppleLogTests: XCTestCase {
         XCTAssertNil(metadata2.primaries)
     }
 
-    /// Flat log puts black at 0.15 and grey at 0.49. Decoded and tone mapped, black is 0 and grey about 0.39.
+    /// Flat log puts black at 0.15 and grey at 0.49. Decoded and tone mapped, black is 0 and grey about 0.31, as in the
+    /// preview (testPreviewOriginalShowsTheDecodedLog). The export encoded with gamma 2.4 before and read 0.39 (30 Oct 2026).
     func testSDRExportDecodesTheLog() async throws {
         for format in [AppleLog.log, .log2] {
             let url = try await Self.makeClip(format)
@@ -78,7 +79,7 @@ final class AppleLogTests: XCTestCase {
                 track: try await exported.loadTracks(withMediaType: .video)[0],
                 outputSettings: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]), asset: exported)
             XCTAssertLessThan(values[0], 0.04, "\(format) black")
-            XCTAssertEqual(values[1], 0.39, accuracy: 0.06, "\(format) grey")
+            XCTAssertEqual(values[1], 0.31, accuracy: 0.04, "\(format) grey")
             XCTAssertGreaterThan(values[2], values[1] + 0.2, "\(format) white")
         }
     }
@@ -106,8 +107,8 @@ final class AppleLogTests: XCTestCase {
             videoSettings: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA])
         output.videoComposition = try await VideoPreview().composition(asset: asset, settings: settings)
         let values = try await Self.patchValues(output, asset: asset)
-        // Flat log grey would read 0.49. The decode matches the export (linear 0.10), but the compositor
-        // encodes Rec. 709 with gamma 1.961 where the export render uses 2.4, so grey reads 0.31 (26 Oct 2026).
+        // Flat log grey would read 0.49. The decode matches the export (linear 0.10). The compositor encodes
+        // Rec. 709 with gamma 1.961, so grey reads 0.31. The export does the same since 30 Oct 2026.
         XCTAssertLessThan(values[0], 0.04, "black")
         XCTAssertEqual(values[1], 0.31, accuracy: 0.04, "grey")
     }

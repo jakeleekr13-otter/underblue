@@ -63,6 +63,13 @@ struct PreviewPane: View {
                 }
             } else if let player = model.player {
                 VideoPlayer(player: player)
+                    // The original plays until the scene analysis is done (MacModel.buildVideoPreview).
+                    .overlay(alignment: .topTrailing) {
+                        if model.analysingSelectedVideo {
+                            HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Analyzing…").font(.footnote.weight(.medium)) }
+                                .padding(8).background(.regularMaterial, in: Capsule()).padding(12)
+                        }
+                    }
             } else {
                 ProgressView()
             }

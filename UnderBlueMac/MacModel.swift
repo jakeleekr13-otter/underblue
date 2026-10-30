@@ -93,6 +93,13 @@ final class MacModel {
     private var photoAnalysis: [UUID: WaterAnalysis] = [:]
     private var videoAnalysis: [UUID: VideoRestorationAnalysis] = [:]
     private var previewTask: Task<Void, Never>?
+    /// The selected video's scene analysis. Its own task, so a look change (refreshPreview cancels previewTask)
+    /// does not cancel it. Before, a slider moved during the analysis left the preview without it.
+    private var analysisTask: Task<Void, Never>?
+    /// The video whose scene analysis runs now. Its preview shows the original until the analysis is done.
+    private var analysingVideo: UUID?
+    /// The preview shows the original because the selected video is still analysed.
+    var analysingSelectedVideo: Bool { analysingVideo != nil && analysingVideo == selectedItem?.id }
     private var previewGeneration = PreviewGeneration()
     private var runTask: Task<Void, Never>?
     private var openedScopes: [URL] = []
@@ -415,6 +422,7 @@ final class MacModel {
 
     private func clearPreview() {
         previewTask?.cancel()
+        analysisTask?.cancel(); analysisTask = nil; analysingVideo = nil
         originalImage = nil; correctedImage = nil; player?.pause(); player = nil
         previewError = nil; previewBusy = false
     }
@@ -597,25 +605,40 @@ final class MacModel {
     private func buildVideoPreview(_ item: BatchEngine.Item) async throws {
         let url = item.url
         let metadata = try await SafeReadRetry().run(operation: .inspection) { try await MediaInspector().inspect(url) }
-        previewSettings.update(settings, comparing: showingOriginal)
+        // Scene analysis takes a while. The preview plays at once and shows the original until the analysis is
+        // ready: the filter without the analysis looked different from the export (Jake, 30 Oct 2026).
+        let pending = videoAnalysis[item.id] == nil
+        if pending { analysingVideo = item.id }
+        previewSettings.update(settings, comparing: showingOriginal || pending)
         let avItem = try await videoPreview.item(url, settings: previewSettings, analysis: videoAnalysis[item.id])
         try Task.checkCancellation()
         player = AVPlayer(playerItem: avItem)
         previewBusy = false
-        // Scene analysis takes a while. The preview plays at once and improves when the analysis is ready.
-        if videoAnalysis[item.id] == nil {
-            do { videoAnalysis[item.id] = try await videoPreview.analyze(url, metadata: metadata) }
-            catch is CancellationError { throw CancellationError() }
-            catch { await diagnostics.recorder.record(Failure.restorationFallback(.videoSceneAnalysis), operation: .videoRestoration) }
+        guard pending else { try await renderVideoComposition(item); return }
+        analysisTask = Task { [weak self] in
+            guard let self else { return }
+            let analysis: VideoRestorationAnalysis?
+            do { analysis = try await videoPreview.analyze(url, metadata: metadata) }
+            catch is CancellationError { return }
+            catch {
+                analysis = nil
+                await diagnostics.recorder.record(Failure.restorationFallback(.videoSceneAnalysis), operation: .videoRestoration)
+            }
+            guard !Task.isCancelled, analysingVideo == item.id else { return }
+            videoAnalysis[item.id] = analysis
+            analysingVideo = nil
+            // A failed analysis leaves the original for the filter without the scene correction, as before.
+            do { try await renderVideoComposition(item) }
+            catch is CancellationError {}
+            catch { previewError = Failure.classify(error, operation: .preview).message }
         }
-        try await renderVideoComposition(item)
     }
 
     private func renderVideoComposition(_ item: BatchEngine.Item) async throws {
         guard let avItem = player?.currentItem else { return }
         var s = settings
         if let analysis = videoAnalysis[item.id] { s.analysis = analysis.legacyAnalysis }
-        previewSettings.update(s, comparing: showingOriginal)
+        previewSettings.update(s, comparing: showingOriginal || analysingVideo == item.id)
         let generation = previewGeneration.begin()
         let composition = try await videoPreview.composition(asset: avItem.asset, settings: previewSettings, analysis: videoAnalysis[item.id])
         try Task.checkCancellation()

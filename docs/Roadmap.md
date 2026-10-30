@@ -48,7 +48,7 @@ Order matters. The hardening changes the binary, so it comes before the archive 
 |---|---|---|---|
 | 3.1 | m6 reef stays olive in video (photo is brown) | Fixed (29 Oct, merged to `main`, Jake): each scene fits the video rule to the photo rule on its keyframe. Video reef hue 132 → 98 (photo 93). Open: a real reef clip and the cost on the iPhone. | [RestorationExperiments](RestorationExperiments.md) |
 | 3.2 | Apple Log: real clips (Log ProRes, Log 2 ProRes and HEVC), look of mid-tones | Generated clips only. Needs footage. | [Verification](Verification.md) |
-| 3.3 | Preview and export use different gamma (1.961 and 2.4) | The same frame reads 0.31 and 0.38. Not checked on a display. | [Verification](Verification.md) |
+| 3.3 | Preview and export use different gamma (1.961 and 2.4) | Fixed (30 Oct 2026): the SDR export now encodes like the preview. Jake checks on the iPhone. | [Verification](Verification.md) |
 | 3.4 | Particle filter for video | Off by default. Jake: record only for now. Turn on at about +20% time and +100 MB. | [RestorationExperiments](RestorationExperiments.md) D2 |
 | 3.5 | Napoleon clip, first 2 s: the fish is pink, then grey at 1.5 s | Jake saw it (27 Oct). Old behaviour. The clip starts facing the surface, and the water holds red until 1.4 s. The analysis made two one-keyframe scenes (0 s, 1.06 s). The colour track cannot fix a start state. Jake: ship 1.1.7 without it. | [ColorAlgorithm](ColorAlgorithm.md) |
 | 3.6 | Preview speed on older iPhones and on a hot iPhone (thermal state 2 or higher) | Not measured. The 30 M px/s budget comes from one iPhone 17. | [Verification](Verification.md) |

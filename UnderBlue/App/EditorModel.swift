@@ -123,7 +123,9 @@ final class EditorModel {
             } else {
                 let metadata = try await SafeReadRetry().run(operation: .inspection) { try await MediaInspector().inspect(media.url) }
                 self.metadata = metadata
-                previewSettings.update(settings, comparing: comparing)
+                // The first frame shows the original until the analysis is done. Before it the filter has no
+                // analysis, and its look differed from playback and export (Jake, 30 Oct 2026).
+                previewSettings.update(settings, comparing: true)
                 player = AVPlayer(playerItem: try await videoPreview.item(media.url, settings: previewSettings))
                 ready = true
                 // Show the first frame immediately. Device benchmarking and depth analysis continue
@@ -141,6 +143,9 @@ final class EditorModel {
                     let fallback = Failure.restorationFallback(.videoSceneAnalysis)
                     Task { await diagnostics.record(fallback, operation: .videoRestoration) }
                     if notice == nil { notice = fallback.message }
+                    // The preview leaves the original and shows the filter without the scene correction.
+                    analyzing = false
+                    await refreshPreview()
                     return
                 }
                 videoAnalysis = analysis
@@ -152,7 +157,14 @@ final class EditorModel {
                         let composition = try await videoPreview.composition(asset: item.asset,
                                                                              settings: previewSettings,
                                                                              analysis: analysis)
-                        if previewGeneration.accepts(generation) { item.videoComposition = composition }
+                        if previewGeneration.accepts(generation) {
+                            item.videoComposition = composition
+                            // A paused player keeps the frame it drew before the analysis, so the still frame
+                            // showed another look than playback and export. Draw it again (as MacModel does).
+                            if let player, player.rate == 0 {
+                                await player.seek(to: player.currentTime(), toleranceBefore: .zero, toleranceAfter: .zero)
+                            }
+                        }
                     } catch is CancellationError { return } catch { report(error, operation: .preview) }
                 }
             }
@@ -162,7 +174,8 @@ final class EditorModel {
     func refreshPreview() async {
         guard !previewPaused else { return }
         guard media.kind == .photo else {
-            previewSettings.update(settings, comparing: comparing)
+            // Until the scene analysis arrives the preview shows the original (see load()).
+            previewSettings.update(settings, comparing: comparing || (analyzing && videoAnalysis == nil))
             let generation = previewGeneration.begin()
             // Without a scene analysis (it failed) the preview still follows the preset and intensity.
             guard let player, let item = player.currentItem else { return }

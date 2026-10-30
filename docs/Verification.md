@@ -70,13 +70,34 @@ What changed:
 Checked so far, on the simulator and the Mac with generated clips only:
 - The curve matches Apple's `AppleLogToLin` LUT at 10 points (`Apple-log/` at the repository root, not in git).
 - Every frame path (AVAssetReader, AVVideoComposition, AVAssetImageGenerator) passes the log signal through unchanged, tagged as sRGB.
-- SDR export of a grey card: black 0.00, 18% grey 0.38, 90% white 0.71 (Log and Log 2). HDR export is HLG and passes `OutputValidator`.
+- SDR export of a grey card: black 0.00, 18% grey 0.31 (Log and Log 2). Before 30 Oct 2026 grey read 0.38 and 90% white 0.71; white is unmeasured since. HDR export is HLG and passes `OutputValidator`.
 
 Still open:
 - Real clips: Apple Log ProRes (iPhone 15 Pro or later), Apple Log 2 in ProRes and in HEVC (iPhone 17 Pro). Check the tags, the look and the HDR export.
 - Look: 18% grey ends at 709 code 0.39. Apple's Rec. 709 LUT puts it at 0.53, so our mid-tones are darker before the colour correction. Judge on real footage.
 - ProRes RAW on the Mac: no sample yet (iPhone 17 Pro with external storage). Check that frames arrive developed, their colour tags, and the export.
-- The preview compositor encodes Rec. 709 with gamma 1.961 and the export render with 2.4. The same frame reads 0.31 in the preview and 0.38 in the export. This applies to every video, not only log. Not checked on a display.
+- Fixed 30 Oct 2026: the preview compositor encoded Rec. 709 with gamma 1.961 and the export render with 2.4. See "Preview, still frame and export match" below.
+
+## Preview, still frame and export match (30 Oct 2026)
+
+Jake's rule (30 Oct 2026): the still frame before playback, the preview and the export must look the same.
+
+What was wrong:
+- SDR export was brighter than its source and the preview. Core Image read the source with gamma 1.961, and the export wrote with `CGColorSpace.itur_709` (gamma 2.4). With the Original preset, grey 0.50 came out as 0.56; every value became source^0.817.
+- The still frame before playback kept the frame drawn before the analysis. That frame used the filter with no analysis: a much more saturated look than playback and export.
+
+What changed:
+- SDR export renders into the colour space CoreVideo reads the Rec. 709 tags as (`VideoColorPipeline.colorSpace`). HDR export is unchanged.
+- While a video is analysed, the preview shows the original. After the analysis the paused frame is drawn again (as the Mac app already did).
+- Mac: the same, with "Analyzing…" over the player. The analysis now runs in its own task. Before, `refreshPreview` cancelled it when a slider moved during the analysis, and that video's preview stayed without it (found in the code, not reproduced).
+
+Checked:
+- New test `VideoPreviewExportMatchTests`: three patches, Original and Natural. Preview and export match within 0.03. Before the fix it failed on 17 of 18 values (export brighter by up to 0.075).
+- `AppleLogTests`: log grey in the SDR export now reads 0.31, as in the preview (0.39 before).
+
+Still open:
+- Jake on the iPhone: a clip's still frame, playback and an exported file look the same.
+- Mac app: the original and "Analyzing…" while a video is analysed; a slider moved meanwhile keeps the analysis. Built only, not run.
 
 ## m5 white band at the top (25 Oct 2026, iPhone, `main`)
 

@@ -205,10 +205,9 @@ Jake saw a black bottom-left corner (9 to 12 s) and a dark veil around a black m
 
 Get Pro → Redeem Code opens Apple's sheet. Checked on the simulator: the button shows in Korean for a non-Pro user. The sheet itself was not opened.
 
-Still open, by hand with a sandbox offer code (PurchaseTests are not run):
-- Redeem in the app: Pro unlocks and "UnderBlue Pro is unlocked." shows.
-- Redeem with the redemption URL while UnderBlue is closed: Pro is on at the next launch.
-- An invalid or used code: Apple's sheet shows the error and Pro stays locked.
+Closed (Jake, 30 Oct 2026): entering a code at purchase unlocks Pro.
+- A code redeemed outside the app is not checked by hand. The app reads it as any purchase: `Transaction.updates` while it runs, `Transaction.currentEntitlements` at launch (PurchaseStore).
+- An invalid or used code is handled by Apple's sheet.
 
 ## Changes waiting for the final round
 

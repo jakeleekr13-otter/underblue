@@ -25,7 +25,7 @@ This page only collects open work. Each row points to the document that holds th
 | 1.3 | Press-and-hold subject pick on the iPhone (U6) | Open. Jake checks. | [ManualSubject](ManualSubject.md) |
 | 1.4 | Labs orb switch: export takes about 4.5 s longer when on | Measured, not explained. Labs only, off by default. | [Verification](Verification.md) |
 | 1.5 | Jake's iPhone checks: jellyfish legs and fins clip 31% (source 23.6%); napoleon clip at 6.7 s, the red rise is smaller, not gone; shallow-water shark photo (3 Oct); subject strength slider drag | Open. Jake checks. If the slider still lags, cache the frame before the lift. | [Verification](Verification.md), [ManualSubject](ManualSubject.md) |
-| 1.6 | Offer code redemption: in the app, by URL while the app is closed, and an invalid code | Open. By hand with a sandbox offer code. | [Verification](Verification.md) |
+| 1.6 | Offer code redemption: in the app, by URL while the app is closed, and an invalid code | Done (Jake, 30 Oct 2026): a code entered in the app unlocks Pro. Codes redeemed outside the app take the normal purchase path. | [Verification](Verification.md) |
 
 ## 2. Mac app 1.0 release (next)
 

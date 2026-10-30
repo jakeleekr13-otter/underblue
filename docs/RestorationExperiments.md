@@ -414,7 +414,7 @@ Results, 40 images (OKLab chroma / hue of the box median; plant boxes count only
 - Cost: one more 320 px render per scene and settings, cached with the values. Not measured on the iPhone.
 - Tests: `RestorationTests` 89 run, 1 skipped, 0 failed (new: `testVideoSceneFitFollowsThePhotoRuleOnTheKeyframe`). The Mac app builds.
 
-#### Keep colour: the residual cast (29 Oct 2026, branch `keep-colour`)
+#### Keep colour: the residual cast (29 Oct 2026, merged to `main` 30 Oct after Jake's iPhone check)
 Jake: Natural 80 looks a bit washed white on a green-teal clip (`tune/video/Tune_20_Oct/2017-01-08 01.21.36.MOV`).
 - Not a regression: mean L* and chroma are flat from 1.1.3 to 1.1.7 (14 clips).
 - Cause found on the stills: the restored path used the source cast gains. The restoration had already taken part of the cast, so the cast came off twice. c01_9 restored mean chroma: 0.053 before the cast step, 0.008 after it.

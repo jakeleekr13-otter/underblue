@@ -1,14 +1,22 @@
 # App Store release checklist
 
-Last reviewed: 2026-10-27
+Last reviewed: 2026-10-31
 
-## Current release: iPhone 1.1.7 (build 13), 27 Oct 2026
+## Current release: iPhone 1.1.8 (build 14), 31 Oct 2026
 
 iPhone only. The Mac targets stay at 1.0 (1).
 
-- 1.1.6 (12) shipped on 26 Oct 2026. Its release note is in `AppStoreMetadata.md`.
-- 1.1.7 (13) is uploaded (Jake, 27 Oct 2026). New since 1.1.6: less flicker in videos when the camera colour or brightness jumps, and even open water in murky photos.
-- Release note: `AppStoreMetadata.md`, "What's New (1.1.7)". Checks: `Verification.md`, 26 and 27 Oct 2026.
+- 1.1.7 (13) was uploaded on 27 Oct 2026. Its release note is in `AppStoreMetadata.md`.
+- 1.1.8 (14) is archived, not uploaded (31 Oct 2026). New since 1.1.7:
+  - Video: each scene fits its reef colour to the photo rule, so an olive reef turns brown.
+  - The restored path no longer takes the cast off twice. Green-teal water stayed grey-white before.
+  - SDR video export matches the preview. It was brighter before.
+  - The video preview shows the original until the analysis is done.
+  - A video export pauses in the background. It goes on when the app is back before iOS suspends it.
+  - A rating prompt from the 10th save, once per version, only online.
+- Release note: not written yet.
+- Checks and open device checks: `Verification.md`, 29 to 31 Oct 2026.
+- Known test failure: the JPEG colour resolution test fails on the simulator, also before these changes (`Verification.md`, 31 Oct).
 - Not fixed: the first 2 s of the napoleon clip stay pink (`Roadmap.md` 3.5).
 
 ## iPhone 1.1.4 (build 10), 23 Oct 2026 (history)

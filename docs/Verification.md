@@ -2,6 +2,35 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## Video export pauses in the background (31 Oct 2026, merged to `main` 8ea5ae8)
+
+What changed: a video export waits while the app is not active. It goes on with the same writer when the app is back. When the background time ends (about 27 s), the export is cancelled as before. Export files start with `export-`, and a new launch removes them.
+
+Checked on the iPhone 17 with a log build:
+- 16 s in Settings: the export went on and passed the output check (720p, 1736 frames).
+- 120 s in Settings: cancelled at 27 s, the file was removed, free memory came back (4K).
+- App killed while paused: the next launch removed its file.
+
+Still open:
+- Lock the screen during an export, then unlock within 20 s.
+- Take a phone call during an export. A call banner now pauses the export too.
+- A 4K and an HDR export that pause and go on.
+
+## App Store rating prompt (31 Oct 2026, merged to `main` 1ec9ef5)
+
+What changed: from the 10th save to Photos, the app asks for a rating once per app version. It asks only when online, after the "Saved to Photos" notice or a fully saved batch summary closes.
+
+Checked: unit tests and the iOS and Mac builds.
+
+Still open (the UI test runner did not start on 31 Oct):
+- Launch with `-reviewPrompt.saves 10`, save one photo, tap OK: the rating sheet appears.
+- Save once more in the same version: no sheet.
+- Airplane mode: no sheet.
+
+## JPEG colour resolution test fails on the simulator (31 Oct 2026)
+
+`PhotoFormatTests.testJPEGExportKeepsFullColorResolutionAndTheCaptureDate` fails on the iPhone 17e simulator (iOS 27.1 SDK). The JPEG has 2x2 luma sampling, so colour is at half resolution. It fails the same way on `a400a74`, before the 31 Oct changes. Not checked on a device.
+
 ## Video reef colour: the scene fit (29 Oct 2026, merged to `main`)
 
 What changed: each video scene fits its object colour values to the photo rule on its keyframe. So an olive reef turns brown in video, as in photos. Details: [RestorationExperiments](RestorationExperiments.md), "Video reef colour: the scene fit".

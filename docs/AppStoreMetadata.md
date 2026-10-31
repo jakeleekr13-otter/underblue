@@ -180,6 +180,20 @@ UnderBlue está pensada para los recuerdos del buceo recreativo. No es una herra
 
 **Spanish (Spain):** buceo,submarinismo,snorkel,fotosub,submarino,fotos,vídeo,arrecife,coral,corregir,filtro,restaurar (98 bytes)
 
+## What's New (1.1.8)
+
+**English:** Reefs in videos now keep a natural colour instead of turning olive. Green-blue water no longer turns grey-white. Exported videos now match the preview. If you leave the app for a moment during a video export, it pauses and continues when you return.
+
+**Korean:** 동영상 속 산호초가 이제 올리브색으로 변하지 않고 자연스러운 색을 유지합니다. 청록색 물이 더 이상 회백색으로 변하지 않습니다. 내보낸 동영상이 이제 미리보기와 똑같이 보입니다. 동영상을 내보내는 중에 앱을 잠깐 벗어나면 내보내기가 일시정지되고, 돌아오면 이어서 진행됩니다.
+
+**Japanese:** ビデオのサンゴ礁が、オリーブ色にならず自然な色のままになりました。青緑の水が灰白色になることがなくなりました。書き出したビデオがプレビューと同じに見えるようになりました。ビデオの書き出し中に少しの間アプリを離れると、書き出しは一時停止し、戻ると続きから再開します。
+
+**Simplified Chinese:** 视频中的珊瑚礁现在保持自然颜色，不再变成橄榄色。青绿色的水不再变成灰白色。导出的视频现在与预览一致。导出视频时短暂离开应用，导出会暂停，返回后继续。
+
+**Traditional Chinese:** 影片中的珊瑚礁現在保持自然色彩，不再變成橄欖色。青綠色的水不再變成灰白色。匯出的影片現在與預覽一致。匯出影片時短暫離開 App，匯出會暫停，返回後繼續。
+
+**Spanish (Spain):** Los arrecifes de los vídeos ahora conservan un color natural en lugar de volverse verde oliva. El agua verdeazulada ya no se vuelve gris blanquecina. Los vídeos exportados ahora se ven igual que la vista previa. Si sales de la app un momento mientras exportas un vídeo, la exportación se pausa y continúa cuando vuelves.
+
 ## What's New (1.1.7)
 
 **English:** Videos flicker less when the camera's colour or brightness jumps for a moment. In murky photos, open water now looks even, with no patches or halo around the subject.

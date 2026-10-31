@@ -14,7 +14,7 @@ iPhone only. The Mac targets stay at 1.0 (1).
   - The video preview shows the original until the analysis is done.
   - A video export pauses in the background. It goes on when the app is back before iOS suspends it.
   - A rating prompt from the 10th save, once per version, only online.
-- Release note: not written yet.
+- Release note: `AppStoreMetadata.md`, "What's New (1.1.8)" (Jake approved the English text, 31 Oct 2026).
 - Checks and open device checks: `Verification.md`, 29 to 31 Oct 2026.
 - Known test failure: the JPEG colour resolution test fails on the simulator, also before these changes (`Verification.md`, 31 Oct).
 - Not fixed: the first 2 s of the napoleon clip stay pink (`Roadmap.md` 3.5).

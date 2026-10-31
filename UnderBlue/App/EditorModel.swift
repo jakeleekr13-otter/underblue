@@ -76,6 +76,7 @@ final class EditorModel {
     var optionsDismissing = false
     var showPro = false
     private var backgroundTask = BackgroundTask()
+    private var exportPause = ExportPause()
     private var cancellationNotice = String(localized: "Export cancelled")
     var completedURL: URL?
     /// Fixed when the export finishes, so the name matches the look that was exported.
@@ -315,6 +316,8 @@ final class EditorModel {
         let chosenSubjects = subjectChoice
         var chosenOptions = options
         cancellationNotice = String(localized: "Export cancelled")
+        let pause = ExportPause()
+        exportPause = pause
         backgroundTask.begin("Finish or cancel export") { [weak self] in
             Task { @MainActor in self?.cancelForBackground() }
         }
@@ -337,7 +340,7 @@ final class EditorModel {
                 let output: URL
                 if let metadata {
                     output = try await video.export(url: media.url, metadata: metadata, settings: chosenSettings,
-                                                    options: chosenOptions, restorationAnalysis: videoAnalysis) { value in
+                                                    options: chosenOptions, restorationAnalysis: videoAnalysis, pause: pause) { value in
                         await self.updateProgress(value)
                     }.url
                 } else {
@@ -353,6 +356,7 @@ final class EditorModel {
                     completedURL = output
                 } catch { TemporaryFiles.remove(output); throw error }
             } catch is CancellationError { notice = cancellationNotice }
+            catch let error where pause.wasPaused && Self.stoppedByIOS(error) { notice = Self.backgroundNotice }
             catch { report(error) }
             if reserved {
                 do { try trial.rollback() } catch { report(error) }
@@ -371,10 +375,29 @@ final class EditorModel {
         } catch { report(error, operation: .save) }
     }
     func discardCompleted() { TemporaryFiles.remove(completedURL); completedURL = nil; completedName = nil }
+    /// Video: the export waits while the app is not active and goes on when the app is back. iOS gives about
+    /// 30 s in the background; when that ends, the background task cancels the export (`startExport`).
+    /// Photo: one render that cannot wait, so the background cancels it.
+    func scenePhaseChanged(_ phase: ScenePhase) {
+        guard exporting else { return }
+        if media.kind == .video { exportPause.isPaused = phase != .active }
+        else if phase == .background { cancelForBackground() }
+    }
     func cancelForBackground() {
         guard exporting else { return }
-        cancellationNotice = String(localized: "Export cancelled because UnderBlue went into the background. Keep the app open and try again. Your trial hasn’t been used.")
+        cancellationNotice = Self.backgroundNotice
         exportTask?.cancel()
+    }
+    private static var backgroundNotice: String {
+        String(localized: "Export cancelled because UnderBlue went into the background. Keep the app open and try again. Your trial hasn’t been used.")
+    }
+    /// The writer error after iOS suspended a paused export (iPhone 17, 31 Oct 2026). macOS does not suspend apps.
+    private static func stoppedByIOS(_ error: any Error) -> Bool {
+        #if os(iOS)
+        return (error as? AVError)?.code == .operationInterrupted
+        #else
+        return false
+        #endif
     }
     private func updateProgress(_ value: Double) { progress = value }
     // MARK: Subjects

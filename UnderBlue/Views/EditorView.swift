@@ -38,7 +38,7 @@ struct EditorView: View {
             .onDisappear { model.close() }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in model.memoryWarning() }
             .onReceive(NotificationCenter.default.publisher(for: .AVPlayerItemFailedToPlayToEndTime)) { model.playbackFailed($0) }
-            .onChange(of: scenePhase) { _, phase in if phase == .background { model.cancelForBackground() } }
+            .onChange(of: scenePhase) { _, phase in model.scenePhaseChanged(phase) }
             .sheet(isPresented: $model.showPro) { ProView() }
             .sheet(isPresented: $model.showExportOptions, onDismiss: { model.optionsDismissing = false }) { ExportView(model: model) }
             .sheet(isPresented: Binding(get: { model.completedURL != nil && !model.optionsDismissing }, set: { if !$0 { model.discardCompleted() } })) {

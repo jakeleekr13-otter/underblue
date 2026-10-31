@@ -12,6 +12,18 @@ struct VideoExportResult: Sendable {
     let frameLoopSeconds: Double
 }
 
+/// Holds a video export between frames while the app is not active. EditorModel sets it.
+final class ExportPause: Sendable {
+    private struct State { var paused = false, wasPaused = false }
+    private let state = OSAllocatedUnfairLock(initialState: State())
+    var isPaused: Bool {
+        get { state.withLock { $0.paused } }
+        set { state.withLock { $0.paused = newValue; $0.wasPaused = $0.wasPaused || newValue } }
+    }
+    /// True once the export has waited. A writer that fails after that was most likely stopped by iOS.
+    var wasPaused: Bool { state.withLock { $0.wasPaused } }
+}
+
 actor VideoExporter {
     private let restorationEngine = RestorationEngine()
     private let diagnostics: DiagnosticRecorder?
@@ -32,7 +44,7 @@ actor VideoExporter {
     }
 
     func export(url: URL, metadata: VideoMetadata, settings: FilterSettings, options: ExportOptions,
-                restorationAnalysis: VideoRestorationAnalysis? = nil,
+                restorationAnalysis: VideoRestorationAnalysis? = nil, pause: ExportPause? = nil,
                 progress: @escaping @Sendable (Double) async -> Void) async throws -> VideoExportResult {
         let interval = signposter.beginInterval("Video export")
         let startedAt = Date()
@@ -50,7 +62,7 @@ actor VideoExporter {
         let engine = FilterEngine(memoryLimitMB: Self.memoryLimitMB(for: size))
         let bitrate = Int(min(100_000_000, max(6_000_000, size.width * size.height * Double(max(24, metadata.frameRate)) * 0.12)))
         try StorageCheck.require(bytes: Int64(Double(bitrate) / 8 * duration * 1.3))
-        let target = try TemporaryFiles.makeURL(extension: "mov")
+        let target = try TemporaryFiles.makeExportURL(extension: "mov")
         var succeeded = false
         defer { if !succeeded { TemporaryFiles.remove(target) } }
         let reader = try AVAssetReader(asset: asset)
@@ -151,6 +163,10 @@ actor VideoExporter {
         guard let pool = sink.pixelBufferPool else { throw UnderBlueError.exportFailed }
         while true {
             try Task.checkCancellation()
+            // Out of the foreground: no new GPU or encoder work. On an iPhone 17 the same writer went on after 16 s
+            // in the background; after iOS suspended the app it had failed with -11847. While a 4K export waits, the
+            // free memory comes back from 2132 to about 3200 MB within 5 s; clearCaches made no difference (31 Oct 2026).
+            while pause?.isPaused == true { try await Task.sleep(for: .milliseconds(50)) }
             if frames % 30 == 0, ProcessInfo.processInfo.thermalState == .critical { throw Failure(kind: .thermal, domain: "UnderBlue", code: 0) }
             guard writer.status == .writing, reader.status != .failed else { throw writer.error ?? reader.error ?? UnderBlueError.exportFailed }
             // Read until a frame is ready: up to 4 at the start, while the filter fills its look-ahead.
@@ -243,8 +259,8 @@ actor VideoExporter {
 
     /// Free memory that Core Image must leave alone. The rest of an export (decoder, encoder, frame buffers)
     /// took about 190 MB on an iPhone 17 at 4K. With 80% of the free memory given to Core Image instead, the
-    /// free memory fell to 11 MB (22 Oct 2026, docs/PerformanceMeasurement.md). The app stays in the
-    /// foreground during an export, so the free memory does not drop suddenly.
+    /// free memory fell to 11 MB (22 Oct 2026, docs/PerformanceMeasurement.md). An export renders only in the
+    /// foreground (it waits in the background), so the free memory does not drop suddenly.
     static let memoryReserveMB = 512
 
     /// The memory that is free now: what the system still lets this app use on an iPhone, the free and

@@ -243,7 +243,7 @@ actor PhotoProcessor {
                 guard let expanded = photoHDR.reexpand(image, original: original, toneMapped: source) else { throw UnderBlueError.exportFailed }
                 hdr = expanded
             }
-            let target = try TemporaryFiles.makeURL(extension: format.fileExtension)
+            let target = try TemporaryFiles.makeExportURL(extension: format.fileExtension)
             do {
                 var options: [CIImageRepresentationOption: Any] = [Self.quality: 1.0]
                 if let hdr { options[.hdrImage] = hdr }

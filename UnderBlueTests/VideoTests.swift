@@ -166,4 +166,53 @@ final class VideoTests: XCTestCase {
         let after = Set((try? FileManager.default.contentsOfDirectory(atPath: TemporaryFiles.directory.path)) ?? [])
         XCTAssertEqual(before, after)
     }
+    /// EditorModel pauses an export while the app is not active. It must render nothing while paused, then write
+    /// every frame with the same writer.
+    func testPausedExportWaitsThenWritesEveryFrame() async throws {
+        let url = try fixture("h264_1080_30_audio")
+        let metadata = try await MediaInspector().inspect(url)
+        let plain = try await VideoExporter().export(url: url, metadata: metadata, settings: .init(), options: .init()) { _ in }
+        defer { TemporaryFiles.remove(plain.url) }
+        let before = Set((try? FileManager.default.contentsOfDirectory(atPath: TemporaryFiles.directory.path)) ?? [])
+        let pause = ExportPause()
+        pause.isPaused = true
+        let progress = ProgressLog()
+        let task = Task {
+            try await VideoExporter().export(url: url, metadata: metadata, settings: .init(), options: .init(), pause: pause) { await progress.add($0) }
+        }
+        try await Task.sleep(for: .seconds(2))
+        let started = Set((try? FileManager.default.contentsOfDirectory(atPath: TemporaryFiles.directory.path)) ?? []).subtracting(before)
+        XCTAssertEqual(started.count, 1, "The writer did not start, so the pause was never reached")
+        let whilePaused = await progress.values
+        XCTAssertTrue(whilePaused.isEmpty, "A paused export rendered frames: \(whilePaused)")
+        pause.isPaused = false
+        let resumed = try await task.value
+        defer { TemporaryFiles.remove(resumed.url) }
+        XCTAssertEqual(resumed.frames, plain.frames)
+        XCTAssertEqual(resumed.metadata.duration, plain.metadata.duration, accuracy: 0.001)
+        XCTAssertTrue(pause.wasPaused)
+    }
+    /// The background task cancels an export that still waits when iOS is about to suspend the app.
+    func testCancellationWhilePausedLeavesNoPartialOutput() async throws {
+        let url = try fixture("h264_1080_30_audio")
+        let metadata = try await MediaInspector().inspect(url)
+        let before = Set((try? FileManager.default.contentsOfDirectory(atPath: TemporaryFiles.directory.path)) ?? [])
+        let pause = ExportPause()
+        pause.isPaused = true
+        let task = Task {
+            try await VideoExporter().export(url: url, metadata: metadata, settings: .init(), options: .init(), pause: pause) { _ in }
+        }
+        try await Task.sleep(for: .seconds(2))
+        let started = Set((try? FileManager.default.contentsOfDirectory(atPath: TemporaryFiles.directory.path)) ?? []).subtracting(before)
+        XCTAssertEqual(started.count, 1, "The writer did not start, so the pause was never reached")
+        task.cancel()
+        do { _ = try await task.value; XCTFail("Cancelled export succeeded") } catch is CancellationError { }
+        let after = Set((try? FileManager.default.contentsOfDirectory(atPath: TemporaryFiles.directory.path)) ?? [])
+        XCTAssertEqual(before, after)
+    }
+}
+
+private actor ProgressLog {
+    var values: [Double] = []
+    func add(_ value: Double) { values.append(value) }
 }

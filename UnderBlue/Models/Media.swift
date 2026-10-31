@@ -26,9 +26,16 @@ struct MediaFile: Transferable, Sendable {
 
 enum TemporaryFiles {
     static let directory = FileManager.default.temporaryDirectory.appendingPathComponent("UnderBlue", isDirectory: true)
+    /// Export outputs start with this. A new launch removes them at any age: the process that made them is gone,
+    /// so each one is unfinished (the app was ended during the export) or was never saved.
+    static let exportPrefix = "export-"
     static func makeURL(extension ext: String) throws -> URL {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         return directory.appendingPathComponent(UUID().uuidString).appendingPathExtension(ext)
+    }
+    static func makeExportURL(extension ext: String) throws -> URL {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory.appendingPathComponent(exportPrefix + UUID().uuidString).appendingPathExtension(ext)
     }
     static func copyImport(_ source: URL) throws -> URL {
         let bytes = try source.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
@@ -49,6 +56,7 @@ enum TemporaryFiles {
     }
     static func cleanPreviousSession() {
         for url in (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.contentModificationDateKey])) ?? [] {
+            if url.lastPathComponent.hasPrefix(exportPrefix) { remove(url); continue }
             let modified = try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
             if let modified, Date().timeIntervalSince(modified) > 24 * 60 * 60 { remove(url) }
         }

@@ -1,10 +1,12 @@
 import SwiftUI
 import AVKit
+import StoreKit
 
 struct EditorView: View {
     @Environment(PurchaseStore.self) private var purchases
     @Environment(TrialStore.self) private var trial
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.requestReview) private var requestReview
     @Environment(\.horizontalSizeClass) private var widthClass
     @State private var model: EditorModel
     @State private var zoom = PreviewZoom()
@@ -46,7 +48,12 @@ struct EditorView: View {
             }
             .overlay { if model.exporting { exportProgress } }
             .alert("Couldn’t finish", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) { Button("OK") { model.error = nil } } message: { Text(model.error ?? "") }
-            .alert("UnderBlue", isPresented: Binding(get: { model.notice != nil }, set: { if !$0 { model.notice = nil } })) { Button("OK") { model.notice = nil } } message: { Text(model.notice ?? "") }
+            .alert("UnderBlue", isPresented: Binding(get: { model.notice != nil }, set: { if !$0 { model.notice = nil } })) {
+                Button("OK") {
+                    model.notice = nil
+                    if model.offersReview { model.offersReview = false; Task { await ReviewPrompt().askIfDue(requestReview) } }
+                }
+            } message: { Text(model.notice ?? "") }
             .alert("Subject model not ready", isPresented: $model.modelNotReadyForSave) {
                 Button("Export without subject emphasis") { Task { await model.saveAnywayWithoutEmphasis(purchases: purchases, trial: trial) } }
                 if PreciseModelLoader.shared.state == .failed { Button("Try again") { PreciseModelLoader.shared.start() } }

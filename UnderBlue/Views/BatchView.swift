@@ -1,8 +1,10 @@
 import SwiftUI
+import StoreKit
 
 struct BatchView: View {
     @Environment(PurchaseStore.self) private var purchases
     @Environment(\.horizontalSizeClass) private var widthClass
+    @Environment(\.requestReview) private var requestReview
     @State var model: BatchModel
     @State private var pressed: BatchModel.Item.ID?
     @State private var detail: BatchModel.Item.ID?
@@ -34,7 +36,10 @@ struct BatchView: View {
             BatchDetailView(model: model, selection: start.id)
         }
         .alert("UnderBlue", isPresented: Binding(get: { model.summary != nil }, set: { if !$0 { model.summary = nil } })) {
-            Button("OK") { model.summary = nil }
+            Button("OK") {
+                model.summary = nil
+                if model.offersReview { model.offersReview = false; Task { await ReviewPrompt().askIfDue(requestReview) } }
+            }
         } message: { Text(model.summary ?? "") }
         .alert("Couldn’t save", isPresented: Binding(get: { model.error != nil && !model.saving }, set: { if !$0 { model.error = nil } })) {
             Button("OK") { model.error = nil }

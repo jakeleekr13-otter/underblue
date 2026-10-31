@@ -79,6 +79,8 @@ final class EditorModel {
     private var exportPause = ExportPause()
     private var cancellationNotice = String(localized: "Export cancelled")
     var completedURL: URL?
+    /// Set by a save to Photos: the next notice to close may ask for a rating (ReviewPrompt).
+    var offersReview = false
     /// Fixed when the export finishes, so the name matches the look that was exported.
     private var completedName: String?
     var saving = false
@@ -371,6 +373,8 @@ final class EditorModel {
             try await PhotoLibrarySaver().save(completedURL, kind: media.kind, fileName: completedName)
             TemporaryFiles.remove(completedURL)
             self.completedURL = nil
+            ReviewPrompt().recordSaves(1)
+            offersReview = true
             notice = String(localized: "Saved to Photos")
         } catch { report(error, operation: .save) }
     }

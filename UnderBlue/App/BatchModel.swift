@@ -43,6 +43,8 @@ final class BatchModel: Identifiable {
     var saving = false
     var savedCount = 0
     var summary: String?
+    /// Set when a batch saved every photo with no interruption: closing the summary may ask for a rating.
+    var offersReview = false
     var error: String?
     var showPro = false
     var saveTask: Task<Void, Never>?
@@ -179,6 +181,8 @@ final class BatchModel: Identifiable {
                 : String(localized: "Saved to Photos: \(savedCount) of \(total)")]
             if unopened > 0 { parts.append(String(localized: "Couldn’t open: \(unopened)")) }
             if let interruption { parts.append(interruption) }
+            ReviewPrompt().recordSaves(savedCount)
+            offersReview = !targets.isEmpty && savedCount == targets.count && interruption == nil
             summary = parts.joined(separator: "\n")
         }
     }

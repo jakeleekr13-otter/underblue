@@ -1,13 +1,13 @@
 # App Store release checklist
 
-Last reviewed: 2026-10-31
+Last reviewed: 2026-11-01
 
 ## Current release: iPhone 1.1.8 (build 14), 31 Oct 2026
 
 iPhone only. The Mac targets stay at 1.0 (1).
 
 - 1.1.7 (13) was uploaded on 27 Oct 2026. Its release note is in `AppStoreMetadata.md`.
-- 1.1.8 (14) is archived, not uploaded (31 Oct 2026). New since 1.1.7:
+- 1.1.8 (14) is on the App Store. It was released on 31 Oct 2026 at 17:10 UTC (Jake; App Store lookup, 1 Nov 2026). New since 1.1.7:
   - Video: each scene fits its reef colour to the photo rule, so an olive reef turns brown.
   - The restored path no longer takes the cast off twice. Green-teal water stayed grey-white before.
   - SDR video export matches the preview. It was brighter before.

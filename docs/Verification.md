@@ -19,9 +19,9 @@ Checked on the Mac (videosim, the 4K frame at 18.45 s). Gamma luma x255, 24-32 p
 - Photos: 21 PNG renders of DSC03545, IMG_7400 and r15 are byte-identical to `main`.
 - Unit tests on the iPhone Air simulator (iOS 26.5): 300 run, 1 failure. `SubjectCandidatesTests.testPickerSwitchIsOffByDefaultAndSavedOnTheDevice` needs iOS 27. It passes on iOS 27.1.
 - The Mac app builds.
+- Checked on the iPhone 17 (Jake, 1 Nov 2026, Debug build of `98380cf`): the `Tune_1_Nov` export shows no ring around the dark fish.
 
 Still open:
-- Export the `Tune_1_Nov` clip on the iPhone. At 18.45 s, the three dark fish at the top have no ring.
 - Light rays in a video: no clip with rays was checked. Rays in video now get no extra contrast.
 
 ## Video export pauses in the background (31 Oct 2026, merged to `main` 8ea5ae8)

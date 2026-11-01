@@ -2,6 +2,28 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## Video: no light detail (1 Nov 2026, merged to `main`)
+
+What changed: video skips the light detail and its grain map. Photos keep both, with the edge guard.
+
+Why: a 4K export showed a thin white oval around dark fish in bright water (Jake: `tune/video/Tune_1_Nov` clip, 18.45 s, the three fish at the top). The light detail lifted the water about 25 px out from each fish. Video had no edge guard. The ring also grew with the render size, so a small preview hid it.
+
+Checked on the Mac (videosim, the 4K frame at 18.45 s). Gamma luma x255, 24-32 px from the fish, against the far water:
+
+| Render | Value |
+|---|---|
+| Source | -1.7 |
+| Before | +6.3 |
+| After | +0.4 |
+
+- Photos: 21 PNG renders of DSC03545, IMG_7400 and r15 are byte-identical to `main`.
+- Unit tests on the iPhone Air simulator (iOS 26.5): 300 run, 1 failure. `SubjectCandidatesTests.testPickerSwitchIsOffByDefaultAndSavedOnTheDevice` needs iOS 27. It passes on iOS 27.1.
+- The Mac app builds.
+
+Still open:
+- Export the `Tune_1_Nov` clip on the iPhone. At 18.45 s, the three dark fish at the top have no ring.
+- Light rays in a video: no clip with rays was checked. Rays in video now get no extra contrast.
+
 ## Video export pauses in the background (31 Oct 2026, merged to `main` 8ea5ae8)
 
 What changed: a video export waits while the app is not active. It goes on with the same writer when the app is back. When the background time ends (about 27 s), the export is cancelled as before. Export files start with `export-`, and a new launch removes them.
@@ -158,8 +180,7 @@ Details: [SubjectEmphasis E27](SubjectEmphasis.md). A new kernel `UnderBlueLight
 
 Checked on the iPhone 17 (Jake, 24 Oct 2026): DSC03545 and IMG_7400 look fine.
 
-Still open:
-- One video export on the phone: unchanged. The Mac says byte-identical.
+Video: since 1 Nov 2026 video has no light detail at all (see "Video: no light detail" above). So the open video check of this entry is replaced by that one.
 
 ## Camera JPEG reef colour (23 Oct 2026, iPhone 1.1.4 build 10)
 

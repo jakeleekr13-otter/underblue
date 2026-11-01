@@ -100,20 +100,20 @@ final class FilterEngine: Sendable {
         return (out ?? image).cropped(to: image.extent)
     }
 
-    func apply(_ image: CIImage, settings: FilterSettings, edgeGuard: Bool = true, coresWater: Bool = true) -> CIImage {
+    func apply(_ image: CIImage, settings: FilterSettings, lightDetail: Bool = true, coresWater: Bool = true) -> CIImage {
         guard settings.preset != .original else { return image }
         return apply(image, correction: .make(analysis: settings.analysis, preset: settings.preset, adjustments: settings.adjustments),
-                     intensity: settings.appliedIntensity, edgeGuard: edgeGuard, coresWater: coresWater)
+                     intensity: settings.appliedIntensity, lightDetail: lightDetail, coresWater: coresWater)
     }
     /// `violetCalm` false leaves the violet calm to the caller: RestorationEngine.combined runs it once
     /// on the blended output.
     func apply(_ image: CIImage, correction: ColorCorrection, intensity: Float, calmWeight: CIImage? = nil,
-               violetCalm calmsViolet: Bool = true, openWaterRed: Bool = false, edgeGuard: Bool = true, coresWater: Bool = true) -> CIImage {
+               violetCalm calmsViolet: Bool = true, openWaterRed: Bool = false, lightDetail: Bool = true, coresWater: Bool = true) -> CIImage {
         let amount = min(1, max(0, intensity.isFinite ? intensity : 0))
         guard amount > 0 else { return image }
         let calm = calmWeight ?? waterCalmWeight(image, correction: correction)
         let shown = blend(image, finishing(image, correction: correction, calmWeight: calm, openWaterRed: openWaterRed,
-                                              edgeGuard: edgeGuard, coresWater: coresWater), amount: amount)
+                                              lightDetail: lightDetail, coresWater: coresWater), amount: amount)
         return calmsViolet ? violetCalm(shown, source: image, calmWeight: calm) : shown
     }
     /// Applies a preset at full strength. Callers choose what the final intensity blends against.
@@ -126,12 +126,12 @@ final class FilterEngine: Sendable {
     /// `image`. The restored path passes the unrestored source, so restoration cannot raise the ceiling.
     /// `calmWeight` is waterCalmWeight of the source; it defaults to the weight of `image` itself.
     /// `openWaterRed` (video) keeps the red rebuild out of flat open water; see below.
-    /// `edgeGuard` keeps the light detail away from strong edges (photos; video passes false). See below.
+    /// `lightDetail` runs the light detail with its edge guard (photos; video passes false). See below.
     /// `coresWater` takes the weak 3-12 px ripple off the water before colour (waterCore; photos, video passes false).
     /// Blur radius (share of the short side) of the open-water weight that mixes out the rebuilt red.
     static let openWaterBlur: Float = 0.03
     func finishing(_ image: CIImage, correction v: ColorCorrection, reference: CIImage? = nil, calmWeight: CIImage? = nil,
-                   openWaterRed: Bool = false, edgeGuard: Bool = true, coresWater: Bool = true) -> CIImage {
+                   openWaterRed: Bool = false, lightDetail: Bool = true, coresWater: Bool = true) -> CIImage {
         guard v != .identity else { return image }
         let side = Float(min(image.extent.width, image.extent.height))
         let short = side.isFinite && side > 0 ? side : 480
@@ -198,16 +198,21 @@ final class FilterEngine: Sendable {
         }
 
         let sharpened = corrected
-        // The local grain level (FinishingMath.grainRadius, grainSpread): the light detail fades on grainy texture
-        // such as bright sand. Black (no fade) when the kernel is missing.
-        let grain = grainMap(corrected, short: short) ?? CIImage(color: .black).cropped(to: image.extent)
         // Light rays inside bright light keep their contrast (FinishingMath.lightDetail). The kernel
         // gets the blur back from an unsharp mask (sharp = pixel + (pixel - blur)), as clarity does.
         // It runs here, before the fine detail. Placed last (after vibrance), with a blur or an unsharp
         // mask as its second input, it gave the Mac video path a vignette: the challenge clip's
         // frame edges up to 60 levels brighter, the centre unchanged (2 Oct 2026). The cause was
         // not found. The pixel values entering the kernel already had the bright edges.
-        if let lightDetailKernel {
+        // Video passes lightDetail false. Beside a dark fish the detail lifted the water where |d| falls
+        // below lightDetailEdgeHigh: a thin white oval about 25 px out at 4K (Tune_1_Nov clip, 18.45 s:
+        // +6.3 levels against the far water, the source -1.7; the photo edge guard left +3.7). The grain
+        // gate reads a 1 px blur, so the ring grew with the render size (+0.6 at 1280, +6.3 at 3840) and
+        // a small preview hid what the export showed. Without the detail, +0.4 (1 Nov 2026).
+        if lightDetail, let lightDetailKernel {
+            // The local grain level (FinishingMath.grainRadius, grainSpread): the light detail fades on grainy texture
+            // such as bright sand. Black (no fade) when the kernel is missing.
+            let grain = grainMap(corrected, short: short) ?? CIImage(color: .black).cropped(to: image.extent)
             let beforeLight = corrected
             let mask = CIFilter.unsharpMask()
             mask.inputImage = corrected
@@ -224,7 +229,7 @@ final class FilterEngine: Sendable {
             // still: a dark band 8 to 40 px wide (DSC03545, -0.02 OKLab L against the far water; the source
             // has none). So where the edge size, spread over half the radius, is large, the pixel keeps its
             // value from before the light detail. Light rays have small differences and keep it (E27, 24 Oct 2026).
-            if edgeGuard, let lightEdgeKernel, let edge = lightEdgeKernel.apply(extent: image.extent, arguments: [beforeLight, sharp]) {
+            if let lightEdgeKernel, let edge = lightEdgeKernel.apply(extent: image.extent, arguments: [beforeLight, sharp]) {
                 let spread = CIFilter.gaussianBlur()
                 spread.inputImage = edge.clampedToExtent()
                 spread.radius = max(1, FinishingMath.lightDetailRadius * FinishingMath.lightEdgeSpread * short)

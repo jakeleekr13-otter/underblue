@@ -200,7 +200,7 @@ actor VideoExporter {
             var renderFellBack = false
             autoreleasepool {
                 let image = restoration?.stabilised(frame.image, at: frame.time.seconds) ?? frame.image
-                let fallback = engine.apply(image, settings: settings, edgeGuard: false, coresWater: false)
+                let fallback = engine.apply(image, settings: settings, lightDetail: false, coresWater: false)
                 let corrected: CIImage
                 if let moment = restoration?.moment(at: frame.time.seconds) {
                     do {

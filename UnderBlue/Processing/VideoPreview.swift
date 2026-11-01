@@ -95,7 +95,7 @@ struct VideoPreview {
             if current.preset != .original, let analysis {
                 source = analysis.stabilised(source, at: request.compositionTime.seconds)
             }
-            let fallback = engine.apply(source, settings: current, edgeGuard: false, coresWater: false)
+            let fallback = engine.apply(source, settings: current, lightDetail: false, coresWater: false)
             guard let moment = analysis?.moment(at: request.compositionTime.seconds) else {
                 return AVCIImageFilteringResult(resultImage: fallback, ciContext: engine.context)
             }
@@ -136,7 +136,7 @@ struct VideoPreview {
         let frame = CIImage(cgImage: analysis.representativeFrame)
         let source = AppleLog(analysis.sourceProfile.dynamicRange).map { engine.sdr($0.decode(frame)) } ?? frame
         let small = FilterEngine.downscaled(source, maxPixel: 1200)
-        let current = engine.apply(small, settings: settings, edgeGuard: false, coresWater: false)
+        let current = engine.apply(small, settings: settings, lightDetail: false, coresWater: false)
         var images: [VideoDebugVariant: CIImage] = [.original: small, .current: current]
         if let moment = analysis.moment(at: analysis.representativeTime), let plan = try? moment.plan(),
            let restored = try? restorationEngine.restore(small, plan: plan) {

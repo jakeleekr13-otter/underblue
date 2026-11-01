@@ -710,6 +710,7 @@ Change: a grain map (`UnderBlueGrain`, `FilterEngine.grainMap`): each pixel agai
 | **Smooth gate 0.0022-0.0032 only (adopted)** | **1.72× / 1.85× / 2.07×** | 87% | 8.64 | 7.31 |
 
 - The water-only gate killed the rays: the colour test reads bright ray water as subject.
+- Later finding (1 Nov 2026): the 1 px blur makes the gate depend on the render size. On a 4K clip the light detail's ring around dark fish was +0.6 levels at 1280 px and +6.3 at 3840; with the gate off, +10 at both. Video now skips the light detail ([ColorAlgorithm](ColorAlgorithm.md#video-only-steps-22-oct-2026)).
 - The fine-detail grain floor took 20% of the subject detail and 6% of the m5 local contrast. Dropped: m5 vividness is a goal.
 - Seen at 1:1: the r03 blotches are gone; the IMG_7400 rays stay, a little softer; the DSC03656 top is near white either way.
 - Guards: AquaColorFix gate 11.22 (was 11.23); black gear and neutral surfaces unchanged; plants inside tolerance. `RestorationTests` pass on the iOS simulator (80 tests, 1 skipped), with a new kernel-versus-mirror check for the gate.

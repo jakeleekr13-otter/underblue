@@ -1307,6 +1307,8 @@ Not adopted: turning the light removal (`subjectTone`) off on pale water-hue pix
 
 iPhone 17, 24 Oct 2026: Jake looked at DSC03545 and IMG_7400 in the app and found them fine. He also said the O4 manta belly is much less green than before. The video export was not looked at on the phone.
 
+Update, 1 Nov 2026: video now skips the light detail. Beside dark fish it drew a white ring in a 4K export, and the guard only weakened it. See [ColorAlgorithm](ColorAlgorithm.md#video-only-steps-22-oct-2026).
+
 ### E28, a sun photo looks very bright, 24 Oct 2026
 
 Jake on the iPhone: `eval/real/P20131018_123503000_...JPG` (a boat from below, the sun above) is much brighter.

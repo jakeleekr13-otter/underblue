@@ -397,13 +397,16 @@ The estimator spreads attenuation across channels only as far as the measured ca
 
 ### Video-only steps (22 Oct 2026)
 
-Three steps run only on video (`combined(..., video: true)`, the flag `combined(_:moment:...)` sets). Photos keep the earlier output: the colour eval report of the photo set is identical to the commit before these steps. Found on two Instagram clips and checked on a whale shark clip and a manta clip (`DeveloperMedia/tune/video/Tune_22_Oct`, `challenge_video`, `Tune_20_Oct`).
+Three steps run only on video (`combined(..., video: true)`, the flag `combined(_:moment:...)` sets). Since 1 Nov 2026, video also skips one photo step (the last row). Photos keep the earlier output: the colour eval report of the photo set is identical to the commit before these steps. Found on two Instagram clips and checked on a whale shark clip and a manta clip (`DeveloperMedia/tune/video/Tune_22_Oct`, `challenge_video`, `Tune_20_Oct`).
 
 | Step | Problem it fixes | How |
 |---|---|---|
 | Middle-channel highlight rule | A hard layer edge in bright blue water (50.6 to 15.9 change over 20 rows; the source has 17.6). Blue water has one bright channel, so the brightest-channel peak read it as a highlight. About 44% of the restored pixel went back to the source, and that weight fell away over about 50 rows. | `peak` is the middle channel. A white highlight has two bright channels. The kernel reads `veil.w` (1 on video) to choose; `RestorationMath.inverse(middleHighlight:)` mirrors it. |
 | No rebuilt red in flat open water | Grey top layer over a blue layer. Sunlit surface water is greener than the scene's one water colour, so the red hue gate took it for a subject. | `FilterEngine.finishing(openWaterRed:)` mixes the colour stage without rebuilt red back in by the water calm weight. The weight is blurred by `openWaterBlur` (0.03 of the short side). Raw, it fell to 0 beside small subjects and gave every fish a grey ring. |
 | Dark pixels lifted before the broad blur | A bright halo around dark fish and sharks. The dark subject lowers the broad light, so the water next to it kept more veil. | `RestorationEngine.restore(liftDark:)`: twice, `max(source, wide blur)` (kernel `UnderBlueLiftToWide`, wide radius 3 broad radii), then the broad blur. Used only without a photo subject mask. |
+| No light detail (1 Nov 2026) | A thin white oval about 25 px out from dark fish in bright water, in a 4K export (`tune/video/Tune_1_Nov`, 18.45 s). Gamma luma x255 at 24-32 px against the far water: +6.3 (source -1.7). The photo edge guard left +3.7. | `FilterEngine.finishing(lightDetail: false)`: no light detail and no grain map. Result +0.4. Checked on the iPhone 17 by Jake. |
+
+The light detail's grain gate reads a 1 px blur, so it is not a share of the short side like the other radii. Its strength depends on the render size: the ring above was +0.6 at 1280 px, +1.1 at 1920 and +6.3 at 3840. A small video preview therefore hid what the 4K export showed.
 
 Rejected tries:
 

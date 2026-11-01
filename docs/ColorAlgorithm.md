@@ -775,6 +775,8 @@ Limits:
 - Deep Dive turns some of r11's sea fans lavender: 12.1% of pixels have OKLab hue 270 to 330 and chroma 0.03 or more (Natural: 2.7%). The far-water check does not see it.
 - Tropical moves some cyan or green water a little greener (m1 water hue 216 to 212, m2 240 to 225). In r10 it gives the sun core a light peach tint.
 - The particle filter and temporal denoiser are prototypes in `Prototypes/VideoCleanup`. They are not wired in.
+- Photo light detail differs between the editor preview (1600 px) and the export (full size), because the grain gate reads a 1 px blur (1 Nov 2026). IMG_7400 rays, change in bright pixels: p99 9.7 levels at 1600 px, 2.2 at 5472 px. By eye the rays are clear in the preview and almost gone in the export. The direction depends on the source: a noisy full-size photo closes the gate; a smooth video frame opens it. Jake, 1 Nov 2026: keep as is. A fix to try later: measure the grain at a fixed reference size (the thresholds were set at 1920 px).
+- The E27 note on bright rims around the dark fish in the IMG_7400 light no longer holds. The light detail's share beside five dark fish there: +2.9 to +3.6 levels at 8-32 px with the grain gate off (24 Oct state), now +1.4 at most at 1600 px and +0.3 at full size (1 Nov 2026). No rim shows in 100% crops.
 
 ## Open problems and next tasks
 

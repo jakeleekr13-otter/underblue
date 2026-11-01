@@ -2,21 +2,17 @@
 
 Last reviewed: 2026-11-01
 
-## Current release: iPhone 1.1.8 (build 14), 31 Oct 2026
+## Current release: iPhone 1.1.9 (build 15), 1 Nov 2026
 
 iPhone only. The Mac targets stay at 1.0 (1).
 
-- 1.1.7 (13) was uploaded on 27 Oct 2026. Its release note is in `AppStoreMetadata.md`.
-- 1.1.8 (14) is on the App Store. It was released on 31 Oct 2026 at 17:10 UTC (Jake; App Store lookup, 1 Nov 2026). New since 1.1.7:
-  - Video: each scene fits its reef colour to the photo rule, so an olive reef turns brown.
-  - The restored path no longer takes the cast off twice. Green-teal water stayed grey-white before.
-  - SDR video export matches the preview. It was brighter before.
-  - The video preview shows the original until the analysis is done.
-  - A video export pauses in the background. It goes on when the app is back before iOS suspends it.
-  - A rating prompt from the 10th save, once per version, only online.
-- Release note: `AppStoreMetadata.md`, "What's New (1.1.8)" (Jake approved the English text, 31 Oct 2026).
-- Checks and open device checks: `Verification.md`, 29 to 31 Oct 2026.
-- Known test failure: the JPEG colour resolution test fails on the simulator, also before these changes (`Verification.md`, 31 Oct).
+- 1.1.8 (14) is on the App Store. It was released on 31 Oct 2026 at 17:10 UTC (Jake; App Store lookup, 1 Nov 2026). Its release note is in `AppStoreMetadata.md`.
+- 1.1.9 (15) is archived, not uploaded (1 Nov 2026). New since 1.1.8:
+  - Video: no light detail. Dark fish in bright water no longer get a thin white ring in 4K exports.
+- Archive: Xcode 27.2 (27B52), iOS SDK 27.2. The unit tests and the iPhone 17 check ran on the 27.1 SDK, before Xcode updated during the session. Xcode 27.2 needed the Metal Toolchain again.
+- Release note: `AppStoreMetadata.md`, "What's New (1.1.9)". Written on 1 Nov 2026; Jake has not approved the English text yet.
+- Checks: `Verification.md`, "Video: no light detail" (1 Nov 2026). Jake checked the fix on the iPhone 17.
+- Known test failures: the JPEG colour resolution test fails on the iOS 27.1 simulator, also before these changes (`Verification.md`, 31 Oct). On the iOS 26.5 simulator, one subject picker test fails because it needs iOS 27 (`Verification.md`, 1 Nov).
 - Not fixed: the first 2 s of the napoleon clip stay pink (`Roadmap.md` 3.5).
 
 ## iPhone 1.1.4 (build 10), 23 Oct 2026 (history)

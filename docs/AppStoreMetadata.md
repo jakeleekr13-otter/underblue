@@ -180,6 +180,20 @@ UnderBlue está pensada para los recuerdos del buceo recreativo. No es una herra
 
 **Spanish (Spain):** buceo,submarinismo,snorkel,fotosub,submarino,fotos,vídeo,arrecife,coral,corregir,filtro,restaurar (98 bytes)
 
+## What's New (1.1.9)
+
+**English:** Exported videos no longer show a thin white outline around dark fish in bright water. It was most visible in 4K videos.
+
+**Korean:** 내보낸 동영상에서 밝은 물속의 어두운 물고기 둘레에 얇은 흰색 테두리가 더 이상 생기지 않습니다. 4K 동영상에서 특히 눈에 띄던 문제입니다.
+
+**Japanese:** 書き出したビデオで、明るい水の中にいる暗い色の魚のまわりに細い白い縁が出なくなりました。特に4Kビデオで目立っていた問題です。
+
+**Simplified Chinese:** 导出的视频中，明亮水域里深色鱼周围不再出现细细的白边。此问题在 4K 视频中尤为明显。
+
+**Traditional Chinese:** 匯出的影片中，明亮水域裡深色魚周圍不再出現細細的白邊。此問題在 4K 影片中特別明顯。
+
+**Spanish (Spain):** Los vídeos exportados ya no muestran un fino contorno blanco alrededor de los peces oscuros en agua luminosa. Se notaba sobre todo en vídeos 4K.
+
 ## What's New (1.1.8)
 
 **English:** Reefs in videos now keep a natural colour instead of turning olive. Green-blue water no longer turns grey-white. Exported videos now match the preview. If you leave the app for a moment during a video export, it pauses and continues when you return.

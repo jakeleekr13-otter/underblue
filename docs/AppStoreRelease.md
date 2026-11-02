@@ -115,6 +115,7 @@ The complete English and Korean descriptions, promotional text, keywords and rev
   - Page titles and the Mac text are in the script itself.
   - The script also rewrites `sitemap.xml`.
   - GitHub Pages does not publish `_build/`.
+  - Since 2 Nov 2026 the description sections describe the watermark trial. The live app does not have it yet. Run the script only after the version with that trial is live.
 - The App Store badge links to the iPhone app (`id6815881625`). The Mac section says "coming soon" until `MAC_APP_STORE` is set in the script.
 - Search Console:
   - The property is the URL prefix above. A Domain property is not possible on github.io.

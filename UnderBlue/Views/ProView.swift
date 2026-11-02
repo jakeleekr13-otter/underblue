@@ -17,6 +17,7 @@ struct ProView: View {
                     if let reason { Text(reason).font(.callout).foregroundStyle(.orange) }
                     VStack(alignment: .leading, spacing: 16) {
                         Label("Unlimited photo exports", systemImage: "photo")
+                        Label("No watermark", systemImage: "seal")
                         #if os(iOS)
                         Label(String(localized: "Batch correct up to \(BatchModel.maxPhotos) photos"), systemImage: "square.grid.2x2")
                         #else

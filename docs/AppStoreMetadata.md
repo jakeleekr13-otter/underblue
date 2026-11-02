@@ -47,7 +47,7 @@ Features:
 • Original frame rate, timing, orientation and audio preservation
 • Fully on-device processing with no account or cloud upload
 
-Try one photo export and the first 10 seconds of one video for free. UnderBlue Pro is a one-time purchase that unlocks unlimited photos (up to 10 at a time), full-length video, 4K and supported HDR export.
+Try it free, with an UnderBlue watermark: 3 photo exports, then 1 photo every 24 hours, and the first 10 seconds of 1 video every 24 hours. UnderBlue Pro is a one-time purchase that removes the watermark and unlocks unlimited photos (up to 10 at a time), full-length video, 4K and supported HDR export.
 
 UnderBlue is designed for recreational diving memories. It is not a scientific colour-measurement or professional grading tool.
 
@@ -70,7 +70,7 @@ UnderBlue는 수중 사진과 영상에서 사라진 색과 선명함을 자연�
 • 원본 프레임률, 타이밍, 방향 및 오디오 유지
 • 계정이나 클라우드 업로드 없는 완전한 온디바이스 처리
 
-사진 1장과 영상 1개의 첫 10초를 무료로 내보낼 수 있습니다. 일회성 구매인 UnderBlue Pro는 사진 무제한(한 번에 최대 10장), 전체 길이 영상, 4K 및 지원되는 HDR 내보내기를 잠금 해제합니다.
+UnderBlue 워터마크가 들어간 상태로 무료로 써 볼 수 있습니다. 사진은 3장, 그 후에는 24시간마다 1장, 영상은 24시간마다 1개(처음 10초)를 내보낼 수 있습니다. 일회성 구매인 UnderBlue Pro는 워터마크를 없애고 사진 무제한(한 번에 최대 10장), 전체 길이 영상, 4K 및 지원되는 HDR 내보내기를 잠금 해제합니다.
 
 UnderBlue는 레저 다이빙의 추억을 위한 앱이며 과학적 색 측정이나 전문가용 컬러 그레이딩 도구가 아닙니다.
 
@@ -93,7 +93,7 @@ UnderBlueは、水中の写真とビデオに自然な色と鮮明さを取り�
 • 元のフレームレート、タイミング、向き、音声を維持
 • アカウント不要、クラウドへのアップロードなしの完全オンデバイス処理
 
-写真1枚と、ビデオ1本の最初の10秒を無料で書き出せます。UnderBlue Proは買い切りです。購入すると、写真の無制限書き出し（一度に最大10枚）、ビデオの全編書き出し、4K書き出し、対応環境でのHDR書き出しが使えるようになります。
+UnderBlueの透かし入りで無料で試せます。写真は3枚、その後は24時間ごとに1枚、ビデオは24時間ごとに1本の最初の10秒を書き出せます。UnderBlue Proは買い切りです。購入すると透かしがなくなり、写真の無制限書き出し（一度に最大10枚）、ビデオの全編書き出し、4K書き出し、対応環境でのHDR書き出しが使えるようになります。
 
 UnderBlueはレジャーダイビングの思い出のためのアプリです。科学的な色測定や、プロ向けのカラーグレーディングのためのツールではありません。
 
@@ -116,7 +116,7 @@ UnderBlue 为水下照片和视频还原自然的色彩与清晰度。
 • 保留原始帧率、时序、方向和音频
 • 完全在设备上处理，无需账户，也不上传到云端
 
-可免费导出 1 张照片，以及 1 个视频的前 10 秒。UnderBlue Pro 为一次性购买。购买后可无限导出照片（每次最多 10 张），并可导出完整视频和 4K 视频，在支持的环境下还可导出 HDR。
+可免费试用，导出内容带 UnderBlue 水印：可导出 3 张照片，之后每 24 小时 1 张；视频每 24 小时可导出 1 个（仅前 10 秒）。UnderBlue Pro 为一次性购买。购买后去除水印，可无限导出照片（每次最多 10 张），并可导出完整视频和 4K 视频，在支持的环境下还可导出 HDR。
 
 UnderBlue 专为记录休闲潜水回忆而设计，不是科学测色工具，也不是专业调色工具。
 
@@ -139,7 +139,7 @@ UnderBlue 為水下照片與影片還原自然的色彩與清晰度。
 • 保留原始影格速率、時序、方向和音訊
 • 完全在裝置上處理，無需帳號，也不上傳到雲端
 
-可免費匯出 1 張照片，以及 1 部影片的前 10 秒。UnderBlue Pro 為一次性購買。購買後可無限匯出照片（每次最多 10 張），並可匯出完整影片和 4K 影片，在支援的環境下還可匯出 HDR。
+可免費試用，匯出內容含 UnderBlue 浮水印：可匯出 3 張照片，之後每 24 小時 1 張；影片每 24 小時可匯出 1 部（僅前 10 秒）。UnderBlue Pro 為一次性購買。購買後移除浮水印，可無限匯出照片（每次最多 10 張），並可匯出完整影片和 4K 影片，在支援的環境下還可匯出 HDR。
 
 UnderBlue 專為記錄休閒潛水回憶而設計，不是科學測色工具，也不是專業調色工具。
 
@@ -162,7 +162,7 @@ Funciones:
 • Conservación de la frecuencia de fotogramas, la sincronización, la orientación y el audio originales
 • Procesado totalmente en el dispositivo, sin cuenta ni subida a la nube
 
-Prueba gratis la exportación de una foto y de los primeros 10 segundos de un vídeo. UnderBlue Pro es una compra única que desbloquea fotos ilimitadas (hasta 10 a la vez), vídeos completos, 4K y la exportación HDR cuando sea compatible.
+Pruébala gratis con marca de agua de UnderBlue: 3 exportaciones de fotos y, después, 1 foto cada 24 horas, y los primeros 10 segundos de 1 vídeo cada 24 horas. UnderBlue Pro es una compra única que quita la marca de agua y desbloquea fotos ilimitadas (hasta 10 a la vez), vídeos completos, 4K y la exportación HDR cuando sea compatible.
 
 UnderBlue está pensada para los recuerdos del buceo recreativo. No es una herramienta científica de medición del color ni de corrección de color profesional.
 
@@ -179,6 +179,20 @@ UnderBlue está pensada para los recuerdos del buceo recreativo. No es una herra
 **Traditional Chinese:** 潛水攝影,水下攝影,水中攝影,水下影片,水肺潛水,色彩校正,珊瑚礁,浮潛攝影 (100 bytes)
 
 **Spanish (Spain):** buceo,submarinismo,snorkel,fotosub,submarino,fotos,vídeo,arrecife,coral,corregir,filtro,restaurar (98 bytes)
+
+## What's New (next version)
+
+**English:** Try UnderBlue free for longer: 3 free photo exports, then 1 photo every 24 hours, and the first 10 seconds of 1 video every 24 hours. Free exports carry a small UnderBlue watermark. UnderBlue Pro exports have none.
+
+**Korean:** 더 오래 무료로 써 볼 수 있습니다. 사진은 3장, 그 후에는 24시간마다 1장, 동영상은 24시간마다 1개(처음 10초)를 무료로 내보낼 수 있습니다. 무료로 내보낸 결과물에는 작은 UnderBlue 워터마크가 들어갑니다. UnderBlue Pro로 내보내면 워터마크가 없습니다.
+
+**Japanese:** より長く無料で試せるようになりました。写真は3枚、その後は24時間ごとに1枚、ビデオは24時間ごとに1本（最初の10秒）を無料で書き出せます。無料の書き出しには小さなUnderBlueの透かしが入ります。UnderBlue Proで書き出すと透かしは入りません。
+
+**Simplified Chinese:** 现在可以免费试用更久：可免费导出 3 张照片，之后每 24 小时 1 张；视频每 24 小时可导出 1 个（仅前 10 秒）。免费导出带有小的 UnderBlue 水印。使用 UnderBlue Pro 导出则没有水印。
+
+**Traditional Chinese:** 現在可以免費試用更久：可免費匯出 3 張照片，之後每 24 小時 1 張；影片每 24 小時可匯出 1 部（僅前 10 秒）。免費匯出含小型 UnderBlue 浮水印。使用 UnderBlue Pro 匯出則沒有浮水印。
+
+**Spanish (Spain):** Ahora puedes probar UnderBlue gratis durante más tiempo: 3 exportaciones de fotos gratuitas y, después, 1 foto cada 24 horas, y los primeros 10 segundos de 1 vídeo cada 24 horas. Las exportaciones gratuitas llevan una pequeña marca de agua de UnderBlue. Las de UnderBlue Pro no la llevan.
 
 ## What's New (1.1.9)
 
@@ -305,4 +319,4 @@ The optional promoted-IAP image is not used. Leave **App Store Image** empty and
 
 ## App Review notes
 
-UnderBlue processes imported photos and videos entirely on device. No account or cloud service is used. The free trial allows one photo export and one video export limited to the first 10 seconds at up to 1080p SDR. UnderBlue Pro is the non-consumable product `com.underblue.pro`. The free trial opens one photo at a time; with UnderBlue Pro, up to 10 photos can be opened and saved together. The Custom look and its sliders are free. Completed exports are offered to the user before add-only Photos permission is requested. The share extension copies shared photos or videos into the app's App Group container on the device, then opens UnderBlue to edit them. Diagnostics remain local and are shared only when the user explicitly uses the system share sheet.
+UnderBlue processes imported photos and videos entirely on device. No account or cloud service is used. The free trial allows 3 photo exports, then 1 photo export every 24 hours. It also allows 1 video export every 24 hours, limited to the first 10 seconds at up to 1080p SDR. Every free export carries a small UnderBlue watermark in the bottom-right corner. UnderBlue Pro exports have no watermark. UnderBlue Pro is the non-consumable product `com.underblue.pro`. The free trial opens one photo at a time; with UnderBlue Pro, up to 10 photos can be opened and saved together. The Custom look and its sliders are free. Completed exports are offered to the user before add-only Photos permission is requested. The share extension copies shared photos or videos into the app's App Group container on the device, then opens UnderBlue to edit them. Diagnostics remain local and are shared only when the user explicitly uses the system share sheet.

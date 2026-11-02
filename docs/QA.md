@@ -19,11 +19,12 @@ Status reflects automated tests in this repository, except where a row says it w
 | Video V2 logic | Device/source policy separation; thermal analysis degradation; per-channel confidence; persistent environment reset; false-reset suppression; timestamp plan lookup; stale preview rejection | Automated pass |
 | HDR input/output | HLG and PQ 10-bit detection; HDR→SDR; HLG/PQ Main10 signaling; highlight values above SDR white | Automated pass on simulator codecs |
 | Dolby Vision | No output claim; base HDR compatibility only | Device QA required |
-| Trial | One photo; one video; 10 seconds; rollback after failure/interruption; real Keychain round trip | Automated pass |
+| Trial | 3 photos, then 1 photo every 24 hours; 1 video every 24 hours; 10 seconds; clock set back or forward; 1.1.9 Keychain value migrates; rollback after failure/interruption; real Keychain round trip (`TrialTests`) | Automated pass |
+| Watermark | Free photo and every free video frame carry the mark in the bottom-right corner; other pixels unchanged; only free exports set the mark (`WatermarkTests`); a Pro batch photo has no mark, a free one has it (`BatchEngineTests`, Mac) | Automated pass |
 | StoreKit | Real App Store sandbox: buy; Restore Purchase; Pro returns after delete and reinstall without Restore Purchase | Sandbox pass by hand (Jake, 29 Sep 2026). `PurchaseTests` are not run, by decision (29 Sep 2026) |
 | Localization | English source/fallback; Korean, Japanese, Simplified Chinese, Traditional Chinese; localized errors and Photos usage string | Automated bundle pass |
 | Diagnostics | Failure classification, nested errors, bounded retry, privacy sanitization, burst aggregation and report size | Automated pass |
-| UI | Home, paywall, Photos picker, photo editor, compare, export sheet, save and consumed-trial gate; landscape video editor | Simulator UI test |
+| UI | Home, paywall, Photos picker, photo editor, compare, export sheet, save and the second free photo; landscape video editor | Simulator UI test |
 
 ## Physical-device release matrix
 

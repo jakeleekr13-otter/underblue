@@ -60,6 +60,54 @@ final class BatchEngineTests: XCTestCase {
          try makePhoto(CIColor(red: 0.05, green: 0.45, blue: 0.75), size: CGSize(width: 4000, height: 3000), name: "IMG_0002.heic")]
     }
 
+    /// A Pro run (`trial: false`, also the Mac app's path for Pro) has no mark. A free run has it in the bottom-right corner.
+    func testProBatchHasNoWatermarkAndFreeBatchHasIt() async throws {
+        let size = CGSize(width: 1200, height: 800)
+        let mark = try XCTUnwrap(Watermark.mark(for: CGRect(origin: .zero, size: size))).extent.integral
+        func run(trial: Bool) async throws -> CIImage {
+            let folder = output.appendingPathComponent(trial ? "free" : "pro", isDirectory: true)
+            let sink = RecordingSink(directory: folder)
+            let batch = engine(sink: sink)
+            batch.add([try makePhoto(CIColor(red: 0.15, green: 0.45, blue: 0.55), size: size, name: "IMG_0003.heic")])
+            batch.start(settings: FilterSettings(), trial: trial)
+            await batch.waitUntilFinished()
+            XCTAssertEqual(batch.items.map(\.state), [.done], batch.items.compactMap(\.error).joined(separator: "; "))
+            let names = await sink.names
+            let name = try XCTUnwrap(names.first)
+            return try XCTUnwrap(CIImage(contentsOf: folder.appendingPathComponent(name)))
+        }
+        let pro = try await run(trial: false), free = try await run(trial: true)
+        XCTAssertEqual(pro.extent.size, size); XCTAssertEqual(free.extent.size, size)
+        func pixels(_ image: CIImage) -> [Float] {
+            var values = [Float](repeating: 0, count: Int(mark.width) * Int(mark.height) * 4)
+            FilterEngine().context.render(image, toBitmap: &values, rowBytes: Int(mark.width) * 16, bounds: mark, format: .RGBAf,
+                                          colorSpace: CGColorSpace(name: CGColorSpace.sRGB))
+            return values
+        }
+        // The mark's own pixels sort the output's pixels into three groups: under its white parts, under its dark
+        // icon fill, and where it is clear. Without a mark the three means match; the pipeline's slow light changes
+        // do not follow the letter shapes.
+        let shape = pixels(try XCTUnwrap(Watermark.mark(for: CGRect(origin: .zero, size: size))))
+        func means(_ image: CIImage) -> (white: Float, dark: Float, clear: Float) {
+            let values = pixels(image)
+            var white: [Float] = [], dark: [Float] = [], clear: [Float] = []
+            for index in stride(from: 0, to: values.count, by: 4) {
+                let alpha = shape[index + 3], sum = values[index] + values[index + 1] + values[index + 2]
+                let markSum = alpha > 0 ? (shape[index] + shape[index + 1] + shape[index + 2]) / alpha : 0
+                if alpha > 0.8, markSum > 2.4 { white.append(sum) } else if alpha > 0.8, markSum < 0.6 { dark.append(sum) } else if alpha < 0.01 { clear.append(sum) }
+            }
+            XCTAssertGreaterThan(white.count, 50); XCTAssertGreaterThan(dark.count, 50); XCTAssertGreaterThan(clear.count, 50)
+            let mean = { (group: [Float]) in group.reduce(0, +) / Float(max(1, group.count)) }
+            return (mean(white), mean(dark), mean(clear))
+        }
+        let proMeans = means(pro), freeMeans = means(free)
+        print("watermark group means (white, dark, clear): pro \(proMeans), free \(freeMeans)")
+        XCTAssertEqual(proMeans.white, proMeans.clear, accuracy: 0.03, "Pro output brightens under the mark's letters")
+        XCTAssertEqual(proMeans.dark, proMeans.clear, accuracy: 0.03, "Pro output darkens under the mark's icon")
+        XCTAssertGreaterThan(freeMeans.white - freeMeans.clear, 0.5, "free output has no white letters")
+        XCTAssertGreaterThan(freeMeans.clear - freeMeans.dark, 0.3, "free output has no dark icon")
+    }
+
     /// Stage 3 artifact: 3 photos + 2 videos give 5 valid files, delivered in queue order.
     /// A video export already runs `OutputValidator` before it returns, so a finished video passed it.
     func testMixedBatchDeliversFiveValidFilesInQueueOrder() async throws {

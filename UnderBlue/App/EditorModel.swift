@@ -75,6 +75,8 @@ final class EditorModel {
     private let estimator = VideoExporter()
     var optionsDismissing = false
     var showPro = false
+    /// Shown on the Pro screen, for example when the next free export is hours away.
+    var proReason: String?
     private var backgroundTask = BackgroundTask()
     private var exportPause = ExportPause()
     private var cancellationNotice = String(localized: "Export cancelled")
@@ -247,11 +249,9 @@ final class EditorModel {
         await purchases.refreshEntitlement()
         if !purchases.isPro {
             guard trial.available else { report(UnderBlueError.trialUnavailable); return }
-            guard trial.canExport(media.kind) else { showPro = true; return }
-            options.range = .sdr
-            options.resolution = .hd
-            options.durationLimit = TrialStore.videoSeconds
-        } else { options.durationLimit = nil }
+            guard trial.canExport(media.kind) else { proReason = trial.waitReason(media.kind); showPro = true; return }
+        }
+        options.applyTrial(!purchases.isPro)
         showExportOptions = true
     }
     /// Measures each resolution on this device with the current preset and color range.
@@ -333,12 +333,10 @@ final class EditorModel {
                 await purchases.refreshEntitlement()
                 try Task.checkCancellation()
                 if !purchases.isPro {
-                    guard trial.canExport(media.kind) else { showPro = true; return }
+                    guard trial.canExport(media.kind) else { proReason = trial.waitReason(media.kind); showPro = true; return }
                     try trial.reserve(media.kind); reserved = true
-                    chosenOptions.resolution = .hd
-                    chosenOptions.range = .sdr
-                    chosenOptions.durationLimit = TrialStore.videoSeconds
-                } else { chosenOptions.durationLimit = nil }
+                }
+                chosenOptions.applyTrial(!purchases.isPro)
                 let output: URL
                 if let metadata {
                     output = try await video.export(url: media.url, metadata: metadata, settings: chosenSettings,
@@ -348,7 +346,8 @@ final class EditorModel {
                 } else {
                     try StorageCheck.require(bytes: 100_000_000)
                     output = try await photos.export(media.url, settings: chosenSettings, keepHDR: chosenOptions.range == .hdr,
-                                                     format: chosenOptions.photoFormat, subjects: chosenSubjects)
+                                                     format: chosenOptions.photoFormat, subjects: chosenSubjects,
+                                                     watermark: chosenOptions.watermark)
                 }
                 do {
                     try Task.checkCancellation()

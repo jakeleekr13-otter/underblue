@@ -2,6 +2,22 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## Free trial with watermark (2 Nov 2026, branch `free-trial-watermark`)
+
+Rules (Jake, 2 Nov 2026): 3 free photos, then 1 photo every 24 hours. 1 free video (first 10 s, 1080p SDR) every 24 hours. Every free export has the icon and "UnderBlue" in the bottom-right corner. The wait counts from the last free export in absolute time, so a clock set back gives nothing.
+
+Automated: `TrialTests` (10) and `WatermarkTests` (5) pass on the iPhone 18 Pro simulator. `BatchEngineTests` (6) pass on the Mac. The UI test was updated but not run.
+
+Pro has no mark (Mac batch, 1200 × 800 flat photo, sum of RGB under the mark's white parts / dark icon / clear parts): Pro 1.249 / 1.257 / 1.255, free 2.825 / 0.423 / 1.255.
+
+Open checks on the iPhone:
+- Install 1.1.9 with its free photo used, then update: 2 free photos are left, and a free video is ready.
+- Export 3 free photos: each has the mark. The 4th opens the Pro screen with the wait time.
+- Free video: the mark is on every frame, also at 10 s. Pro exports have no mark.
+- Set the clock back 2 days after a free export: still no free export.
+- Delete and reinstall the app: the trial state stays (Keychain). Not checked on a device yet.
+- Mac: one free item has the mark; the paywall shows the wait time.
+
 ## Video: no light detail (1 Nov 2026, merged to `main`)
 
 What changed: video skips the light detail and its grain map. Photos keep both, with the edge guard.

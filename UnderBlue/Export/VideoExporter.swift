@@ -161,6 +161,8 @@ actor VideoExporter {
         var recordedRenderFallback = false
         var lastProgress = -1.0
         guard let pool = sink.pixelBufferPool else { throw UnderBlueError.exportFailed }
+        // Made once: the same mark goes over every frame.
+        let mark = options.watermark ? Watermark.mark(for: CGRect(origin: .zero, size: size)) : nil
         while true {
             try Task.checkCancellation()
             // Out of the foreground: no new GPU or encoder work. On an iPhone 17 the same writer went on after 16 s
@@ -211,8 +213,9 @@ actor VideoExporter {
                         renderFellBack = true
                     }
                 } else { corrected = fallback }
+                let output = mark?.composited(over: corrected) ?? corrected
                 destination.withUnsafeBuffer {
-                    engine.context.render(corrected, to: $0, bounds: CGRect(origin: .zero, size: size),
+                    engine.context.render(output, to: $0, bounds: CGRect(origin: .zero, size: size),
                                           colorSpace: VideoColorPipeline.colorSpace(hdr: hdr, pq: metadata.dynamicRange == .pq))
                 }
             }

@@ -207,88 +207,6 @@
         }
       }
     },
-    "1 photo export. This uses your free photo." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 photo export. This uses your free photo."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 exportación de foto. Esto usa tu foto gratuita."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "写真を1枚無料で書き出せます。この書き出しで無料枠を使用します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "무료 사진 내보내기 1회입니다. 이번 내보내기에 무료 이용권을 사용합니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "可免费导出 1 张照片。本次导出将使用免费额度。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "可免費匯出 1 張照片。本次匯出將使用免費額度。"
-          }
-        }
-      }
-    },
-    "1 video export · first 10 seconds · up to 1080p SDR. This uses your free video." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 video export · first 10 seconds · up to 1080p SDR. This uses your free video."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 exportación de vídeo · primeros 10 segundos · hasta 1080p SDR. Esto usa tu vídeo gratuito."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "動画を1本無料で書き出せます · 冒頭10秒 · 最大1080p SDR。この書き出しで無料枠を使用します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "무료 동영상 내보내기 1회 · 처음 10초 · 최대 1080p SDR입니다. 이번 내보내기에 무료 이용권을 사용합니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "可免费导出 1 个视频 · 前 10 秒 · 最高 1080p SDR。本次导出将使用免费额度。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "可免費匯出 1 部影片 · 前 10 秒 · 最高 1080p SDR。本次匯出將使用免費額度。"
-          }
-        }
-      }
-    },
     "4K export" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1105,47 +1023,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "使用 Pro 一次批次校正最多 %lld 張照片"
-          }
-        }
-      }
-    },
-    "Batch needs UnderBlue Pro. The free trial corrects one photo and one short video." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Batch needs UnderBlue Pro. The free trial corrects one photo and one short video."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El lote requiere UnderBlue Pro. La prueba gratuita corrige una foto y un vídeo corto."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "一括処理にはUnderBlue Proが必要です。無料体験では写真1枚と短いビデオ1本を補正できます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "일괄 처리에는 UnderBlue Pro가 필요합니다. 무료 체험에서는 사진 1장과 짧은 동영상 1개를 보정할 수 있습니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "批量处理需要 UnderBlue Pro。免费试用可校正 1 张照片和 1 个短视频。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "批次處理需要 UnderBlue Pro。免費試用可校正 1 張照片和 1 部短影片。"
           }
         }
       }
@@ -3606,47 +3483,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "免費試用"
-          }
-        }
-      }
-    },
-    "Free: 1 photo export and 1 video export (first 10 seconds, up to 1080p SDR)." : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Free: 1 photo export and 1 video export (first 10 seconds, up to 1080p SDR)."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gratis: 1 exportación de foto y 1 de vídeo (primeros 10 segundos, hasta 1080p SDR)."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "無料：写真1回、ビデオ1回の書き出し（最初の10秒、最大1080p SDR）。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "무료: 사진 1회, 동영상 1회 내보내기(처음 10초, 최대 1080p SDR)."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "免费：可导出 1 张照片和 1 个视频（前 10 秒，最高 1080p SDR）。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "免費：可匯出 1 張照片和 1 部影片（前 10 秒，最高 1080p SDR）。"
           }
         }
       }
@@ -11849,6 +11685,457 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "UnderBlue 無法編輯 ProRes RAW 影片。請改用 ProRes 或 HEVC 錄製。"
+          }
+        }
+      }
+    },
+    "Your next free photo is ready in %@. Pro exports without waiting or a watermark." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your next free photo is ready in %@. Pro exports without waiting or a watermark."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu próxima foto gratuita estará lista en %@. Pro exporta sin esperas y sin marca de agua."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次の無料写真は%@後に使えます。Proなら待たずに、透かしなしで書き出せます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다음 무료 사진은 %@ 후에 받을 수 있습니다. Pro에서는 기다리지 않고 워터마크 없이 내보낼 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下一张免费照片将在 %@ 后可用。Pro 无需等待，导出无水印。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下一張免費照片將在 %@ 後可用。Pro 無需等待，匯出不含浮水印。"
+          }
+        }
+      }
+    },
+    "Your next free video is ready in %@. Pro exports without waiting or a watermark." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your next free video is ready in %@. Pro exports without waiting or a watermark."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu próximo vídeo gratuito estará listo en %@. Pro exporta sin esperas y sin marca de agua."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次の無料動画は%@後に使えます。Proなら待たずに、透かしなしで書き出せます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다음 무료 동영상은 %@ 후에 받을 수 있습니다. Pro에서는 기다리지 않고 워터마크 없이 내보낼 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下一个免费视频将在 %@ 后可用。Pro 无需等待，导出无水印。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下一部免費影片將在 %@ 後可用。Pro 無需等待，匯出不含浮水印。"
+          }
+        }
+      }
+    },
+    "Free export with an UnderBlue watermark." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free export with an UnderBlue watermark."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportación gratuita con marca de agua de UnderBlue."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UnderBlueの透かし入りで無料で書き出します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UnderBlue 워터마크가 들어간 무료 내보내기입니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免费导出，带 UnderBlue 水印。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免費匯出，含 UnderBlue 浮水印。"
+          }
+        }
+      }
+    },
+    "Free export: first 10 seconds · up to 1080p SDR · UnderBlue watermark." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free export: first 10 seconds · up to 1080p SDR · UnderBlue watermark."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportación gratuita: primeros 10 segundos · hasta 1080p SDR · marca de agua de UnderBlue."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無料の書き出し：冒頭10秒 · 最大1080p SDR · UnderBlueの透かし入り。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "무료 내보내기: 처음 10초 · 최대 1080p SDR · UnderBlue 워터마크 포함."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免费导出：前 10 秒 · 最高 1080p SDR · 带 UnderBlue 水印。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免費匯出：前 10 秒 · 最高 1080p SDR · 含 UnderBlue 浮水印。"
+          }
+        }
+      }
+    },
+    "Free photos left: %lld of %lld. Then 1 free photo every 24 hours." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free photos left: %lld of %lld. Then 1 free photo every 24 hours."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fotos gratuitas restantes: %lld de %lld. Después, 1 foto gratuita cada 24 horas."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "残りの無料写真：%lld/%lld枚。その後は24時間ごとに1枚無料です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "남은 무료 사진: %lld/%lld장. 그 후에는 24시간마다 1장씩 무료입니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "剩余免费照片：%lld/%lld 张。之后每 24 小时可免费导出 1 张。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "剩餘免費照片：%lld/%lld 張。之後每 24 小時可免費匯出 1 張。"
+          }
+        }
+      }
+    },
+    "1 free photo every 24 hours." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 free photo every 24 hours."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 foto gratuita cada 24 horas."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "24時間ごとに写真を1枚無料で書き出せます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "24시간마다 사진 1장을 무료로 내보낼 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每 24 小时可免费导出 1 张照片。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每 24 小時可免費匯出 1 張照片。"
+          }
+        }
+      }
+    },
+    "1 free video every 24 hours." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 free video every 24 hours."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 vídeo gratuito cada 24 horas."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "24時間ごとに動画を1本無料で書き出せます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "24시간마다 동영상 1개를 무료로 내보낼 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每 24 小时可免费导出 1 个视频。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每 24 小時可免費匯出 1 部影片。"
+          }
+        }
+      }
+    },
+    "Free: %lld photo exports, then 1 photo every 24 hours. 1 video every 24 hours (first 10 seconds, up to 1080p SDR). Free exports carry an UnderBlue watermark." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Free: %lld photo exports, then 1 photo every 24 hours. 1 video every 24 hours (first 10 seconds, up to 1080p SDR). Free exports carry an UnderBlue watermark."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gratis: %lld exportaciones de fotos y, después, 1 foto cada 24 horas. 1 vídeo cada 24 horas (primeros 10 segundos, hasta 1080p SDR). Las exportaciones gratuitas llevan marca de agua de UnderBlue."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無料：写真を%lld回書き出し、その後は24時間ごとに1回。動画は24時間ごとに1回（冒頭10秒、最大1080p SDR）。無料の書き出しにはUnderBlueの透かしが入ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "무료: 사진 %lld회 내보내기, 그 후에는 24시간마다 사진 1회. 동영상은 24시간마다 1회(처음 10초, 최대 1080p SDR). 무료 내보내기에는 UnderBlue 워터마크가 들어갑니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免费：可导出 %lld 张照片，之后每 24 小时 1 张。视频每 24 小时 1 个（前 10 秒，最高 1080p SDR）。免费导出带有 UnderBlue 水印。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免費：可匯出 %lld 張照片，之後每 24 小時 1 張。影片每 24 小時 1 部（前 10 秒，最高 1080p SDR）。免費匯出含 UnderBlue 浮水印。"
+          }
+        }
+      }
+    },
+    "No watermark" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No watermark"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin marca de agua"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "透かしなし"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "워터마크 없음"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无水印"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無浮水印"
+          }
+        }
+      }
+    },
+    "This free export carries an UnderBlue watermark. Pro removes it." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This free export carries an UnderBlue watermark. Pro removes it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta exportación gratuita lleva marca de agua de UnderBlue. Pro la quita."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この無料の書き出しにはUnderBlueの透かしが入っています。Proなら透かしなしで書き出せます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 무료 내보내기에는 UnderBlue 워터마크가 들어 있습니다. Pro에서는 워터마크 없이 내보낼 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此次免费导出带有 UnderBlue 水印。升级 Pro 可去除水印。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此次免費匯出含 UnderBlue 浮水印。升級 Pro 即可移除浮水印。"
+          }
+        }
+      }
+    },
+    "Batch needs UnderBlue Pro. The free trial corrects one file at a time, with a watermark." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Batch needs UnderBlue Pro. The free trial corrects one file at a time, with a watermark."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El lote requiere UnderBlue Pro. La prueba gratuita corrige un archivo cada vez, con marca de agua."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一括処理にはUnderBlue Proが必要です。無料体験では1回に1ファイルずつ、透かし入りで補正します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "일괄 처리에는 UnderBlue Pro가 필요합니다. 무료 체험에서는 한 번에 파일 1개를 워터마크와 함께 보정합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "批量处理需要 UnderBlue Pro。免费试用每次校正 1 个文件，并带有水印。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "批次處理需要 UnderBlue Pro。免費試用每次校正 1 個檔案，並含浮水印。"
           }
         }
       }

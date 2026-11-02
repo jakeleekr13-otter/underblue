@@ -29,6 +29,17 @@ struct ExportOptions: Sendable {
     var range: Range = .sdr
     var photoFormat: PhotoFormat = .jpeg
     var durationLimit: Double?
+    /// Free exports carry the UnderBlue mark (Watermark). Pro exports never do.
+    var watermark = false
+    /// The one place that sets the free-trial limits. Free: 1080p SDR, the first `TrialPolicy.videoSeconds`, the mark.
+    /// Pro: no time limit and no mark; the chosen resolution and range stay.
+    mutating func applyTrial(_ free: Bool) {
+        if free {
+            resolution = .hd; range = .sdr; durationLimit = TrialPolicy.videoSeconds; watermark = true
+        } else {
+            durationLimit = nil; watermark = false
+        }
+    }
     /// Video output never exceeds 4K (3840 × 2160, either orientation). An 8K source exports at 4K.
     /// 8K peaked at 5.2 GB on a Mac even with the memory limit set, and the default build did not finish 60
     /// frames in 86 minutes. An iPhone 17 has about 3 GB free for the app (22 Oct 2026, docs/PerformanceMeasurement.md).

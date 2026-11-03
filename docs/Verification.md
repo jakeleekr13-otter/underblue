@@ -577,7 +577,7 @@ Checked:
 Open:
 
 - Jake: look at the first second and at 6.7 s of the napoleon clip on the iPhone. The fish keeps part of its own pulse (18% against 24% in the source). The 6.7 s red rise is smaller, not gone.
-- The first 2 s of the napoleon clip stay pink. Not fixed in 1.1.7 (Roadmap 3.5).
+- The first 2 s of the napoleon clip stay pink. Not fixed in 1.1.7 (Roadmap 3.5). 3 Nov 2026: the pink is in the source. Jake: leave it. See ColorAlgorithm.md, "The napoleon clip's first 2 s".
 
 ## Reader and writer on the receiver API (27 Oct 2026)
 

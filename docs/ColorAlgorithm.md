@@ -484,7 +484,29 @@ Result, napoleon clip, iPhone 17 export, 5.4 to 7.0 s, range of red/blue (linear
 - The rise is smaller, not gone. The frames just before it turn slightly redder, because the window now holds part of the rise.
 - 0 to 1 s brightness stays as with the 1 s window (whole frame 3.7%, fish 17.6%).
 - 14 clips, Mac render against the 1 s window: 57 photos byte-identical. Mean OKLab dE x100 is 0.00 to 0.21 on 13 clips, 0.34 on the napoleon clip. The largest other frame (`2025-05-03 22.12.02.MOV` at 0.5 s, 0.80) looks the same by eye.
-- Not fixed: the first 2 s of the napoleon clip. The fish is pink, then grey at 1.5 s. The clip starts facing the surface, and the water holds red until 1.4 s. So there is no earlier colour to go back to. See the [Roadmap](Roadmap.md) 3.5.
+- Not fixed: the first 2 s of the napoleon clip. The fish is pink, then grey at 1.5 s. The clip starts facing the surface, and the water holds red until 1.4 s. So there is no earlier colour to go back to. See the [Roadmap](Roadmap.md) 3.5 and the next section.
+
+#### The napoleon clip's first 2 s (3 Nov 2026, left as it is)
+
+Problem: the fish is pink until 1.5 s, then grey ([Roadmap](Roadmap.md) 3.5).
+
+Measured on the Mac (videosim, 640 px, Natural Dive at 0.8):
+
+- The pink is in the source. At about 1.55 s the source red drops within 0.2 s and stays down. Fish red/green (linear Rec. 709) goes from 1.94 (1.53 s) to 1.10 (1.70 s).
+- The correction makes this step bigger. Fish OKLab distance from 1.5 s to 1.8 s: source 0.051, output 0.095 (1.85x).
+- Other source changes in this clip get smaller in the output: 0.6 to 0.95x (median 0.80, 17 frame pairs 0.3 s apart, after 2.5 s).
+- Cause: the fish crosses the colour kernel's water-like test. Its redness falls from 0.37 to 0.18. The test fades from waterRedness (0.065) to 0.365. The mean waterLike on the fish is 0.04 at 1.5 s and 0.65 at 1.8 s. These come from the kernel formula on the source frame (current path). So the fish moves from the subject tone to the water tone.
+- Not the cause: the scene values. The values of scenes 0, 1 and 2, each held over 0 to 3 s, give the same flip.
+- Five sets of plain channel gains (no kernel) enlarged the step 1.14 to 1.5x.
+
+Tried, not adopted:
+
+| Change | Fish step, output / source | Result |
+|---|---|---|
+| Water-like band 0.6 wide instead of 0.3 | 1.47x | Photos share the kernel. On this fish at 1.5 s, OKLab a fell from 0.054 to 0.014 |
+| Colour track: frames from 0 to 2 s take the median of 1 to 3 s | not measured (fish grey from 0 s) | Changes the source look |
+
+Jake (3 Nov 2026): a problem in the source stays as it is, so this is left. Of 17 test clips, only this one has a fast step in both red/green and blue/green. This was checked in the first 3 s of each clip (frame mean, 0.17 s apart). Fast red/green steps in clips with almost no red were not checked by eye.
 
 ### Open water the veil fit cannot measure (photos, 26 Oct 2026)
 

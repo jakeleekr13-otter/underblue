@@ -133,7 +133,7 @@ Why not "strictly one at a time": the CPU idles during export, and the GPU idles
 | # | Question | Answer |
 |---|---|---|
 | 1 | Bundle ID | `com.underblue.mac` |
-| 2 | Price model | Free download + in-app purchase. Proposed product ID `com.underblue.mac.pro`. Trial: yes, same as iOS — reuse `TrialStore`. Branch `free-trial-watermark` (2 Nov 2026, not merged): 3 photo exports, then 1 photo every 24 hours; 1 video (first 10 s) every 24 hours; every free export has a watermark. The Mac 1.0 build in review still has the old trial. No batch in the trial: batch is Pro only, and the paywall says so. |
+| 2 | Price model | Free download + in-app purchase. Proposed product ID `com.underblue.mac.pro`. Trial: yes, same as iOS — reuse `TrialStore`. On `main` since 3 Nov 2026: 3 photo exports, then 1 photo every 24 hours; 1 video (first 10 s) every 24 hours; every free export has a watermark. The Mac 1.0 build in review still has the old trial. No batch in the trial: batch is Pro only, and the paywall says so. |
 | 3 | Lowest macOS | macOS 26, Apple silicon only. Depth estimation stays. |
 | 4 | Store | Mac App Store only (sandboxed) |
 | 5 | Save target | User chooses: a folder or the Photos library. Setting in Settings, default open. |

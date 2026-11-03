@@ -1,11 +1,13 @@
 # UnderBlue roadmap
 
-Status: draft, updated 1 Nov 2026 (iPhone 1.1.8 on the App Store). Nothing here is decided unless a line says "Jake".
+Status: draft, updated 3 Nov 2026 (iPhone 1.1.8 on the App Store, 1.1.10 archived). Nothing here is decided unless a line says "Jake".
 
 This page only collects open work. Each row points to the document that holds the details.
 
-## Where we are (1 Nov 2026)
+## Where we are (3 Nov 2026)
 
+- iPhone 1.1.9 (15) was submitted for App Review on 1 Nov 2026 (Jake). Its later state is not recorded.
+- iPhone 1.1.10 (16) is archived (3 Nov 2026), not uploaded. New: the free trial with a watermark (row 1.7).
 - iPhone 1.1.8 (14) is on the App Store. It was released on 31 Oct 2026 at 17:10 UTC (Jake; App Store lookup, 1 Nov 2026). New since 1.1.7 ([AppStoreRelease](AppStoreRelease.md)):
   - each video scene fits its reef colour to the photo rule
   - the restored path no longer takes the cast off twice
@@ -29,7 +31,7 @@ Most rows are Jake's checks on the iPhone.
 | 1.4 | Labs orb switch: export takes about 4.5 s longer when on | Measured, not explained. Labs only, off by default. | [Verification](Verification.md) |
 | 1.5 | Jake's iPhone checks: jellyfish legs and fins clip 31% (source 23.6%); napoleon clip at 6.7 s, the red rise is smaller, not gone; shallow-water shark photo (3 Oct); subject strength slider drag | Open. Jake checks. If the slider still lags, cache the frame before the lift. | [Verification](Verification.md), [ManualSubject](ManualSubject.md) |
 | 1.6 | JPEG colour resolution test fails on the simulator (2x2 sampling) | Open. It also fails before the 31 Oct changes. Not checked on a device. | [Verification](Verification.md) |
-| 1.7 | Free trial with watermark: 3 photos, then 1 photo every 24 hours; 1 video every 24 hours; a mark on every free export (Jake, 2 Nov) | Built on branch `free-trial-watermark`, not merged. Store text and What's New are in [AppStoreMetadata](AppStoreMetadata.md). Run the landing script only after release ([AppStoreRelease](AppStoreRelease.md)). The Mac 1.0 build in review has the old trial; the next Mac build gets the new one. | [Verification](Verification.md) |
+| 1.7 | Free trial with watermark: 3 photos, then 1 photo every 24 hours; 1 video every 24 hours; a mark on every free export (Jake, 2 Nov) | On `main`, in the iPhone 1.1.10 (16) archive. Device checks are open. Store text and What's New are in [AppStoreMetadata](AppStoreMetadata.md). Run the landing script only after release ([AppStoreRelease](AppStoreRelease.md)). The Mac 1.0 build in review has the old trial; the next Mac build gets the new one. | [Verification](Verification.md) |
 
 ## 2. Mac app 1.0 release (next)
 

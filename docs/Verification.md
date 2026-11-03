@@ -2,11 +2,13 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
-## Free trial with watermark (2 Nov 2026, branch `free-trial-watermark`)
+## Free trial with watermark (2 Nov 2026, on `main`, iPhone 1.1.10 (16))
 
 Rules (Jake, 2 Nov 2026): 3 free photos, then 1 photo every 24 hours. 1 free video (first 10 s, 1080p SDR) every 24 hours. Every free export has the icon and "UnderBlue" in the bottom-right corner. The wait counts from the last free export in absolute time, so a clock set back gives nothing.
 
 Automated: `TrialTests` (10) and `WatermarkTests` (5) pass on the iPhone 18 Pro simulator. `BatchEngineTests` (6) pass on the Mac. The UI test was updated but not run.
+
+Full run on 3 Nov 2026 (iPhone 18 Pro simulator, iOS 27.0): 311 iOS unit tests, 1 known failure (JPEG colour resolution, see 31 Oct below), 13 skipped probes. Mac: 24 unit tests, no failure, 2 skipped probes. `PurchaseTests` not run (decision).
 
 Pro has no mark (Mac batch, 1200 × 800 flat photo, sum of RGB under the mark's white parts / dark icon / clear parts): Pro 1.249 / 1.257 / 1.255, free 2.825 / 0.423 / 1.255.
 

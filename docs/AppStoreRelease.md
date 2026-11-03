@@ -1,8 +1,23 @@
 # App Store release checklist
 
-Last reviewed: 2026-11-01
+Last reviewed: 2026-11-03
 
-## Current release: iPhone 1.1.9 (build 15), 1 Nov 2026
+## Current release: iPhone 1.1.10 (build 16), 3 Nov 2026
+
+iPhone only. The Mac targets stay at 1.0 (1).
+
+- 1.1.9 (15) was submitted for App Review on 1 Nov 2026 (Jake). Its later state is not recorded here.
+- 1.1.10 (16) is archived (3 Nov 2026). It is not uploaded. New since 1.1.9:
+  - Free trial: 3 photo exports, then 1 photo every 24 hours. 1 video export (first 10 s) every 24 hours.
+  - Every free export carries a small UnderBlue watermark. Pro exports have none.
+- Archive: Xcode 27.2 (27B52), `~/Library/Developer/Xcode/Archives/2026-11-03/UnderBlue 1.1.10 (16).xcarchive`. Checked: app and share extension are both 1.1.10 (16); iPhone only (device family 1); both have the App Group `group.com.underblue.app`; dSYMs for both.
+- Release note: `AppStoreMetadata.md`, "What's New (1.1.10)". The description sections and the App Review notes also describe the new trial. Paste them with this version.
+- Tests (3 Nov 2026): 311 iOS unit tests on the iPhone 18 Pro simulator (iOS 27.0): 1 known failure (JPEG colour resolution), 13 skipped probes. 24 Mac unit tests: no failure, 2 skipped. `PurchaseTests` not run (decision). UI tests not run.
+- Checks: `Verification.md`, "Free trial with watermark". The device checks are open.
+- Landing pages: run `build_landing.py` only after 1.1.10 is live (see "Website" below).
+- The IAP description still says "Unlimited photos, full video, 4K and HDR". It does not mention the watermark.
+
+## iPhone 1.1.9 (build 15), 1 Nov 2026 (history)
 
 iPhone only. The Mac targets stay at 1.0 (1).
 

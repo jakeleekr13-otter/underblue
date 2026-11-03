@@ -284,17 +284,19 @@ An App Preview video isn't required for the first release. If produced later, sh
 
 **Display name:** UnderBlue Pro
 
-**Description:** Unlimited photos, full video, 4K and HDR
+The description is at most 45 characters (App Store Connect reference, checked 3 Nov 2026). Since 1.1.10 it names the watermark. Submit the change with 1.1.10.
 
-**Korean:** 사진·전체 영상·4K·HDR 무제한 내보내기
+**Description:** No watermark or limits, full video, 4K, HDR
 
-**Japanese:** 写真・全編ビデオ・4K・HDRを無制限に書き出し
+**Korean:** 워터마크 없이 사진·전체 영상·4K·HDR 무제한 내보내기
 
-**Simplified Chinese:** 无限导出照片、完整视频、4K 和 HDR
+**Japanese:** 透かしなしで写真・全編ビデオ・4K・HDRを無制限に書き出し
 
-**Traditional Chinese:** 無限匯出照片、完整影片、4K 與 HDR
+**Simplified Chinese:** 无水印，无限导出照片、完整视频、4K 和 HDR
 
-**Spanish (Spain):** Fotos ilimitadas, vídeos completos, 4K y HDR
+**Traditional Chinese:** 無浮水印，無限匯出照片、完整影片、4K 與 HDR
+
+**Spanish (Spain):** Sin marca de agua, vídeo completo, 4K y HDR
 
 The IAP review screenshot is ready at `AppStoreAssets/IAP/UnderBluePro-Review-1206x2622.png`.
 It is a real iPhone purchase screen showing the one-time purchase wording, feature list, production

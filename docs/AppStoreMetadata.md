@@ -180,7 +180,7 @@ UnderBlue está pensada para los recuerdos del buceo recreativo. No es una herra
 
 **Spanish (Spain):** buceo,submarinismo,snorkel,fotosub,submarino,fotos,vídeo,arrecife,coral,corregir,filtro,restaurar (98 bytes)
 
-## What's New (next version)
+## What's New (1.1.10)
 
 **English:** Try UnderBlue free for longer: 3 free photo exports, then 1 photo every 24 hours, and the first 10 seconds of 1 video every 24 hours. Free exports carry a small UnderBlue watermark. UnderBlue Pro exports have none.
 

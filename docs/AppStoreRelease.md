@@ -15,7 +15,8 @@ iPhone only. The Mac targets stay at 1.0 (1).
 - Tests (3 Nov 2026): 311 iOS unit tests on the iPhone 18 Pro simulator (iOS 27.0): 1 known failure (JPEG colour resolution), 13 skipped probes. 24 Mac unit tests: no failure, 2 skipped. `PurchaseTests` not run (decision). UI tests not run.
 - Checks: `Verification.md`, "Free trial with watermark". The device checks are open.
 - Landing pages: run `build_landing.py` only after 1.1.10 is live (see "Website" below).
-- The IAP description still says "Unlimited photos, full video, 4K and HDR". It does not mention the watermark.
+- The IAP description now names the watermark in all six languages (`AppStoreMetadata.md`). Submit the IAP change with 1.1.10.
+- Jake approved the IAP description and the What's New text in all six languages on 3 Nov 2026. The ja, zh and es lines were also checked by a reviewer agent.
 
 ## iPhone 1.1.9 (build 15), 1 Nov 2026 (history)
 
@@ -194,7 +195,7 @@ accepted iPhone screenshot size.
 - Reference name: `UnderBlue Pro`
 - Product ID: `com.underblue.pro`
 - English display name: `UnderBlue Pro`
-- English description: `Unlimited photos, full video, 4K and HDR`
+- English description: `No watermark or limits, full video, 4K, HDR` (since 1.1.10; at most 45 characters)
 - Availability: match the app's selected territories
 - App Store Server Notifications URL: leave blank; UnderBlue has no server
 - Family Sharing: leave off for the first release unless it is explicitly tested and accepted as an irreversible setting

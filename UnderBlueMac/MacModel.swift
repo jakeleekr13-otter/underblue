@@ -354,10 +354,10 @@ final class MacModel {
             var trialKind: ImportedMedia.Kind?
             if !isProOrDemo {
                 guard pending.count == 1, let kind = pending.first?.kind else {
-                    paywallReason = String(localized: "Batch needs UnderBlue Pro. The free trial corrects one photo and one short video."); showPaywall = true; return
+                    paywallReason = String(localized: "Batch needs UnderBlue Pro. The free trial corrects one file at a time, with a watermark."); showPaywall = true; return
                 }
                 guard trial.canExport(kind) else {
-                    paywallReason = String(localized: "The free trial for this kind of file is used."); showPaywall = true; return
+                    paywallReason = trial.waitReason(kind) ?? String(localized: "The free trial for this kind of file is used."); showPaywall = true; return
                 }
                 do { try trial.reserve(kind) } catch { notice = Failure.classify(error, operation: .trial).message; return }
                 trialKind = kind

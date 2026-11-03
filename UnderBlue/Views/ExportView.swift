@@ -11,8 +11,9 @@ struct ExportView: View {
                 // First, so the 10-second limit is seen before the options.
                 if !purchases.isPro {
                     Section("Free trial") {
-                        Text(model.media.kind == .photo ? String(localized: "1 photo export. This uses your free photo.") : String(localized: "1 video export · first 10 seconds · up to 1080p SDR. This uses your free video."))
+                        Text(model.media.kind == .photo ? String(localized: "Free export with an UnderBlue watermark.") : String(localized: "Free export: first 10 seconds · up to 1080p SDR · UnderBlue watermark."))
                             .accessibilityIdentifier(model.media.kind == .photo ? "photo-trial-description" : "video-trial-description")
+                        Text(allowance).font(.footnote)
                         Text("Failed or cancelled exports don’t use your trial.").font(.footnote).foregroundStyle(.secondary)
                     }
                 }
@@ -104,6 +105,13 @@ struct ExportView: View {
         case (.hdr, .heic): String(localized: "Original resolution · HDR · HEIC 10-bit with gain map")
         }
     }
+    /// What the trial gives after this export.
+    private var allowance: String {
+        guard model.media.kind == .photo else { return String(localized: "1 free video every 24 hours.") }
+        let left = trial.welcomePhotosLeft
+        return left > 0 ? String(localized: "Free photos left: \(left) of \(TrialPolicy.welcomePhotos). Then 1 free photo every 24 hours.")
+            : String(localized: "1 free photo every 24 hours.")
+    }
     static func format(_ seconds: Double) -> String {
         let rounded = seconds < 60 ? max(5, (seconds / 5).rounded(.up) * 5) : (seconds / 60).rounded(.up) * 60
         return Duration.seconds(rounded).formatted(.units(allowed: [.minutes, .seconds], width: .abbreviated))
@@ -123,6 +131,7 @@ struct ExportCompleteView: View {
                 Text("Ready to save").font(.title2.bold())
                 Text("Your export has been checked and is ready for Photos.").foregroundStyle(.secondary).multilineTextAlignment(.center)
                 if trimmed { Text("Only the first 10 seconds were exported. Pro exports the full video.").font(.subheadline).multilineTextAlignment(.center) }
+                if model.options.watermark { Text("This free export carries an UnderBlue watermark. Pro removes it.").font(.subheadline).multilineTextAlignment(.center) }
                 Button("Save to Photos") { Task { await model.saveCompleted() } }.buttonStyle(.borderedProminent).disabled(model.saving)
                 if model.saving { ProgressView("Saving…") }
                 Button("Discard export", role: .destructive) { model.discardCompleted() }.disabled(model.saving)

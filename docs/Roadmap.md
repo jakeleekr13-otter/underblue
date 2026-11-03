@@ -29,6 +29,7 @@ Most rows are Jake's checks on the iPhone.
 | 1.4 | Labs orb switch: export takes about 4.5 s longer when on | Measured, not explained. Labs only, off by default. | [Verification](Verification.md) |
 | 1.5 | Jake's iPhone checks: jellyfish legs and fins clip 31% (source 23.6%); napoleon clip at 6.7 s, the red rise is smaller, not gone; shallow-water shark photo (3 Oct); subject strength slider drag | Open. Jake checks. If the slider still lags, cache the frame before the lift. | [Verification](Verification.md), [ManualSubject](ManualSubject.md) |
 | 1.6 | JPEG colour resolution test fails on the simulator (2x2 sampling) | Open. It also fails before the 31 Oct changes. Not checked on a device. | [Verification](Verification.md) |
+| 1.7 | Free trial with watermark: 3 photos, then 1 photo every 24 hours; 1 video every 24 hours; a mark on every free export (Jake, 2 Nov) | Built on branch `free-trial-watermark`, not merged. Store text and What's New are in [AppStoreMetadata](AppStoreMetadata.md). Run the landing script only after release ([AppStoreRelease](AppStoreRelease.md)). The Mac 1.0 build in review has the old trial; the next Mac build gets the new one. | [Verification](Verification.md) |
 
 ## 2. Mac app 1.0 release (next)
 

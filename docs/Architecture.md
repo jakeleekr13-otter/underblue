@@ -84,7 +84,7 @@ After export the app checks codec, dimensions, orientation, duration, audio trac
 
 ## Trial and lifecycle
 
-A trial reservation is durably written before work begins. Successful validation commits consumption; failure/cancellation rolls it back. A pending reservation after a crash is refunded on the next launch because no deliverable was exposed. Keychain failure fails closed. No device fingerprinting is used.
+Trial rules (2 Nov 2026): 3 free photo exports, then 1 photo every 24 hours; 1 free video export (first 10 seconds, 1080p SDR) every 24 hours. The wait counts from the last free export in absolute time, so a time-zone change does nothing and a clock set back gives nothing. `TrialPolicy` holds the rules; `ExportOptions.applyTrial` is the one place that sets the free limits and the watermark (`Watermark`, export only, never in the preview). A trial reservation is durably written before work begins. Successful validation commits consumption; failure/cancellation rolls it back. A pending reservation after a crash is refunded on the next launch because no deliverable was exposed. Keychain failure fails closed. No device fingerprinting is used.
 
 Verified StoreKit purchase results, transaction updates and current entitlements control Pro ownership. Generation tracking prevents an older asynchronous entitlement read from overwriting a newer transaction update. Cancellation and pending approval do not unlock Pro.
 

@@ -209,7 +209,7 @@ final class BatchEngine {
                     await self.update(id) { $0.state = .exporting }
                     try StorageCheck.require(bytes: 100_000_000)
                     // Batch has no SDR/HDR choice: HDR photos stay HDR, SDR photos stay SDR.
-                    let file = try await workers.processors[slot].export(url, settings: chosen, keepHDR: !workers.trial && workers.preferHDR, format: format, subjects: subjects)
+                    let file = try await workers.processors[slot].export(url, settings: chosen, keepHDR: !workers.trial && workers.preferHDR, format: format, subjects: subjects, watermark: workers.trial)
                     await workers.memory.release(reservation)
                     return file
                 } catch { await workers.memory.release(reservation); throw error }
@@ -235,9 +235,8 @@ final class BatchEngine {
                 await diagnostics.record(Failure.restorationFallback(.videoSceneAnalysis), operation: .videoRestoration)
             }
             settings.analysis = analysis?.legacyAnalysis ?? .neutral
-            if workers.trial {
-                options.resolution = .hd; options.range = .sdr; options.durationLimit = TrialStore.videoSeconds
-            } else {
+            options.applyTrial(workers.trial)
+            if !workers.trial {
                 options.resolution = .source
                 let hdr = workers.preferHDR ? await ExportCapability.evaluate(url: url, metadata: metadata).hdrAvailable : false
                 options.range = hdr ? .hdr : .sdr

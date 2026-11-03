@@ -66,7 +66,7 @@ struct DiagnosticsView: View {
                 if !purchases.isPro {
                     Label {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Free: 1 photo export and 1 video export (first 10 seconds, up to 1080p SDR).")
+                            Text("Free: \(TrialPolicy.welcomePhotos) photo exports, then 1 photo every 24 hours. 1 video every 24 hours (first 10 seconds, up to 1080p SDR). Free exports carry an UnderBlue watermark.")
                             Text("Failed or cancelled exports don’t use your trial.").font(.footnote).foregroundStyle(.secondary)
                         }
                     } icon: { Image(systemName: "gift") }

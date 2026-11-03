@@ -22,15 +22,17 @@ final class UnderBlueUITests: XCTestCase {
         add(screenshot)
         app.buttons["Export"].tap()
         XCTAssertTrue(app.staticTexts["Free trial"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["1 photo export. This uses your free photo."].exists)
+        XCTAssertTrue(app.staticTexts["Free export with an UnderBlue watermark."].exists)
+        XCTAssertTrue(app.staticTexts["Free photos left: 3 of 3. Then 1 free photo every 24 hours."].exists)
         let exportButtons = app.buttons.matching(identifier: "Export")
         exportButtons.element(boundBy: exportButtons.count - 1).tap()
         XCTAssertTrue(app.buttons["Save to Photos"].waitForExistence(timeout: 15))
         app.buttons["Save to Photos"].tap()
         XCTAssertTrue(app.staticTexts["Saved to Photos"].waitForExistence(timeout: 10))
         app.buttons["OK"].tap()
+        // Three welcome photos: the second export is still free.
         app.buttons["Export"].tap()
-        XCTAssertTrue(app.staticTexts["One-time purchase. Every dive."].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Free photos left: 2 of 3. Then 1 free photo every 24 hours."].waitForExistence(timeout: 8))
     }
     @MainActor
     func testVideoImportAndLandscapeEditor() {

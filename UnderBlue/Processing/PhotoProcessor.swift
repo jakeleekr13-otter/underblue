@@ -217,7 +217,7 @@ actor PhotoProcessor {
     /// In both formats, quality 0.95 to 0.99 barely changed the error (measured 28 Sep 2026).
     /// A JPEG source is already compressed, so each save must add as little loss as possible.
     func export(_ url: URL, settings: FilterSettings, keepHDR: Bool = false,
-                format: ExportOptions.PhotoFormat = .jpeg, subjects: SubjectChoice = .off) async throws -> URL {
+                format: ExportOptions.PhotoFormat = .jpeg, subjects: SubjectChoice = .off, watermark: Bool = false) async throws -> URL {
         try Task.checkCancellation()
         let original = try open(url)
         let source = engine.sdr(original)
@@ -236,7 +236,8 @@ actor PhotoProcessor {
         defer { if pixels > FilterEngine.materializeAbove { engine.context.clearCaches() } }
         return try autoreleasepool {
             let chosen = Self.settings(settings, for: subjects) { engine.analyze(source, subjects: $0) }
-            let image = processed(cleaned(source, source: source, url: url, settings: chosen, plan: plan), settings: chosen, plan: plan)
+            let corrected = processed(cleaned(source, source: source, url: url, settings: chosen, plan: plan), settings: chosen, plan: plan)
+            let image = watermark ? Watermark.apply(to: corrected) : corrected
             // The SDR image in the file is the normal export. The HDR version (PhotoHDR) becomes its gain map.
             var hdr: CIImage?
             if keepHDR, original.contentHeadroom > 1 {

@@ -2,6 +2,14 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## Mac: save place locked during a run (4 Nov 2026, merged to `main`)
+
+What changed (Jake, 4 Nov 2026): in Settings, "Save results to" (Place and Choose…) is disabled while a batch runs, like the toolbar folder button. Before, a change there made Show in Finder open the new place, while the run still saved to the old one.
+
+Why: finding 6.7 of the flow review (`Roadmap.md`). Format, Keep HDR and Speed stay enabled: a run reads them when it starts.
+
+Checked: the Mac app builds. Not run: there is no Mac UI test target. On the Mac: start a batch, open Settings (⌘,). Place and Choose… should be dimmed until the batch ends.
+
 ## Export options after buying Pro (4 Nov 2026, merged to `main`)
 
 What changed (Jake, 4 Nov 2026): the free limits remember the resolution and range they replace. When Pro starts in the same editor, both come back. Before, a purchase after a free Export left the options at 1080p SDR, also for a 4K or HDR source.

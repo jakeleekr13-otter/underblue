@@ -349,6 +349,9 @@ final class MacModel {
             defer { runTask = nil }
             await purchases.refreshEntitlement()
             let pending = engine.items.filter { $0.state == .queued || $0.state == .cancelled }
+            // The run is the items checked here. Files added during the awaits below wait for the next run,
+            // so a free run stays one file, and its result counts only its own items.
+            let runIDs = Set(pending.map(\.id))
             if let shortage = await videoMemoryShortage(for: pending) { memoryShortage = shortage; return }
             memoryShortage = nil
             var trialKind: ImportedMedia.Kind?
@@ -372,13 +375,14 @@ final class MacModel {
                 _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
             }
             syncSubjectsToEngine()
-            engine.start(settings: settings, photoFormat: format, trial: trialKind != nil)
+            engine.start(settings: settings, photoFormat: format, trial: trialKind != nil, only: runIDs)
             let ticker = Task { while !Task.isCancelled { updateDock(); try? await Task.sleep(for: .milliseconds(500)) } }
             await engine.waitUntilFinished()
             ticker.cancel()
             NSApp.dockTile.badgeLabel = nil
-            if let trialKind { finishTrial(trialKind) }
-            announceFinished()
+            let result = Self.runResult(engine.items, runIDs: runIDs)
+            if let trialKind { finishTrial(trialKind, saved: result.done > 0) }
+            announceFinished(result)
             if runWithoutEmphasis { runWithoutEmphasis = false; syncSubjectsToEngine() }
         }
     }
@@ -387,8 +391,13 @@ final class MacModel {
 
     func retryFailed() { engine.retryFailed() }
 
-    private func finishTrial(_ kind: ImportedMedia.Kind) {
-        let saved = engine.items.contains { $0.state == .done }
+    /// Saved and failed items of one run. Items that an earlier run finished do not count, so a free run that
+    /// saved nothing never uses the trial (flow review 6.2, 4 Nov 2026).
+    static func runResult(_ items: [BatchEngine.Item], runIDs: Set<BatchEngine.Item.ID>) -> (done: Int, failed: Int) {
+        let run = items.filter { runIDs.contains($0.id) }
+        return (run.filter { $0.state == .done }.count, run.filter { $0.state == .failed }.count)
+    }
+    private func finishTrial(_ kind: ImportedMedia.Kind, saved: Bool) {
         do { if saved { try trial.commit(kind) } else { try trial.rollback() } }
         catch { notice = Failure.classify(error, operation: .trial).message }
     }
@@ -401,8 +410,8 @@ final class MacModel {
         NSApp.dockTile.badgeLabel = engine.running ? "\(engine.doneCount)/\(total)" : nil
     }
 
-    private func announceFinished() {
-        let done = engine.doneCount, failed = engine.failedCount
+    private func announceFinished(_ result: (done: Int, failed: Int)) {
+        let (done, failed) = result
         notice = failed == 0 ? String(localized: "Done: \(done) saved.") : String(localized: "Done: \(done) saved, \(failed) failed.")
         guard !NSApp.isActive else { return }
         let content = UNMutableNotificationContent()

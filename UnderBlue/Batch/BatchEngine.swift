@@ -88,9 +88,13 @@ final class BatchEngine {
 
     /// Starts every queued or cancelled item. It does nothing while a run is active.
     /// `trial` applies the free-trial limits to every item: photos export as SDR, videos as 1080p SDR for the first seconds only.
-    func start(settings: FilterSettings, photoFormat: ExportOptions.PhotoFormat = .jpeg, trial: Bool = false) {
+    /// `only` limits the run to these items, so files added after the caller's checks wait for the next run.
+    func start(settings: FilterSettings, photoFormat: ExportOptions.PhotoFormat = .jpeg, trial: Bool = false,
+               only: Set<Item.ID>? = nil) {
         guard !running else { return }
-        let ids = items.filter { $0.state == .queued || $0.state == .cancelled }.map(\.id)
+        let ids = items.filter { item in
+            (item.state == .queued || item.state == .cancelled) && (only?.contains(item.id) ?? true)
+        }.map(\.id)
         guard !ids.isEmpty else { return }
         for id in ids { update(id) { $0.state = .queued; $0.progress = 0; $0.error = nil } }
         running = true

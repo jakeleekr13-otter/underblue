@@ -205,6 +205,20 @@ final class BatchEngineTests: XCTestCase {
         XCTAssertFalse(queue.setSubjects(UUID(), picked), "an unknown item is refused")
     }
 
+    /// The Mac app checks the free trial against the queued items, then awaits before the run starts. A file added
+    /// in that gap must wait for the next run, so a free run stays one file (flow review 6.2, 4 Nov 2026).
+    func testStartOnlyRunsTheGivenItems() async throws {
+        let sink = RecordingSink(directory: output)
+        let batch = engine(sink: sink)
+        let color = CIColor(red: 0.15, green: 0.45, blue: 0.55), size = CGSize(width: 240, height: 160)
+        batch.add([try makePhoto(color, size: size, name: "IMG_0010.heic"), try makePhoto(color, size: size, name: "IMG_0011.heic")])
+        let first = try XCTUnwrap(batch.items.first?.id)
+        batch.start(settings: FilterSettings(), trial: true, only: [first])
+        await batch.waitUntilFinished()
+        XCTAssertEqual(batch.items.map(\.state), [.done, .queued], batch.items.compactMap(\.error).joined(separator: "; "))
+        let names = await sink.names
+        XCTAssertEqual(names.count, 1)
+    }
     func testUniqueNameAddsANumberUntilFree() {
         let taken: Set = ["a.jpg", "a_2.jpg", "a_3.jpg"]
         XCTAssertEqual(ExportNaming.unique("b.jpg") { taken.contains($0) }, "b.jpg")

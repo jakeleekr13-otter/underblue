@@ -14,6 +14,17 @@ Why: finding 6.9 of the flow review (`Roadmap.md`).
 
 Checked: `BatchTests.testSummaryNamesSaveFailuresAndWhyItStopped` and the other 3 `BatchTests` pass on the iPhone 18 Pro simulator (iOS 27.2). The Mac app builds. Not run: Save All itself (it needs Pro), and a real Cancel on a device. A device run would save real photos to the library.
 
+## Save alerts offer Open Settings; a failed save keeps the file (4 Nov 2026, merged to `main`)
+
+What changed:
+- Jake, 4 Nov 2026 (flow review 6.14): when a save fails for Photos permission, "Couldn’t save" also has "Open Settings". It opens the iOS Settings page of UnderBlue. Single export and batch. New string in six languages; no reviewer has checked it yet.
+- New finding 6.16, fixed: the editor had a second alert on the same error. During "Ready to save" it closed that sheet, and closing the sheet deleted the finished file. The editor alert now waits while the sheet is up.
+
+Checked on Jake's iPhone 17 (Debug build, sandbox Pro):
+- `BatchFlowTests.testSaveAllWithPhotosAccessDeniedStopsBeforeRendering` passes with the new Open Settings check.
+- New `BatchFlowTests.testSingleSaveWithPhotosAccessDeniedOffersSettings`: export one photo, deny access at Save to Photos. Before the 6.16 fix, the screen recording shows "Couldn’t save" with Open Settings, then about 1 s later the alert and the sheet are gone (the test failed). After the fix it passes: the alert has Open Settings, and Save to Photos is still there after OK. Discard then asks and closes.
+- Both tests reset Photos access at the end, so the next save asks. Nothing was saved to the library.
+
 ## Pro screen: no stale text after a purchase (4 Nov 2026, merged to `main`)
 
 What changed (Jake, 4 Nov 2026):

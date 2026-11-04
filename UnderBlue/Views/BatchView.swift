@@ -6,6 +6,7 @@ struct BatchView: View {
     @Environment(TrialStore.self) private var trial
     @Environment(\.horizontalSizeClass) private var widthClass
     @Environment(\.requestReview) private var requestReview
+    @Environment(\.openURL) private var openURL
     @State var model: BatchModel
     @State private var pressed: BatchModel.Item.ID?
     @State private var detail: BatchModel.Item.ID?
@@ -43,6 +44,10 @@ struct BatchView: View {
             }
         } message: { Text(model.summary ?? "") }
         .alert("Couldn’t save", isPresented: Binding(get: { model.error != nil && !model.saving }, set: { if !$0 { model.error = nil } })) {
+            // The message names Settings. Open it there directly (flow review 6.14, Jake 4 Nov 2026).
+            if model.errorNeedsSettings, let settings = URL(string: UIApplication.openSettingsURLString) {
+                Button("Open Settings") { model.error = nil; openURL(settings) }
+            }
             Button("OK") { model.error = nil }
         } message: { Text(model.error ?? "") }
     }

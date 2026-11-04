@@ -47,7 +47,9 @@ struct EditorView: View {
                 ExportCompleteView(model: model)
             }
             .overlay { if model.exporting { exportProgress } }
-            .alert("Couldn’t finish", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) { Button("OK") { model.error = nil } } message: { Text(model.error ?? "") }
+            // While "Ready to save" is up, its own "Couldn’t save" alert shows the error. A second alert here closed that
+            // sheet, and closing it deleted the finished file (seen on the iPhone 17, 4 Nov 2026).
+            .alert("Couldn’t finish", isPresented: Binding(get: { model.error != nil && model.completedURL == nil }, set: { if !$0 { model.error = nil } })) { Button("OK") { model.error = nil } } message: { Text(model.error ?? "") }
             .alert("UnderBlue", isPresented: Binding(get: { model.notice != nil }, set: { if !$0 { model.notice = nil } })) {
                 Button("OK") {
                     model.notice = nil

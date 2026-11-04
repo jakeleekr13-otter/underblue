@@ -119,6 +119,7 @@ struct ExportView: View {
 }
 struct ExportCompleteView: View {
     @Bindable var model: EditorModel
+    @Environment(\.openURL) private var openURL
     @State private var confirmDiscard = false
     /// A free video export cuts the clip at the trial limit. Say so when the clip was longer.
     private var trimmed: Bool {
@@ -148,7 +149,12 @@ struct ExportCompleteView: View {
                 } message: {
                     if model.options.watermark { Text("Your trial won’t be used.") }
                 }
-                .alert("Couldn’t save", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) { Button("OK") { model.error = nil } } message: { Text(model.error ?? "") }
+                .alert("Couldn’t save", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {
+                    if model.errorNeedsSettings, let settings = URL(string: UIApplication.openSettingsURLString) {
+                        Button("Open Settings") { model.error = nil; openURL(settings) }
+                    }
+                    Button("OK") { model.error = nil }
+                } message: { Text(model.error ?? "") }
         }.interactiveDismissDisabled().presentationDetents([.medium])
     }
 }

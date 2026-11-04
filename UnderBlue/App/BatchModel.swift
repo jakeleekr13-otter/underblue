@@ -45,7 +45,9 @@ final class BatchModel: Identifiable {
     var summary: String?
     /// Set when a batch saved every photo with no interruption: closing the summary may ask for a rating.
     var offersReview = false
-    var error: String?
+    var error: String? { didSet { if error == nil { errorNeedsSettings = false } } }
+    /// True when `error` is a Photos permission error. The save alert then offers Open Settings (flow review 6.14).
+    private(set) var errorNeedsSettings = false
     var showPro = false
     /// Why the Pro screen opened from Save All, for example the wait for the next free photo.
     var proReason: String?
@@ -243,6 +245,8 @@ final class BatchModel: Identifiable {
         let failure = Failure.classify(error, operation: operation)
         guard failure.kind != .cancelled else { return }
         await diagnostics.record(failure, operation: operation)
-        if self.error == nil, operation == .save || operation == .export { self.error = failure.message }
+        if self.error == nil, operation == .save || operation == .export {
+            self.error = failure.message; errorNeedsSettings = failure.kind == .permission
+        }
     }
 }

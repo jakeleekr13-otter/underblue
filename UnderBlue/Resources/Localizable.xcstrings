@@ -12385,6 +12385,88 @@
           }
         }
       }
+    },
+    "The free trial corrects one photo and one video at a time, with a watermark. Pro corrects every file." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The free trial corrects one photo and one video at a time, with a watermark. Pro corrects every file."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La prueba gratuita corrige una foto y un vídeo cada vez, con marca de agua. Pro corrige todos los archivos."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無料体験では1回に写真1枚と動画1本を、透かし入りで補正します。Proならすべてのファイルを補正できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "무료 체험에서는 한 번에 사진 1장과 영상 1개를 워터마크와 함께 보정합니다. Pro는 모든 파일을 보정합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免费试用每次校正 1 张照片和 1 个视频，并带有水印。Pro 可校正所有文件。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免費試用每次校正 1 張照片和 1 部影片，並含浮水印。Pro 可校正所有檔案。"
+          }
+        }
+      }
+    },
+    "The free trial corrects up to %lld photos and one video at a time, with a watermark. Pro corrects every file." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The free trial corrects up to %lld photos and one video at a time, with a watermark. Pro corrects every file."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La prueba gratuita corrige hasta %lld fotos y un vídeo cada vez, con marca de agua. Pro corrige todos los archivos."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無料体験では1回に写真最大%lld枚と動画1本を、透かし入りで補正します。Proならすべてのファイルを補正できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "무료 체험에서는 한 번에 사진 최대 %lld장과 영상 1개를 워터마크와 함께 보정합니다. Pro는 모든 파일을 보정합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免费试用每次最多校正 %lld 张照片和 1 个视频，并带有水印。Pro 可校正所有文件。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免費試用每次最多校正 %lld 張照片和 1 部影片，並含浮水印。Pro 可校正所有檔案。"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

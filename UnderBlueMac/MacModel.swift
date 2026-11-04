@@ -184,7 +184,9 @@ final class MacModel {
         let result = await MediaScanner.scan(urls)
         let known = Set(engine.items.map { $0.url.standardizedFileURL.path })
         let fresh = result.media.filter { !known.contains($0.url.standardizedFileURL.path) }
-        engine.add(fresh)
+        let fit = fitFreeQueue(fresh)
+        engine.add(fit.kept)
+        if !fit.dropped.isEmpty { paywallReason = freeLimitReason; showPaywall = true }
         if selection == nil, !isDemoNoPreview { selection = engine.items.first?.id }
         if fresh.isEmpty && result.skipped > 0 {
             notice = String(localized: "No photos or videos found in what you added.")
@@ -209,8 +211,12 @@ final class MacModel {
         defer { importingShared = false }
         guard let shared = await takeShared() else { return }
         let known = Set(engine.items.map { $0.url.standardizedFileURL.path })
-        let fresh = shared.media.filter { !known.contains($0.url.standardizedFileURL.path) }
+        let fit = fitFreeQueue(shared.media.filter { !known.contains($0.url.standardizedFileURL.path) })
+        // Shared files are temporary copies. The ones the free queue cannot take are deleted.
+        fit.dropped.forEach { TemporaryFiles.remove($0.url) }
+        let fresh = fit.kept
         engine.add(fresh)
+        if !fit.dropped.isEmpty { paywallReason = freeLimitReason; showPaywall = true }
         if let first = fresh.first { selection = engine.items.first { $0.url == first.url }?.id }
         if fresh.isEmpty, shared.failed == 0 { return }
         let message = shared.failed == 0 ? String(localized: "Added \(fresh.count) from the share menu.")
@@ -344,7 +350,8 @@ final class MacModel {
         return largest.flatMap { VideoExporter.memoryShortage(outputSize: $0) }
     }
 
-    /// Pro runs the whole queue. Without Pro, one item may run as the free trial; more than one needs Pro.
+    /// Pro runs the whole queue. Without Pro, one run takes the free allowance of each kind: the welcome photos
+    /// left (3 on a first install), else 1 photo, and 1 video (Jake, 4 Nov 2026). More needs Pro.
     func start() {
         guard canStart, runTask == nil else { return }
         let photos = engine.items.contains { $0.kind == .photo && ($0.state == .queued || $0.state == .cancelled) }
@@ -362,19 +369,20 @@ final class MacModel {
             let runIDs = Set(pending.map(\.id))
             if let shortage = await videoMemoryShortage(for: pending) { memoryShortage = shortage; return }
             memoryShortage = nil
-            var trialKind: ImportedMedia.Kind?
+            var trialCounts: [ImportedMedia.Kind: Int]?
             if !isProOrDemo {
-                guard pending.count == 1, let kind = pending.first?.kind else {
-                    paywallReason = String(localized: "Batch needs UnderBlue Pro. The free trial corrects one file at a time, with a watermark."); showPaywall = true; return
+                let counts = Dictionary(grouping: pending, by: \.kind).mapValues(\.count)
+                if let (kind, _) = counts.first(where: { $0.value > trial.allowance($0.key) }) {
+                    paywallReason = trial.allowance(kind) == 0
+                        ? trial.waitReason(kind) ?? String(localized: "The free trial for this kind of file is used.")
+                        : freeLimitReason
+                    showPaywall = true; return
                 }
-                guard trial.canExport(kind) else {
-                    paywallReason = trial.waitReason(kind) ?? String(localized: "The free trial for this kind of file is used."); showPaywall = true; return
-                }
-                do { try trial.reserve(kind) } catch { notice = Failure.classify(error, operation: .trial).message; return }
-                trialKind = kind
+                do { try trial.reserve(counts) } catch { notice = Failure.classify(error, operation: .trial).message; return }
+                trialCounts = counts
             }
             guard let sink = makeSink() else {
-                if let trialKind { rollbackTrial(trialKind) }
+                if trialCounts != nil { rollbackTrial() }
                 return
             }
             engine.sink = sink
@@ -383,13 +391,13 @@ final class MacModel {
                 _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
             }
             syncSubjectsToEngine()
-            engine.start(settings: settings, photoFormat: format, trial: trialKind != nil, only: runIDs)
+            engine.start(settings: settings, photoFormat: format, trial: trialCounts != nil, only: runIDs)
             let ticker = Task { while !Task.isCancelled { updateDock(); try? await Task.sleep(for: .milliseconds(500)) } }
             await engine.waitUntilFinished()
             ticker.cancel()
             NSApp.dockTile.badgeLabel = nil
             let result = Self.runResult(engine.items, runIDs: runIDs)
-            if let trialKind { finishTrial(trialKind, saved: result.done > 0) }
+            if trialCounts != nil { finishTrial(saved: Self.savedKinds(engine.items, runIDs: runIDs)) }
             announceFinished(result)
             // A share that arrived during the run waited in the inbox. Add it now, below the Done line.
             await importShared(appendNotice: true)
@@ -407,11 +415,40 @@ final class MacModel {
         let run = items.filter { runIDs.contains($0.id) }
         return (run.filter { $0.state == .done }.count, run.filter { $0.state == .failed }.count)
     }
-    private func finishTrial(_ kind: ImportedMedia.Kind, saved: Bool) {
-        do { if saved { try trial.commit(kind) } else { try trial.rollback() } }
+    /// Saved items of one run by kind. Each one uses a free export.
+    static func savedKinds(_ items: [BatchEngine.Item], runIDs: Set<BatchEngine.Item.ID>) -> [ImportedMedia.Kind: Int] {
+        Dictionary(grouping: items.filter { runIDs.contains($0.id) && $0.state == .done }, by: \.kind).mapValues(\.count)
+    }
+    private func finishTrial(saved: [ImportedMedia.Kind: Int]) {
+        do { if saved.values.contains(where: { $0 > 0 }) { try trial.commit(saved) } else { try trial.rollback() } }
         catch { notice = Failure.classify(error, operation: .trial).message }
     }
-    private func rollbackTrial(_ kind: ImportedMedia.Kind) {
+    /// Without Pro the queue takes what one free run may correct, and at least 1 of each kind, so a person who
+    /// waits for the next free export can still look at a file. The rest is not added; the paywall says why.
+    static func fitTrial(_ media: [ImportedMedia], photoRoom: Int, videoRoom: Int)
+        -> (kept: [ImportedMedia], dropped: [ImportedMedia]) {
+        var room: [ImportedMedia.Kind: Int] = [.photo: photoRoom, .video: videoRoom]
+        var kept: [ImportedMedia] = [], dropped: [ImportedMedia] = []
+        for item in media {
+            if room[item.kind, default: 0] > 0 { kept.append(item); room[item.kind, default: 0] -= 1 } else { dropped.append(item) }
+        }
+        return (kept, dropped)
+    }
+    private func fitFreeQueue(_ media: [ImportedMedia]) -> (kept: [ImportedMedia], dropped: [ImportedMedia]) {
+        guard !isProOrDemo else { return (media, []) }
+        func room(_ kind: ImportedMedia.Kind) -> Int {
+            let queued = engine.items.filter { $0.kind == kind && $0.state != .done }.count
+            return max(0, max(1, trial.allowance(kind)) - queued)
+        }
+        return Self.fitTrial(media, photoRoom: room(.photo), videoRoom: room(.video))
+    }
+    private var freeLimitReason: String {
+        let photos = max(1, trial.allowance(.photo))
+        return photos == 1
+            ? String(localized: "The free trial corrects one photo and one video at a time, with a watermark. Pro corrects every file.")
+            : String(localized: "The free trial corrects up to \(photos) photos and one video at a time, with a watermark. Pro corrects every file.")
+    }
+    private func rollbackTrial() {
         do { try trial.rollback() } catch { notice = Failure.classify(error, operation: .trial).message }
     }
 

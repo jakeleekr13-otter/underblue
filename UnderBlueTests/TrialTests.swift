@@ -75,6 +75,33 @@ final class TrialTests: XCTestCase {
         clock.now = real + 54 * hour
         XCTAssertTrue(trial.canExport(.video))
     }
+    /// A first install takes its 3 welcome photos in one run; after that one photo a day (Jake, 4 Nov 2026).
+    func testOneRunTakesTheWelcomePhotosThenOne() throws {
+        let persistence = MemoryPersistence(), clock = Clock()
+        let trial = TrialStore(persistence: persistence, now: { clock.now })
+        XCTAssertEqual(trial.allowance(.photo), 3); XCTAssertEqual(trial.allowance(.video), 1)
+        XCTAssertThrowsError(try trial.reserve([.photo: 4]))
+        try trial.reserve([.photo: 3, .video: 1])
+        XCTAssertEqual(persistence.value.pending, "photo:3,video:1")
+        XCTAssertEqual(trial.allowance(.photo), 0, "a reservation blocks another run")
+        // One photo failed: only the 2 saved ones are used, and the video.
+        XCTAssertThrowsError(try trial.commit([.photo: 4]), "more than reserved")
+        try trial.commit([.photo: 2, .video: 1])
+        XCTAssertEqual(trial.welcomePhotosLeft, 1)
+        XCTAssertNil(persistence.value.pending)
+        XCTAssertEqual(trial.allowance(.photo), 1); XCTAssertEqual(trial.allowance(.video), 0)
+        try trial.reserve([.photo: 1]); try trial.commit([.photo: 1])
+        XCTAssertEqual(trial.allowance(.photo), 0, "the welcome photos are used and the wait started")
+        clock.now += 24 * hour
+        XCTAssertEqual(trial.allowance(.photo), 1); XCTAssertEqual(trial.allowance(.video), 1)
+    }
+    /// The 1.1.10 pending value is one kind name. It still reads as one export.
+    func testOldPendingValueReadsAsOne() {
+        XCTAssertEqual(TrialPolicy.pendingCounts("photo"), [.photo: 1])
+        XCTAssertEqual(TrialPolicy.pendingCounts("video"), [.video: 1])
+        XCTAssertEqual(TrialPolicy.pendingCounts("photo:3,video:1"), [.photo: 3, .video: 1])
+        XCTAssertEqual(TrialPolicy.pendingCounts(nil), [:])
+    }
     func testRollbackRefundsAndPendingBlocks() throws {
         let trial = TrialStore(persistence: MemoryPersistence())
         try trial.reserve(.photo)

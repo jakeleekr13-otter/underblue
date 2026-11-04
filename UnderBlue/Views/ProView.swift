@@ -14,7 +14,8 @@ struct ProView: View {
                     Image(systemName: "water.waves").font(.system(size: 44)).foregroundStyle(.mint).accessibilityHidden(true)
                     Text("UnderBlue Pro").font(.largeTitle.bold())
                     Text("One-time purchase. Every dive.").font(.title3).foregroundStyle(.secondary)
-                    if let reason { Text(reason).font(.callout).foregroundStyle(.orange) }
+                    // The wait for the next free export means nothing once Pro is unlocked (flow review 6.13).
+                    if let reason, !purchases.isPro { Text(reason).font(.callout).foregroundStyle(.orange) }
                     VStack(alignment: .leading, spacing: 16) {
                         Label("Unlimited photo exports", systemImage: "photo")
                         Label("No watermark", systemImage: "seal")

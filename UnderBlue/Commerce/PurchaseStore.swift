@@ -92,6 +92,8 @@ final class PurchaseStore {
         let unlocked = transaction.productType == .nonConsumable && transaction.revocationDate == nil
         unlockedBySession = unlocked
         isPro = unlocked
+        // An Ask to Buy approval arrives here. Its "pending approval" line is out of date now (flow review 6.13).
+        if unlocked, message != nil { message = String(localized: "UnderBlue Pro is unlocked.") }
     }
     func purchase() async {
         guard let product, !busy else { return }

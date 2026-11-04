@@ -17,6 +17,7 @@ On `main` since 1.1.10, not released (4 Nov 2026, flow review in `Roadmap.md` se
 - A first install takes its 3 free photos in one batch (6.10).
 - A failed open shows the reason and Try again (6.11).
 - Custom Reset asks first (6.12).
+- The Pro screen drops the wait line and the pending line once Pro unlocks (6.13).
 
 ## Current release: iPhone 1.1.10 (build 16), 3 Nov 2026
 

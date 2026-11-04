@@ -2,6 +2,31 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## "Ready to save" keeps the file (4 Nov 2026, merged to `main`)
+
+What changed (Jake, 4 Nov 2026):
+- A swipe no longer closes the "Ready to save" sheet. Before, a swipe deleted the finished file at once.
+- Discard moved to the top-left corner, away from Save to Photos. It asks first.
+- A free export uses the trial only when the file is saved to Photos. Discard and closing the editor give the trial back. Before, the trial was used when the render ended.
+
+Why: finding 6.1 of the flow review (`Roadmap.md`). A swipe lost a long export, and a free user then waited 24 hours.
+
+Checked on the iPhone 18 Pro simulator (iOS 27.2):
+- `testReadySheetIgnoresSwipeAndDiscardKeepsTrial` passes. It drags the sheet down, discards, and sees "3 of 3" free photos again.
+- The same test fails on the old sheet ("A swipe closed the sheet"). A plain `swipeDown` did not close even the old sheet, so the test drags the title bar instead.
+- `testPhotoImportPresetsCompareExportSaveAndTrialGate` passes. A save still uses one free photo ("2 of 3").
+- Unit tests `TrialTests`, `CustomPresetTests`, `PhotoFormatTests` (iOS 27.0 simulator): 37 run, 1 known failure (JPEG colour resolution).
+- The Mac app builds. The Mac app does not use this sheet.
+
+UI test fixes in the same change:
+- The picker wait is 30 s, not 8 s. A freshly booted simulator showed "Loading…" for longer.
+- The tests wait until the editor's Export is enabled. A tap during the analysis did nothing.
+- The tests tap `export-confirm` in the options sheet. `matching(identifier: "Export")` hit the editor's Export behind the sheet.
+
+Open:
+- Not checked on a device.
+- New strings in six languages: "Discard", "Discard this export?", "Your trial won’t be used." No reviewer has checked the ko, ja, zh and es text yet.
+
 ## Free trial with watermark (2 Nov 2026, iPhone 1.1.10 (16), on the App Store since 3 Nov 2026)
 
 Rules (Jake, 2 Nov 2026): 3 free photos, then 1 photo every 24 hours. 1 free video (first 10 s, 1080p SDR) every 24 hours. Every free export has the icon and "UnderBlue" in the bottom-right corner. The wait counts from the last free export in absolute time, so a clock set back gives nothing.

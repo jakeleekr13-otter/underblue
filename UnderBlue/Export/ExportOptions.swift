@@ -31,12 +31,18 @@ struct ExportOptions: Sendable {
     var durationLimit: Double?
     /// Free exports carry the UnderBlue mark (Watermark). Pro exports never do.
     var watermark = false
+    /// The resolution and range from before the free limits. Only `applyTrial` sets it.
+    var beforeTrial: (resolution: Resolution, range: Range)? = nil
     /// The one place that sets the free-trial limits. Free: 1080p SDR, the first `TrialPolicy.videoSeconds`, the mark.
-    /// Pro: no time limit and no mark; the chosen resolution and range stay.
+    /// Pro: no time limit and no mark. The resolution and range from before the free limits come back, so a purchase
+    /// in the same editor gets the full choice (flow review 6.6, Jake 4 Nov 2026).
     mutating func applyTrial(_ free: Bool) {
         if free {
+            // Keep the first values only. The export applies the limits again to its copy of the options.
+            if beforeTrial == nil { beforeTrial = (resolution, range) }
             resolution = .hd; range = .sdr; durationLimit = TrialPolicy.videoSeconds; watermark = true
         } else {
+            if let beforeTrial { resolution = beforeTrial.resolution; range = beforeTrial.range; self.beforeTrial = nil }
             durationLimit = nil; watermark = false
         }
     }

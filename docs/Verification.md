@@ -2,6 +2,16 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## Export options after buying Pro (4 Nov 2026, merged to `main`)
+
+What changed (Jake, 4 Nov 2026): the free limits remember the resolution and range they replace. When Pro starts in the same editor, both come back. Before, a purchase after a free Export left the options at 1080p SDR, also for a 4K or HDR source.
+
+Why: finding 6.6 of the flow review (`Roadmap.md`).
+
+Checked: `WatermarkTests.testOnlyFreeExportsGetTheMark` now also checks Pro after free, and a second free call (the export applies the limits again to its copy). The 5 `WatermarkTests` pass on the iPhone 18 Pro simulator (iOS 27.2). With the old `ExportOptions.swift`, the two new checks fail ("hd" not "source", "sdr" not "hdr"). The Mac app builds.
+
+Open: not run as a real purchase. On a device: as a free user, tap Export on an HDR photo, close, buy Pro (sandbox), tap Export. HDR and Original resolution should be selected.
+
 ## iPhone batch: Photos access before any render (4 Nov 2026, merged to `main`)
 
 What changed (Jake, 4 Nov 2026):

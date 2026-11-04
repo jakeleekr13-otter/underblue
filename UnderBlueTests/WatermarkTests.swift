@@ -45,6 +45,7 @@ final class WatermarkTests: XCTestCase {
         XCTAssertEqual(difference(source, marked, in: CGRect(x: 0, y: 0, width: mark.minX, height: mark.maxY)), 0, accuracy: 0.0001)
     }
     /// The editor and the batch both decide through `applyTrial`. Pro must never get the mark, also after a free export.
+    /// Pro after free gets the resolution and range back (flow review 6.6, 4 Nov 2026). Before, they stayed 1080p SDR.
     func testOnlyFreeExportsGetTheMark() {
         var options = ExportOptions(resolution: .source, range: .hdr)
         options.applyTrial(false)
@@ -53,8 +54,11 @@ final class WatermarkTests: XCTestCase {
         options.applyTrial(true)
         XCTAssertTrue(options.watermark); XCTAssertEqual(options.durationLimit, 10)
         XCTAssertEqual(options.resolution, .hd); XCTAssertEqual(options.range, .sdr)
+        // The export applies the limits again to its copy. That must not save 1080p SDR as the choice.
+        options.applyTrial(true)
         options.applyTrial(false)
         XCTAssertFalse(options.watermark); XCTAssertNil(options.durationLimit)
+        XCTAssertEqual(options.resolution, .source); XCTAssertEqual(options.range, .hdr)
     }
     func testTinyImageIsLeftAlone() {
         let source = water(CGSize(width: 60, height: 40))

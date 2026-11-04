@@ -2,7 +2,7 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
-## Free trial with watermark (2 Nov 2026, on `main`, iPhone 1.1.10 (16))
+## Free trial with watermark (2 Nov 2026, iPhone 1.1.10 (16), on the App Store since 3 Nov 2026)
 
 Rules (Jake, 2 Nov 2026): 3 free photos, then 1 photo every 24 hours. 1 free video (first 10 s, 1080p SDR) every 24 hours. Every free export has the icon and "UnderBlue" in the bottom-right corner. The wait counts from the last free export in absolute time, so a clock set back gives nothing.
 
@@ -12,7 +12,7 @@ Full run on 3 Nov 2026 (iPhone 18 Pro simulator, iOS 27.0): 311 iOS unit tests, 
 
 Pro has no mark (Mac batch, 1200 × 800 flat photo, sum of RGB under the mark's white parts / dark icon / clear parts): Pro 1.249 / 1.257 / 1.255, free 2.825 / 0.423 / 1.255.
 
-Open checks on the iPhone:
+Open checks on the iPhone (on hold, Jake 4 Nov 2026):
 - Install 1.1.9 with its free photo used, then update: 2 free photos are left, and a free video is ready.
 - Export 3 free photos: each has the mark. The 4th opens the Pro screen with the wait time.
 - Free video: the mark is on every frame, also at 10 s. Pro exports have no mark.

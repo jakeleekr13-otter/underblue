@@ -2,6 +2,21 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## iPhone: look controls wait for the analysis (4 Nov 2026, merged to `main`)
+
+What changed (Jake, 4 Nov 2026: block preset changes during the analysis):
+- The presets, Intensity, the Custom sliders, Compare and the subject bar are disabled while the editor loads or analyses. Export and 3s Preview already were.
+- Photo: this covers the analysis and the first preview. Before, a preset tapped during the first render stayed selected, but the image kept the old look.
+- Video: this covers the scene analysis. The preview shows the original until then, so a change showed nothing.
+
+Why: finding 6.4 of the flow review (`Roadmap.md`).
+
+Checked on the iPhone 18 Pro simulator (iOS 27.2), all in `UnderBlueUITests` and `AppStoreScreenshotTests`: 6 UI tests pass.
+- New check in `testPhotoImportPresetsCompareExportSaveAndTrialGate`: a preset is never enabled while Export is not. It fails with the old controls ("A preset was enabled during the analysis").
+- The tests now wait until Export is enabled before they tap a preset or Compare.
+- The App Store screenshots still show Deep Dive at 100% (photo and video, checked by eye).
+- `AppStoreScreenshotTests` had an old failure: it looked for the preview as an Image, but it is an Other element. Fixed.
+
 ## iPhone: Cancel while importing (4 Nov 2026, merged to `main`)
 
 What changed (Jake, 4 Nov 2026):

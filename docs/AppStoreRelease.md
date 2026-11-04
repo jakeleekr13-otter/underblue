@@ -124,7 +124,7 @@ The complete English and Korean descriptions, promotional text, keywords and rev
 
 ## Website and Google Search Console (28 Oct 2026)
 
-- Landing page: <https://jakeleekr13-otter.github.io/underblue-support/>. It can be the Marketing URL in App Store Connect. Whether that field is set was not checked.
+- Landing page: <https://jakeleekr13-otter.github.io/underblue-support/>. It is not the Marketing URL yet (4 Nov 2026: the live App Store page links only support/ and privacy/). Set the Marketing URL with the next version. The per-language list is in `AppStoreMetadata.md`, "Public URLs".
 - Languages: English at the root, then `/ko/`, `/ja/`, `/zh-hans/`, `/zh-hant/` and `/es/`.
 - The pages are generated. Do not edit them by hand. Edit the store copy in `AppStoreMetadata.md` or `captions.json`, then run this from the `underblue-support` clone:
   `python3 -I _build/build_landing.py <path to this repo>`
@@ -137,8 +137,13 @@ The complete English and Korean descriptions, promotional text, keywords and rev
   - The property is the URL prefix above. A Domain property is not possible on github.io.
   - It is verified by `google98d8e981a7645ba2.html` at the site root. Never delete that file.
   - The sitemap was submitted on 28 Oct 2026. After the submit, the status read "Couldn't fetch".
+  - 4 Nov 2026: Google had still crawled nothing on the site. The sitemap still read "Couldn't fetch" and the root was unknown to Google.
+  - Same day, a root site was added: repo `jakeleekr13-otter/jakeleekr13-otter.github.io`. It serves `robots.txt` (with a `Sitemap:` line for this sitemap), a small hub page with links, and a copy of the verification file.
+  - A second Search Console property, `https://jakeleekr13-otter.github.io/`, verified on its own with that file. It has the robots.txt and crawl stats reports. Google fetched the root robots.txt at 09:41 CST on 4 Nov.
+  - The indexing-request quota is not per property. About 12 requests a day in total.
+  - `support/` and `privacy/` are hand-written, not generated. Since 4 Nov their footers link to the landing page, because the App Store links only to these two pages.
 
-Both pages are publicly available over HTTPS. Their email addresses are clickable `mailto:` links. The repository's `main` branch blocks force pushes and deletion; only the owner has direct repository access.
+Both pages are publicly available over HTTPS. Their email addresses are clickable `mailto:` links. The repository's `main` branch blocks force pushes and deletion and needs a linear history (no merge commits); only the owner has direct repository access.
 
 ## App Privacy declaration
 

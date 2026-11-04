@@ -12262,6 +12262,47 @@
           }
         }
       }
+    },
+    "Shared files will be added when the batch ends." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shared files will be added when the batch ends."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los archivos compartidos se añadirán cuando termine el lote."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一括処理が終わったら、共有したファイルを追加します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "일괄 처리가 끝나면 공유한 파일을 추가합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "批量处理完成后，将添加共享的文件。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "批次處理完成後，將加入分享的檔案。"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

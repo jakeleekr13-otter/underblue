@@ -13,7 +13,7 @@ struct UnderBlueMacApp: App {
                 .task { await model.purchases.load() }
                 .task { await model.importShared() }
                 // The share extension opens underblue://share. Becoming active covers a refused open.
-                .onOpenURL { url in if url.scheme == SharedInbox.openURL.scheme { Task { await model.importShared() } } }
+                .onOpenURL { url in if url.scheme == SharedInbox.openURL.scheme { Task { await model.importShared(fromShareMenu: true) } } }
                 .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
                     Task { await model.importShared() }
                 }

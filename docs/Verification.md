@@ -2,6 +2,16 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## Mac: a share during a batch is added when it ends (4 Nov 2026, merged to `main`)
+
+What changed (Jake, 4 Nov 2026):
+- When a run ends, the app adds a share that waited in the inbox. "Added n from the share menu." goes below the Done line, so both stay visible. Before, the share waited until the app became active again.
+- When the share extension opens the app during a batch, the notice says "Shared files will be added when the batch ends." New string in six languages; no reviewer has checked it yet. A share found only by becoming active gives no notice, because the app cannot tell a share is waiting.
+
+Why: finding 6.8 of the flow review (`Roadmap.md`).
+
+Checked on the Mac: 27 unit tests pass, 2 skipped probes. New: `ShareFlowTests.testShareAfterABatchKeepsTheDoneLine`. Not run: the real share menu needs a signed build.
+
 ## Mac: save place locked during a run (4 Nov 2026, merged to `main`)
 
 What changed (Jake, 4 Nov 2026): in Settings, "Save results to" (Place and Choose…) is disabled while a batch runs, like the toolbar folder button. Before, a change there made Show in Finder open the new place, while the run still saved to the old one.

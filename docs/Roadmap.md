@@ -95,7 +95,7 @@ A static code review of the user flows on iPhone and Mac. Each row was confirmed
 | 6.5 | iPhone batch | With Photos access denied, every photo renders, then each save fails | `BatchModel.swift:131` | Fixed (Jake, 4 Nov). Checked on the iPhone 17. See [Verification](Verification.md) |
 | 6.6 | iPhone purchase | After buying Pro in the same editor, the options stay at 1080p SDR | `ExportOptions.swift:36` | Fixed (Jake, 4 Nov). See [Verification](Verification.md) |
 | 6.7 | Mac settings | The save place can change during a run; "Show in Finder" then opens the wrong place | `SettingsView.swift:10` | Fixed (Jake, 4 Nov). In the next Mac build. Not run yet |
-| 6.8 | Mac share | A share that arrives during a batch is not added after it, with no notice | `MacModel.swift:200` | Waits for Jake |
+| 6.8 | Mac share | A share that arrives during a batch is not added after it, with no notice | `MacModel.swift:200` | Fixed (Jake, 4 Nov). In the next Mac build. See [Verification](Verification.md) |
 | 6.9 | iPhone batch | The summary leaves out save failures, Cancel and a background stop | `BatchModel.swift:131` | Waits for Jake |
 | 6.10 | Mac free | Many files give only the paywall; no way to correct only the selected one | `MacModel.swift:357` | Waits for Jake |
 | 6.11 | iPhone editor | A failed open leaves a black screen with no Retry | `EditorModel.swift:180` | Waits for Jake |

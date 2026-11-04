@@ -14,6 +14,14 @@ Why: finding 6.9 of the flow review (`Roadmap.md`).
 
 Checked: `BatchTests.testSummaryNamesSaveFailuresAndWhyItStopped` and the other 3 `BatchTests` pass on the iPhone 18 Pro simulator (iOS 27.2). The Mac app builds. Not run: Save All itself (it needs Pro), and a real Cancel on a device. A device run would save real photos to the library.
 
+## Share extension: Cancel during the last copy (4 Nov 2026, merged to `main`)
+
+What changed (Jake, 4 Nov 2026): the share checks for Cancel once more after the last copy, before it marks the folder complete. A cancelled share is deleted. Before, a Cancel during the last copy still finished the share, and it opened on the next launch if the extension was still alive. The iPhone and Mac extensions share this code.
+
+Why: finding 6.15 of the flow review (`Roadmap.md`).
+
+Checked on the Mac: new `ShareFlowTests.testCancelDuringTheLastCopyLeavesNoShare` (a provider that takes 0.5 s, Cancel after 0.1 s). Before the fix it failed: the state was "done(saved: 1, total: 1)" and a complete share waited in the inbox. After the fix: 30 Mac unit tests pass, 2 skipped. The iOS app builds. Not run: the real share sheet (it needs a signed build), and how fast iOS ends the extension after Cancel.
+
 ## Save alerts offer Open Settings; a failed save keeps the file (4 Nov 2026, merged to `main`)
 
 What changed:

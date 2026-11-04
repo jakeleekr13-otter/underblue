@@ -103,7 +103,7 @@ A static code review of the user flows on iPhone and Mac. Each row was confirmed
 | 6.13 | iPhone purchase | After a purchase, the Pro screen still shows the wait for the next free photo | `ProView.swift:17` | Fixed (Jake, 4 Nov). Builds only, not run. See [Verification](Verification.md) |
 | 6.14 | iPhone save | The Photos permission alert has no "Open Settings" button | `ExportView.swift:151` | Fixed (Jake, 4 Nov). Checked on the iPhone 17. See [Verification](Verification.md) |
 | 6.16 | iPhone export | A failed save in "Ready to save" closed the sheet and deleted the file. Found on the iPhone 17 while checking 6.14 | `EditorView.swift:52` | Fixed (4 Nov). Checked on the iPhone 17 |
-| 6.15 | Share extension | Cancel during the last copy can still finish the share; the effect needs a run | `ShareModel.swift:28` | Waits for Jake |
+| 6.15 | Share extension | Cancel during the last copy can still finish the share; the effect needs a run | `ShareModel.swift:28` | Fixed (Jake, 4 Nov). See [Verification](Verification.md) |
 
 ## Recommended order
 

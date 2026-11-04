@@ -19,6 +19,7 @@ On `main` since 1.1.10, not released (4 Nov 2026, flow review in `Roadmap.md` se
 - Custom Reset asks first (6.12).
 - The Pro screen drops the wait line and the pending line once Pro unlocks (6.13).
 - A Photos permission error offers Open Settings (6.14); a failed save no longer deletes the finished file (6.16).
+- A share cancelled during its last copy no longer opens later (6.15).
 
 ## Current release: iPhone 1.1.10 (build 16), 3 Nov 2026
 

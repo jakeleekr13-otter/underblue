@@ -2,6 +2,20 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## iPhone batch: Photos access before any render (4 Nov 2026, merged to `main`)
+
+What changed (Jake, 4 Nov 2026):
+- Save All asks for add-only Photos access before it renders anything. Denied access shows one alert, and nothing runs.
+- A permission error during the run stops the rest. Before, every photo rendered, every save failed, and a "Saved to Photos: 0 of n" summary followed.
+
+Why: finding 6.5 of the flow review (`Roadmap.md`).
+
+Checked on Jake's iPhone 17 (Debug build, sandbox Pro, `BatchFlowTests.testSaveAllWithPhotosAccessDeniedStopsBeforeRendering`):
+- The test resets Photos access, picks 3 photos, taps Save All and denies the system prompt. The prompt came before any render. "Couldn’t save" followed, and no summary appeared in 20 s. Passed twice (47 s, 44 s).
+- With the old `BatchModel.swift` the same test fails ("The batch ran after access was denied").
+- The test resets Photos access again at the end, so the next save asks. It uses its own trial Keychain, so the real trial state is not touched.
+- iOS unit tests `BatchTests`, `PhotoFormatTests`, `CustomPresetTests`: 30 run, 1 known failure (JPEG colour resolution). The Mac app builds.
+
 ## iPhone: look controls wait for the analysis (4 Nov 2026, merged to `main`)
 
 What changed (Jake, 4 Nov 2026: block preset changes during the analysis):

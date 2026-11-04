@@ -63,6 +63,46 @@ final class BatchFlowTests: XCTestCase {
         XCTAssertEqual(summary.label, "Saved to Photos: 2")
     }
 
+    /// Needs Pro (a sandbox purchase on a device). With add access denied, Save All shows the access alert at
+    /// once and renders nothing. Before 4 Nov 2026 it rendered every photo, failed each save, then showed a
+    /// "Saved to Photos: 0 of 3" summary (flow review 6.5). Nothing reaches the library, because access is denied.
+    @MainActor
+    func testSaveAllWithPhotosAccessDeniedStopsBeforeRendering() throws {
+        let app = XCUIApplication()
+        app.resetAuthorizationStatus(for: .photos)
+        // Leave the next save to ask again, instead of leaving access denied on the device.
+        addTeardownBlock { @MainActor in app.resetAuthorizationStatus(for: .photos) }
+        app.launchArguments = ["--ui-test-keychain=batch-denied", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        let select = app.buttons["Select Photos"]
+        guard select.waitForExistence(timeout: 10) else { throw XCTSkip("Not Pro: Home shows no multi-photo picker") }
+        select.tap()
+        let cells = app.images.matching(identifier: "PXGGridLayout-Info")
+        XCTAssertTrue(cells.firstMatch.waitForExistence(timeout: 30), "Picker contents: \(app.debugDescription)")
+        for index in 0..<3 { cells.element(boundBy: index).tap() }
+        let add = ["Add", "Done"].map { app.buttons[$0] }.first { $0.exists }
+        guard let add else { XCTFail("No picker confirm button: \(app.debugDescription)"); return }
+        add.tap()
+        let saveAll = app.buttons["Save All (3)"]
+        XCTAssertTrue(saveAll.waitForExistence(timeout: 60), "Batch screen did not load 3 photos")
+        expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: saveAll)
+        waitForExpectations(timeout: 120)
+        saveAll.tap()
+        // The system asks for add access in the device language. "Don't Allow" is the first button.
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let prompt = springboard.alerts.firstMatch
+        XCTAssertTrue(prompt.waitForExistence(timeout: 15), "No Photos access prompt")
+        attach(app, "1-access-prompt")
+        prompt.buttons.element(boundBy: 0).tap()
+        let denied = app.staticTexts["Allow UnderBlue to add to Photos in Settings, then try saving again."]
+        XCTAssertTrue(denied.waitForExistence(timeout: 10), "No access alert: \(app.debugDescription)")
+        attach(app, "2-access-alert")
+        app.alerts.buttons["OK"].tap()
+        let summary = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Saved to Photos'")).firstMatch
+        XCTAssertFalse(summary.waitForExistence(timeout: 20), "The batch ran after access was denied")
+        XCTAssertTrue(saveAll.exists, "Save All should still offer all 3 photos")
+    }
+
     @MainActor private func attach(_ app: XCUIApplication, _ name: String) {
         let a = XCTAttachment(screenshot: app.screenshot()); a.name = name; a.lifetime = .keepAlways; add(a)
     }

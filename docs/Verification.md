@@ -14,6 +14,16 @@ Why: finding 6.9 of the flow review (`Roadmap.md`).
 
 Checked: `BatchTests.testSummaryNamesSaveFailuresAndWhyItStopped` and the other 3 `BatchTests` pass on the iPhone 18 Pro simulator (iOS 27.2). The Mac app builds. Not run: Save All itself (it needs Pro), and a real Cancel on a device. A device run would save real photos to the library.
 
+## Pro screen: no stale text after a purchase (4 Nov 2026, merged to `main`)
+
+What changed (Jake, 4 Nov 2026):
+- The orange wait line ("Your next free photo is ready in …") hides once Pro is unlocked. Before, it stayed next to "Pro is unlocked".
+- An Ask to Buy approval that arrives while the Pro screen is open replaces "pending approval" with "UnderBlue Pro is unlocked." (existing string).
+
+Why: finding 6.13 of the flow review (`Roadmap.md`).
+
+Checked: the iOS and Mac apps build. Not run: it needs a purchase (no StoreKit tests), and the sandbox account on Jake's iPhone already owns Pro.
+
 ## Custom Reset asks first (4 Nov 2026, merged to `main`)
 
 What changed (Jake, 4 Nov 2026): Reset in the Custom sliders opens "Reset all Custom sliders to 0?" with a Reset button. The sliders save at once, so before, a stray tap set the saved look to 0 for every later photo and batch. The control is shared, so this covers the iPhone editor, the iPhone batch screen and the Mac inspector. New string in six languages; no reviewer has checked it yet.

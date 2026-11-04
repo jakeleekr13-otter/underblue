@@ -2,6 +2,19 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## Mac: a free run counts only its own items (4 Nov 2026, merged to `main`)
+
+What changed (Jake, 4 Nov 2026):
+- The trial is used only when an item of this run is saved. Before, any finished item in the queue counted. So a free run that failed still used the trial when an older item was done.
+- "Done: n saved, n failed" counts only this run.
+- The run is the items that passed the free-trial check. A file added during the awaits before the start waits for the next run. Before, the engine ran every queued item, so a free run could take more than one file.
+
+Why: finding 6.2 of the flow review (`Roadmap.md`).
+
+Checked on the Mac: 26 unit tests pass, 2 skipped probes. New: `MacModelTests.testRunResultCountsOnlyThisRun` and `BatchEngineTests.testStartOnlyRunsTheGivenItems`. The iOS app builds (`BatchEngine` is shared).
+
+Open: not run in the signed app. The Mac 1.0 build in review does not have it.
+
 ## "Ready to save" keeps the file (4 Nov 2026, merged to `main`)
 
 What changed (Jake, 4 Nov 2026):

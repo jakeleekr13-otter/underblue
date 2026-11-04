@@ -5,6 +5,18 @@ import XCTest
 final class MacModelTests: XCTestCase {
     private static var alive: [MacModel] = []
 
+    /// An item that an earlier run saved must not count for this run. Before 4 Nov 2026 a free run that saved
+    /// nothing still used the trial when the queue held an older finished item (flow review 6.2).
+    func testRunResultCountsOnlyThisRun() {
+        let url = URL(fileURLWithPath: "/tmp/none.heic")
+        let earlier = BatchEngine.Item(url: url, kind: .photo, state: .done)
+        let failed = BatchEngine.Item(url: url, kind: .photo, state: .failed)
+        let saved = BatchEngine.Item(url: url, kind: .photo, state: .done)
+        let nothing = MacModel.runResult([earlier, failed], runIDs: [failed.id])
+        XCTAssertEqual(nothing.done, 0); XCTAssertEqual(nothing.failed, 1)
+        let one = MacModel.runResult([earlier, saved], runIDs: [saved.id])
+        XCTAssertEqual(one.done, 1); XCTAssertEqual(one.failed, 0)
+    }
     /// A setting that clamps itself inside didSet once looped forever and crashed the app (20 Oct 2026).
     func testParallelPhotosAcceptsEveryValueAndClampsTheEngineLimit() {
         let key = "mac.parallelPhotos"

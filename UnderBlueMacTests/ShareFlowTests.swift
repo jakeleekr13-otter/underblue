@@ -53,6 +53,25 @@ final class ShareFlowTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: share.items[0].url, encoding: .utf8), "photo one")
     }
 
+    /// Cancel during the last copy. The copy cannot stop part way, but the share must not be finished
+    /// (flow review 6.15, 4 Nov 2026). Before, the folder became a complete share and opened on the next launch.
+    func testCancelDuringTheLastCopyLeavesNoShare() async throws {
+        let source = try makeFolder(), inbox = try makeFolder()
+        let file = try makeFile("slow.jpg", in: source, bytes: "slow")
+        let slow = NSItemProvider()
+        slow.registerFileRepresentation(for: .jpeg, visibility: .all) { completion in
+            DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) { completion(file, false, nil) }
+            return nil
+        }
+        let model = ShareModel(inboxRoot: { inbox })
+        model.start([slow])
+        try await Task.sleep(for: .milliseconds(100))
+        model.cancel()
+        try await Task.sleep(for: .milliseconds(1000))   // the copy ends after 0.5 s
+        XCTAssertNil(SharedInbox.takeNewest(at: inbox), "a cancelled share must not wait in the inbox")
+        XCTAssertNotEqual(model.state, .done(saved: 1, total: 1))
+    }
+
     func testExtensionLeavesNothingBehindWhenEveryItemFails() async throws {
         let inbox = try makeFolder()
         let model = ShareModel(inboxRoot: { inbox })

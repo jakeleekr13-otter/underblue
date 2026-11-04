@@ -25,6 +25,9 @@ final class ShareModel {
                         catch is CancellationError { throw CancellationError() } catch { continue }
                     }
                     guard saved > 0 else { throw CocoaError(.fileReadUnknown) }
+                    // A Cancel during the last copy lands here: the copy could not stop, but the share must not
+                    // finish, or it opens on the next launch (flow review 6.15, Jake 4 Nov 2026).
+                    try Task.checkCancellation()
                     try SharedInbox.finish(folder)
                 } catch { SharedInbox.remove(folder); throw error }
                 state = .done(saved: saved, total: providers.count)

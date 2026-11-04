@@ -82,9 +82,32 @@ Decided against for now (Jake): finishing an export in the background, a call du
 
 Kept as is (Jake, 4 Nov 2026): the player's own play button plays the whole video, also for free users. Only the 3s Preview button stops after 3 s. A screen recording of the preview has no watermark, and Jake accepts this. A screenshot of a photo preview is the same.
 
+## 6. Flow review findings (4 Nov 2026)
+
+A static code review of the user flows on iPhone and Mac. Each row was confirmed by reading the code. Jake reviews them one at a time. 16 more candidates are not listed: 12 need a run before they count, and 4 were not checked again (mostly Labs subject picking).
+
+| # | Area | Finding | Code | State |
+|---|---|---|---|---|
+| 6.1 | iPhone export | A swipe on "Ready to save" deleted the file; the trial was already used | `EditorView.swift:46` | Fixed (Jake, 4 Nov). See [Verification](Verification.md) |
+| 6.2 | Mac trial | A failed run uses the trial when an earlier item in the queue is done | `MacModel.swift:391` | Waits for Jake |
+| 6.3 | iPhone import | "Importing…" has no Cancel, and the home screen is locked | `HomeView.swift:56` | Waits for Jake |
+| 6.4 | iPhone editor | A preset change during the first photo render does not show | `EditorView.swift:36` | Waits for Jake |
+| 6.5 | iPhone batch | With Photos access denied, every photo renders, then each save fails | `BatchModel.swift:131` | Waits for Jake |
+| 6.6 | iPhone purchase | After buying Pro in the same editor, the options stay at 1080p SDR | `ExportOptions.swift:36` | Waits for Jake |
+| 6.7 | Mac settings | The save place can change during a run; "Show in Finder" then opens the wrong place | `SettingsView.swift:10` | Waits for Jake |
+| 6.8 | Mac share | A share that arrives during a batch is not added after it, with no notice | `MacModel.swift:200` | Waits for Jake |
+| 6.9 | iPhone batch | The summary leaves out save failures, Cancel and a background stop | `BatchModel.swift:131` | Waits for Jake |
+| 6.10 | Mac free | Many files give only the paywall; no way to correct only the selected one | `MacModel.swift:357` | Waits for Jake |
+| 6.11 | iPhone editor | A failed open leaves a black screen with no Retry | `EditorModel.swift:180` | Waits for Jake |
+| 6.12 | iPhone Custom | Reset sets the saved sliders to 0 at once, with no undo | `CustomAdjustmentControls.swift:53` | Waits for Jake |
+| 6.13 | iPhone purchase | After a purchase, the Pro screen still shows the wait for the next free photo | `ProView.swift:17` | Waits for Jake |
+| 6.14 | iPhone save | The Photos permission alert has no "Open Settings" button | `ExportView.swift:151` | Waits for Jake |
+| 6.15 | Share extension | Cancel during the last copy can still finish the share; the effect needs a run | `ShareModel.swift:28` | Waits for Jake |
+
 ## Recommended order
 
 1. Wait for the Mac 1.0 review. Section 1 device checks are on hold (Jake, 3 and 4 Nov 2026).
 2. Section 2, after the Mac review ends: the Mac release, hardening first. The app is built, and the Mac price is the higher one ([MacApp](MacApp.md)).
 3. Section 3: 3.1 and 3.3 shipped in 1.1.8 and wait for Jake's check on the iPhone. 3.2 waits for real Log clips.
 4. Sections 4 and 5 only when a real photo or a user asks for it.
+5. Section 6 runs beside these: Jake reviews one finding at a time.

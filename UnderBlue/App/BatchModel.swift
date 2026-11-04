@@ -145,6 +145,9 @@ final class BatchModel: Identifiable {
             }
             await purchases.refreshEntitlement()
             guard purchases.isPro else { showPro = true; return }
+            // Ask for Photos access before any render. Without it every photo rendered and then failed to save
+            // (flow review 6.5, Jake 4 Nov 2026). The alert names Settings.
+            do { try await PhotoLibrarySaver.requireAddAccess() } catch { await record(error, operation: .save); return }
             let targets = items.indices.filter { items[$0].analysis != nil && items[$0].state != .saved }
             let format = format
             var failed = 0
@@ -171,6 +174,8 @@ final class BatchModel: Identifiable {
                 } catch is CancellationError { break } catch {
                     items[index].state = .saveFailed; failed += 1
                     await record(error, operation: .save)
+                    // Access was turned off during the run. The rest would render and fail the same way.
+                    if Failure.classify(error, operation: .save).kind == .permission { break }
                 }
             }
             // Count every selected photo, including ones that never opened, so partial success never reads as full.

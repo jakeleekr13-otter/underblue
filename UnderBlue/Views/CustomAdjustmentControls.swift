@@ -3,6 +3,7 @@ import SwiftUI
 /// The five Custom sliders and Reset, shared by the editor and the batch screen.
 /// Each slider is a position in -1...1, shown as -100...+100. Zero is the automatic result.
 struct CustomAdjustmentControls: View {
+    @State private var confirmReset = false
     @Binding var adjustments: CustomAdjustments
 
     enum Control: CaseIterable, Identifiable {
@@ -50,9 +51,14 @@ struct CustomAdjustmentControls: View {
                         .accessibilityValue(Text(text))
                 }
             }
-            Button("Reset") { adjustments = .zero }
+            // Reset asks first: the sliders save at once, so a stray tap lost the saved look for every later photo
+            // (flow review 6.12, Jake 4 Nov 2026).
+            Button("Reset") { confirmReset = true }
                 .buttonStyle(.bordered).frame(minHeight: 44)
                 .disabled(atZero)
+                .confirmationDialog("Reset all Custom sliders to 0?", isPresented: $confirmReset, titleVisibility: .visible) {
+                    Button("Reset", role: .destructive) { adjustments = .zero }
+                }
         }
     }
     @ViewBuilder private func slider(for control: Control) -> some View {

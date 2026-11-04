@@ -12303,6 +12303,88 @@
           }
         }
       }
+    },
+    "Couldn’t save: %lld" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn’t save: %lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se han podido guardar: %lld"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存できませんでした: %lld枚"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "저장하지 못함: %lld장"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法保存：%lld 张"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法儲存：%lld 張"
+          }
+        }
+      }
+    },
+    "Saving stopped because UnderBlue went into the background. Keep the app open and try again." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saving stopped because UnderBlue went into the background. Keep the app open and try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se ha detenido el guardado porque UnderBlue ha pasado a segundo plano. Mantén la app abierta y vuelve a intentarlo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UnderBlueがバックグラウンドに移ったため、保存を中止しました。アプリを開いたまま、もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UnderBlue가 백그라운드로 전환되어 저장을 멈췄습니다. 앱을 열어 둔 채 다시 시도하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UnderBlue 进入后台，因此保存已停止。请保持应用打开后重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UnderBlue 進入背景，因此儲存已停止。請保持 App 開啟後再試一次。"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

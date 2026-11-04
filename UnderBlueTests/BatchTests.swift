@@ -33,6 +33,17 @@ final class BatchTests: XCTestCase {
         XCTAssertEqual(CGFloat(max(thumb.width, thumb.height)), BatchModel.thumbnailPixels, accuracy: 1)
     }
 
+    /// Save failures, a Cancel and a stop in the background were missing from the summary (flow review 6.9).
+    @MainActor
+    func testSummaryNamesSaveFailuresAndWhyItStopped() {
+        XCTAssertEqual(BatchModel.summaryText(saved: 10, total: 10, saveFailed: 0, unopened: 0, left: 0, stop: nil),
+                       "Saved to Photos: 10")
+        XCTAssertEqual(BatchModel.summaryText(saved: 4, total: 10, saveFailed: 3, unopened: 2, left: 1, stop: "Cancelled"),
+                       "Saved to Photos: 4 of 10\nCouldn’t save: 3\nCouldn’t open: 2\nCancelled")
+        // A Cancel that came after the last photo does not mark the run as stopped.
+        XCTAssertEqual(BatchModel.summaryText(saved: 8, total: 8, saveFailed: 0, unopened: 0, left: 0, stop: "Cancelled"),
+                       "Saved to Photos: 8")
+    }
     @MainActor
     func testOverrideAppliesToOnePhotoAndClearsWhenEqualToShared() throws {
         let urls = [URL(fileURLWithPath: "/tmp/a.heic"), URL(fileURLWithPath: "/tmp/b.heic")]

@@ -2,6 +2,18 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## iPhone batch: the summary says what failed and why it stopped (4 Nov 2026, merged to `main`)
+
+What changed (Jake, 4 Nov 2026):
+- New line "Couldn’t save: n" for photos that failed to render or save. Before, only the tile badges showed them.
+- A Cancel adds "Cancelled". The end of the background time adds "Saving stopped because UnderBlue went into the background. Keep the app open and try again." Before, both showed only "Saved to Photos: n of m".
+- A stop reason shows only when photos were left, so a Cancel after the last photo does not mark a full run.
+- New strings in six languages: "Couldn’t save: %lld" and the background line. "Cancelled" already existed. No reviewer has checked the new text yet.
+
+Why: finding 6.9 of the flow review (`Roadmap.md`).
+
+Checked: `BatchTests.testSummaryNamesSaveFailuresAndWhyItStopped` and the other 3 `BatchTests` pass on the iPhone 18 Pro simulator (iOS 27.2). The Mac app builds. Not run: Save All itself (it needs Pro), and a real Cancel on a device. A device run would save real photos to the library.
+
 ## Mac: a share during a batch is added when it ends (4 Nov 2026, merged to `main`)
 
 What changed (Jake, 4 Nov 2026):

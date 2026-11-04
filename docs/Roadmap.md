@@ -77,9 +77,10 @@ Order matters. The hardening changes the binary, so it comes before the archive 
 | 5.2 | iPhone Duo, stage 2 | Waits for Xcode 27.1. | [iPhoneDuoSupportPlan](iPhoneDuoSupportPlan.md) |
 | 5.3 | ProRAW 48 MP and many 48 MP photos in one batch | Jake: accepted as open (26 Oct). | [Verification](Verification.md) |
 | 5.4 | "Changes waiting for the final round" (5 commits) | The list dates from 29 Sep. Not updated since. Jake: run the round, or close the list. | [Verification](Verification.md) |
-| 5.5 | Video: after 3s Preview, the player's own play button plays on to the end (Jake, 4 Nov 2026) | Code read only, not run. Only the 3s Preview button stops after 3 s. The player's play button has no 3 s stop. Jake decides if this is wrong. | [Verification](Verification.md) |
 
 Decided against for now (Jake): finishing an export in the background, a call during export (follows the background rule), and Android.
+
+Kept as is (Jake, 4 Nov 2026): the player's own play button plays the whole video, also for free users. Only the 3s Preview button stops after 3 s. A screen recording of the preview has no watermark, and Jake accepts this. A screenshot of a photo preview is the same.
 
 ## Recommended order
 

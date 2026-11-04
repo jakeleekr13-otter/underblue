@@ -57,12 +57,14 @@ final class CustomPresetUITests: XCTestCase {
     }
 
     @MainActor private func open(_ app: XCUIApplication, button: String) throws {
-        XCTAssertTrue(app.buttons[button].waitForExistence(timeout: 10))
-        app.buttons[button].tap()
+        let opener = button == "Select Photo" ? app.selectPhotoButton : app.buttons[button]
+        XCTAssertTrue(opener.waitForExistence(timeout: 10))
+        opener.tap()
         let cell = app.images.matching(identifier: "PXGGridLayout-Info").firstMatch
         if !cell.waitForExistence(timeout: 8), app.staticTexts["No Videos"].exists { throw XCTSkip("No videos in this library") }
         guard cell.exists else { XCTFail("Picker contents: \(app.debugDescription)"); return }
         cell.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        if button == "Select Photo" { app.confirmPhotoPicker() }
         // Wait until the media is open, so the controls act on a loaded editor.
         let export = app.buttons["Export"]
         XCTAssertTrue(export.waitForExistence(timeout: 30))

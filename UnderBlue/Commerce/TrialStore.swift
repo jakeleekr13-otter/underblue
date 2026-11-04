@@ -12,6 +12,8 @@ struct TrialState: Codable, Equatable {
     /// The last free photo and video export, as absolute times. Nil: none yet.
     var lastPhoto: Date?
     var lastVideo: Date?
+    /// The free exports reserved while an export runs, as "photo:3,video:1" (`TrialPolicy.pendingCounts`).
+    /// Up to 1.1.10 it was "photo" or "video", one export. A new launch clears it, so a crash uses nothing.
     var pending: String?
 
     init(welcomePhotosUsed: Int = 0, lastPhoto: Date? = nil, lastVideo: Date? = nil, pending: String? = nil) {
@@ -55,6 +57,30 @@ enum TrialPolicy {
     static let interval: TimeInterval = 24 * 60 * 60
 
     static func welcomePhotosLeft(_ state: TrialState) -> Int { max(0, welcomePhotos - state.welcomePhotosUsed) }
+
+    /// How many free exports of this kind one run may take now: the welcome photos left, else 1 once the wait
+    /// is over, else 0. A first install takes 3 photos in one run (Jake, 4 Nov 2026).
+    static func allowance(_ kind: ImportedMedia.Kind, state: TrialState, now: Date) -> Int {
+        guard nextFree(kind, state: state, now: now) == nil else { return 0 }
+        return kind == .photo ? max(1, welcomePhotosLeft(state)) : 1
+    }
+
+    static func pendingCounts(_ value: String?) -> [ImportedMedia.Kind: Int] {
+        var counts: [ImportedMedia.Kind: Int] = [:]
+        for part in (value ?? "").split(separator: ",") {
+            let pieces = part.split(separator: ":")
+            let kind: ImportedMedia.Kind? = pieces.first == "photo" ? .photo : pieces.first == "video" ? .video : nil
+            guard let kind else { continue }
+            counts[kind, default: 0] += pieces.count > 1 ? Int(pieces[1]) ?? 0 : 1
+        }
+        return counts.filter { $0.value > 0 }
+    }
+    static func pendingValue(_ counts: [ImportedMedia.Kind: Int]) -> String? {
+        let parts = [ImportedMedia.Kind.photo, .video].compactMap { kind in
+            counts[kind].flatMap { $0 > 0 ? "\(kind == .photo ? "photo" : "video"):\($0)" : nil }
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: ",")
+    }
 
     /// When the next free export of this kind is allowed. Nil: allowed now.
     /// The wait counts from the last free export, in absolute time, so a time-zone change does nothing.
@@ -133,6 +159,10 @@ final class TrialStore {
     /// When the next free export of this kind is allowed. Nil: allowed now (or the trial can't be read).
     func nextFree(_ kind: ImportedMedia.Kind) -> Date? { TrialPolicy.nextFree(kind, state: state, now: now()) }
     func canExport(_ kind: ImportedMedia.Kind) -> Bool { available && state.pending == nil && nextFree(kind) == nil }
+    /// How many free exports of this kind one run may take now. 0 while another export is reserved.
+    func allowance(_ kind: ImportedMedia.Kind) -> Int {
+        available && state.pending == nil ? TrialPolicy.allowance(kind, state: state, now: now()) : 0
+    }
     /// Why a free export is not allowed now, for the Pro screen. Nil when it is allowed.
     func waitReason(_ kind: ImportedMedia.Kind) -> String? {
         guard available, let next = nextFree(kind) else { return nil }
@@ -145,20 +175,30 @@ final class TrialStore {
         let minutes = max(1, Int((seconds / 60).rounded(.up)))
         return Duration.seconds(minutes * 60).formatted(.units(allowed: [.hours, .minutes], width: .abbreviated))
     }
-    func reserve(_ kind: ImportedMedia.Kind) throws {
-        guard canExport(kind) else { throw UnderBlueError.trialUnavailable }
+    func reserve(_ kind: ImportedMedia.Kind) throws { try reserve([kind: 1]) }
+    func commit(_ kind: ImportedMedia.Kind) throws { try commit([kind: 1]) }
+    /// Reserves several free exports for one run. Each kind must fit its `allowance`.
+    func reserve(_ counts: [ImportedMedia.Kind: Int]) throws {
+        let wanted = counts.filter { $0.value > 0 }
+        guard !wanted.isEmpty, wanted.allSatisfy({ allowance($0.key) >= $0.value }) else { throw UnderBlueError.trialUnavailable }
         var next = state
-        next.pending = kind == .photo ? "photo" : "video"
+        next.pending = TrialPolicy.pendingValue(wanted)
         try persistence.write(next); state = next
     }
-    func commit(_ kind: ImportedMedia.Kind) throws {
-        guard state.pending == (kind == .photo ? "photo" : "video") else { throw UnderBlueError.trialUnavailable }
+    /// Uses the free exports that were saved, at most the reserved ones, and ends the reservation.
+    func commit(_ saved: [ImportedMedia.Kind: Int]) throws {
+        let reserved = TrialPolicy.pendingCounts(state.pending)
+        guard !reserved.isEmpty, saved.allSatisfy({ $0.value <= reserved[$0.key, default: 0] }) else {
+            throw UnderBlueError.trialUnavailable
+        }
         var next = state
         // Every free photo starts the wait, also a welcome one. So the first day gives 3 photos, not 4.
-        if kind == .photo {
-            if TrialPolicy.welcomePhotosLeft(next) > 0 { next.welcomePhotosUsed += 1 }
+        let photos = saved[.photo, default: 0]
+        if photos > 0 {
+            next.welcomePhotosUsed += min(photos, TrialPolicy.welcomePhotosLeft(next))
             next.lastPhoto = now()
-        } else { next.lastVideo = now() }
+        }
+        if saved[.video, default: 0] > 0 { next.lastVideo = now() }
         next.pending = nil
         try persistence.write(next); state = next
     }

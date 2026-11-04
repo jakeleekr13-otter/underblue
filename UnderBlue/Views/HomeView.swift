@@ -3,6 +3,7 @@ import PhotosUI
 
 struct HomeView: View {
     @Environment(PurchaseStore.self) private var purchases
+    @Environment(TrialStore.self) private var trial
     @Environment(DiagnosticsCenter.self) private var diagnostics
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.horizontalSizeClass) private var widthClass
@@ -72,7 +73,7 @@ struct HomeView: View {
                 .navigationDestination(item: $batch) { model in BatchView(model: model) }
                 .task(id: photoSelection) { await importPhotos() }
                 .fileImporter(isPresented: $showFileImporter, allowedContentTypes: FileImport.contentTypes,
-                              allowsMultipleSelection: purchases.isPro) { result in
+                              allowsMultipleSelection: photoLimit > 1) { result in
                     switch result {
                     case .success(let urls): pickedFiles = urls
                     case .failure(let error): Task { await report(error) }
@@ -115,12 +116,15 @@ struct HomeView: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 
+    /// Pro picks up to BatchModel.maxPhotos. Without Pro, as many as the free trial allows in one run: the welcome
+    /// photos left (3 on a first install), else 1 (Jake, 4 Nov 2026). One photo still opens the single editor.
+    private var photoLimit: Int { purchases.isPro ? BatchModel.maxPhotos : max(1, trial.allowance(.photo)) }
+
     @ViewBuilder private var actions: some View {
         let pro = purchases.isPro
-        // Pro can pick up to BatchModel.maxPhotos; one photo still opens the single editor.
-        PhotosPicker(selection: $photoSelection, maxSelectionCount: pro ? BatchModel.maxPhotos : 1,
+        PhotosPicker(selection: $photoSelection, maxSelectionCount: photoLimit,
                      selectionBehavior: .ordered, matching: .images, preferredItemEncoding: .current) {
-            Label(pro ? "Select Photos" : "Select Photo", systemImage: "photo").frame(maxWidth: .infinity, minHeight: 44)
+            Label(photoLimit > 1 ? "Select Photos" : "Select Photo", systemImage: "photo").frame(maxWidth: .infinity, minHeight: 44)
         }.buttonStyle(.borderedProminent)
         PhotosPicker(selection: $selection, matching: .videos, preferredItemEncoding: .current) {
             Label("Select Video", systemImage: "video").frame(maxWidth: .infinity, minHeight: 44)
@@ -249,12 +253,13 @@ struct HomeView: View {
             videos.forEach { TemporaryFiles.remove($0.url) }
             notices.append(String(localized: "Skipped videos: \(videos.count). Videos open one at a time."))
         }
-        let limit = purchases.isPro ? BatchModel.maxPhotos : 1
+        let limit = photoLimit
         if photos.count > limit {
             photos[limit...].forEach { TemporaryFiles.remove($0.url) }
             photos = Array(photos.prefix(limit))
             notices.append(purchases.isPro ? String(localized: "Only the first \(limit) photos were opened.")
-                : String(localized: "Only the first photo was opened. Pro can batch correct up to \(BatchModel.maxPhotos) photos."))
+                : limit == 1 ? String(localized: "Only the first photo was opened. Pro can batch correct up to \(BatchModel.maxPhotos) photos.")
+                : String(localized: "Only the first \(limit) photos were opened. Pro can batch correct up to \(BatchModel.maxPhotos) photos."))
         }
         if photos.count == 1 { media = photos[0] }
         else if photos.count > 1 { batch = BatchModel(media: photos, diagnostics: diagnostics.recorder) }

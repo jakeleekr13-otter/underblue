@@ -120,7 +120,7 @@ UnderBlue is made for recreational diving memories. It is not a scientific colou
 
 **Review notes (draft):**
 
-UnderBlue processes imported photos and videos entirely on the device. No account or cloud service is used. The free trial allows 3 photo exports, then 1 photo export every 24 hours. It also allows 1 video export every 24 hours, limited to the first 10 seconds. Every free export carries a small UnderBlue watermark. Batch processing is a Pro feature. UnderBlue Pro is the non-consumable product `com.underblue.mac.pro`. The output folder is chosen by the user and kept with a security-scoped bookmark. Diagnostics stay on the device and are shared only when the user uses the system share sheet. **Confirm** the trial limits after stage 5.
+UnderBlue processes imported photos and videos entirely on the device. No account or cloud service is used. The free trial allows 3 photo exports, then 1 photo export every 24 hours. It also allows 1 video export every 24 hours, limited to the first 10 seconds. Every free export carries a small UnderBlue watermark. Without Pro, one run takes at most the free exports left (the 3 welcome photos and 1 video); larger batches are a Pro feature. UnderBlue Pro is the non-consumable product `com.underblue.mac.pro`. The output folder is chosen by the user and kept with a security-scoped bookmark. Diagnostics stay on the device and are shared only when the user uses the system share sheet. **Confirm** the trial limits after stage 5.
 
 Korean text: write after Jake approves the English text.
 

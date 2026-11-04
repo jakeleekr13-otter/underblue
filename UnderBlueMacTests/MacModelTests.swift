@@ -17,6 +17,28 @@ final class MacModelTests: XCTestCase {
         let one = MacModel.runResult([earlier, saved], runIDs: [saved.id])
         XCTAssertEqual(one.done, 1); XCTAssertEqual(one.failed, 0)
     }
+    /// A free queue takes what one free run may correct; the rest is dropped (Jake, 4 Nov 2026).
+    func testFreeQueueKeepsTheAllowanceOfEachKind() {
+        func media(_ name: String, _ kind: ImportedMedia.Kind) -> ImportedMedia {
+            ImportedMedia(url: URL(fileURLWithPath: "/tmp/\(name)"), kind: kind, originalName: name)
+        }
+        let files = [media("1.jpg", .photo), media("a.mov", .video), media("2.jpg", .photo), media("3.jpg", .photo),
+                     media("4.jpg", .photo), media("b.mov", .video)]
+        let first = MacModel.fitTrial(files, photoRoom: 3, videoRoom: 1)
+        XCTAssertEqual(first.kept.map(\.originalName), ["1.jpg", "a.mov", "2.jpg", "3.jpg"])
+        XCTAssertEqual(first.dropped.map(\.originalName), ["4.jpg", "b.mov"])
+        XCTAssertEqual(MacModel.fitTrial(files, photoRoom: 1, videoRoom: 0).kept.map(\.originalName), ["1.jpg"])
+    }
+    /// Each saved item of the run uses one free export of its kind. Older finished items do not count.
+    func testSavedKindsCountOnlyThisRun() {
+        let url = URL(fileURLWithPath: "/tmp/none.heic")
+        let older = BatchEngine.Item(url: url, kind: .photo, state: .done)
+        let photo = BatchEngine.Item(url: url, kind: .photo, state: .done)
+        let failed = BatchEngine.Item(url: url, kind: .photo, state: .failed)
+        let video = BatchEngine.Item(url: url, kind: .video, state: .done)
+        let saved = MacModel.savedKinds([older, photo, failed, video], runIDs: [photo.id, failed.id, video.id])
+        XCTAssertEqual(saved, [.photo: 1, .video: 1])
+    }
     /// A setting that clamps itself inside didSet once looped forever and crashed the app (20 Oct 2026).
     func testParallelPhotosAcceptsEveryValueAndClampsTheEngineLimit() {
         let key = "mac.parallelPhotos"

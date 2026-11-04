@@ -97,7 +97,7 @@ A static code review of the user flows on iPhone and Mac. Each row was confirmed
 | 6.7 | Mac settings | The save place can change during a run; "Show in Finder" then opens the wrong place | `SettingsView.swift:10` | Fixed (Jake, 4 Nov). In the next Mac build. Not run yet |
 | 6.8 | Mac share | A share that arrives during a batch is not added after it, with no notice | `MacModel.swift:200` | Fixed (Jake, 4 Nov). In the next Mac build. See [Verification](Verification.md) |
 | 6.9 | iPhone batch | The summary leaves out save failures, Cancel and a background stop | `BatchModel.swift:131` | Fixed (Jake, 4 Nov). See [Verification](Verification.md) |
-| 6.10 | Mac free | Many files give only the paywall; no way to correct only the selected one | `MacModel.swift:357` | Waits for Jake |
+| 6.10 | Mac free | Many files give only the paywall; no way to correct only the selected one | `MacModel.swift:357` | Done another way (Jake, 4 Nov): a free queue takes the free exports left, also on iPhone. See [Verification](Verification.md) |
 | 6.11 | iPhone editor | A failed open leaves a black screen with no Retry | `EditorModel.swift:180` | Waits for Jake |
 | 6.12 | iPhone Custom | Reset sets the saved sliders to 0 at once, with no undo | `CustomAdjustmentControls.swift:53` | Waits for Jake |
 | 6.13 | iPhone purchase | After a purchase, the Pro screen still shows the wait for the next free photo | `ProView.swift:17` | Waits for Jake |

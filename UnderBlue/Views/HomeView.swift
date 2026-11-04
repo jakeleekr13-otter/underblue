@@ -16,6 +16,9 @@ struct HomeView: View {
     @State private var batch: BatchModel?
     @State private var loading = false
     @State private var importProgress: (done: Int, total: Int)?
+    /// Each import gets a number. Cancel moves it on, so a late result of the old import is thrown away
+    /// and never opens the editor or touches the screen state of a newer import.
+    @State private var importRun = 0
     @State private var error: String?
     @State private var errorTitle = String(localized: "Couldn’t import")
     var body: some View {
@@ -56,10 +59,12 @@ struct HomeView: View {
                 .disabled(loading)
                 .overlay {
                     if loading {
-                        Group {
+                        // Outside the disabled screen, so Cancel works. An iCloud file with no network can load for a long time.
+                        VStack(spacing: 16) {
                             if let importProgress, importProgress.total > 1 {
                                 ProgressView(String(localized: "Importing \(importProgress.done + 1) of \(importProgress.total)…"))
                             } else { ProgressView("Importing…") }
+                            Button("Cancel", role: .cancel) { cancelImport() }.buttonStyle(.bordered)
                         }.padding(24).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
                     }
                 }
@@ -83,12 +88,15 @@ struct HomeView: View {
                 .onChange(of: media == nil && batch == nil) { _, home in if home { Task { await openShared() } } }
                 .task(id: selection) {
                     guard let selection else { return }
-                    loading = true
-                    defer { loading = false }
-                    do { media = try await SafeReadRetry().run(operation: .importing) { try await MediaImporter().load(selection) } }
+                    let run = beginImport()
+                    defer { endImport(run) }
+                    do {
+                        let loaded = try await SafeReadRetry().run(operation: .importing) { try await MediaImporter().load(selection) }
+                        if isCurrent(run) { media = loaded } else { TemporaryFiles.remove(loaded.url) }
+                    }
                     catch is CancellationError { }
-                    catch { await report(error) }
-                    self.selection = nil
+                    catch { if isCurrent(run) { await report(error) } }
+                    if importRun == run { self.selection = nil }
                 }
                 .alert(errorTitle, isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) { Button("OK") { error = nil } } message: { Text(error ?? "") }
         }
@@ -134,8 +142,8 @@ struct HomeView: View {
     private func importPhotos() async {
         let items = photoSelection
         guard !items.isEmpty else { return }
-        loading = true
-        defer { loading = false; importProgress = nil; photoSelection = [] }
+        let run = beginImport()
+        defer { if importRun == run { photoSelection = [] }; endImport(run) }
         var imported: [ImportedMedia] = []
         var firstFailure: Failure?
         for (index, item) in items.enumerated() {
@@ -147,6 +155,7 @@ struct HomeView: View {
                 await diagnostics.recorder.record(failure, operation: .importing)
                 if failure.kind != .cancelled, firstFailure == nil { firstFailure = failure }
             }
+            guard isCurrent(run) else { imported.forEach { TemporaryFiles.remove($0.url) }; return }
         }
         finish(imported, selected: items.count, firstFailure: firstFailure)
     }
@@ -165,8 +174,8 @@ struct HomeView: View {
     private func importFiles() async {
         let urls = pickedFiles
         guard !urls.isEmpty else { return }
-        loading = true
-        defer { loading = false; importProgress = nil; pickedFiles = [] }
+        let run = beginImport()
+        defer { if importRun == run { pickedFiles = [] }; endImport(run) }
         var imported: [ImportedMedia] = []
         var firstFailure: Failure?
         for (index, url) in urls.enumerated() {
@@ -178,6 +187,8 @@ struct HomeView: View {
                 await diagnostics.recorder.record(failure, operation: .importing)
                 if failure.kind != .cancelled, firstFailure == nil { firstFailure = failure }
             }
+            // A coordinated read in Files cannot stop part way. After Cancel it ends here, and its copy is thrown away.
+            guard isCurrent(run) else { imported.forEach { TemporaryFiles.remove($0.url) }; return }
         }
         finish(imported, selected: urls.count, firstFailure: firstFailure)
     }
@@ -186,12 +197,31 @@ struct HomeView: View {
     /// so a share never replaces work in progress.
     private func openShared() async {
         guard media == nil, batch == nil, !loading else { return }
-        loading = true
-        defer { loading = false }
+        let run = beginImport()
+        defer { endImport(run) }
         guard let shared = await FileImport.takeShared() else { return }
+        guard isCurrent(run) else { shared.media.forEach { TemporaryFiles.remove($0.url) }; return }
         let failure = shared.failed > 0 ? Failure.classify(UnderBlueError.unreadable, operation: .importing) : nil
         if let failure { await diagnostics.recorder.record(failure, operation: .importing) }
         finish(shared.media, selected: shared.media.count + shared.failed, firstFailure: failure)
+    }
+
+    private func beginImport() -> Int {
+        importRun += 1
+        loading = true
+        return importRun
+    }
+    /// False once Cancel was pressed or the task was cancelled. Such an import must not open anything.
+    private func isCurrent(_ run: Int) -> Bool { importRun == run && !Task.isCancelled }
+    private func endImport(_ run: Int) {
+        guard importRun == run else { return }
+        loading = false; importProgress = nil
+    }
+    /// Frees the screen at once. A load that cannot stop goes on in the background and its result is thrown away.
+    private func cancelImport() {
+        importRun += 1
+        loading = false; importProgress = nil
+        photoSelection = []; pickedFiles = []; selection = nil
     }
 
     private func finish(_ imported: [ImportedMedia], selected: Int, firstFailure: Failure?) {

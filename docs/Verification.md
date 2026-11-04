@@ -2,6 +2,22 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## iPhone: Cancel while importing (4 Nov 2026, merged to `main`)
+
+What changed (Jake, 4 Nov 2026):
+- The "Importing…" box has a Cancel button. Before, it had none, and the whole home screen stayed locked until the import ended.
+- Cancel frees the screen at once. Each import has a number, and Cancel moves it on. A late result of the cancelled import is deleted and never opens the editor.
+- A finished old import no longer resets the screen state or the picker selection of a newer import.
+
+Why: finding 6.3 of the flow review (`Roadmap.md`). An iCloud-only file with no network had no way out.
+
+Checked: the two photo UI tests pass on the iPhone 18 Pro simulator (iOS 27.2), so a normal import still works.
+
+Open:
+- Cancel itself was not run. A simulator import ends in under a second, so there is no time to tap it.
+- On a device: pick an iCloud-only video in airplane mode, then tap Cancel. The home screen should work at once.
+- A Files import in iCloud Drive cannot stop part way. Its copy goes on in the background and is then deleted.
+
 ## Mac: a free run counts only its own items (4 Nov 2026, merged to `main`)
 
 What changed (Jake, 4 Nov 2026):

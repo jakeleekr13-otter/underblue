@@ -14,6 +14,18 @@ Why: finding 6.9 of the flow review (`Roadmap.md`).
 
 Checked: `BatchTests.testSummaryNamesSaveFailuresAndWhyItStopped` and the other 3 `BatchTests` pass on the iPhone 18 Pro simulator (iOS 27.2). The Mac app builds. Not run: Save All itself (it needs Pro), and a real Cancel on a device. A device run would save real photos to the library.
 
+## Custom Reset asks first (4 Nov 2026, merged to `main`)
+
+What changed (Jake, 4 Nov 2026): Reset in the Custom sliders opens "Reset all Custom sliders to 0?" with a Reset button. The sliders save at once, so before, a stray tap set the saved look to 0 for every later photo and batch. The control is shared, so this covers the iPhone editor, the iPhone batch screen and the Mac inspector. New string in six languages; no reviewer has checked it yet.
+
+Why: finding 6.12 of the flow review (`Roadmap.md`).
+
+Checked on the iPhone 18 Pro simulator (iOS 27.2): both `CustomPresetUITests` pass. The photo test now taps Reset, closes the dialog without confirming and sees the value kept, then confirms and sees 0. On iOS 27 the dialog is a popover over Reset with no Cancel; a tap outside closes it. Not run against the old control (its dialog title does not exist there). The Mac app builds; the Mac dialog was not run.
+
+Test fixes in the same change:
+- `adjust` does not scroll the capped controls area, so the tests drag the label row above a visible slider until the slider is on screen. This also fixed the older `testVideoCustomSliders` failure.
+- The picker wait is 30 s in `CustomPresetUITests` too.
+
 ## iPhone editor: a failed open says why and offers Try again (4 Nov 2026, merged to `main`)
 
 What changed (Jake, 4 Nov 2026): when a photo or video cannot be opened, the preview area shows a warning, the reason and "Try again". Try again runs the whole open again. The look controls stay disabled. Before, an alert came once, then a black preview stayed with working controls and no retry. A photo whose first preview failed now counts as a failed open too.
@@ -40,7 +52,7 @@ Checked:
 - New strings in six languages (three keys). No reviewer has checked them yet.
 
 Open:
-- `CustomPresetUITests.testVideoCustomSliders` fails at the Temperature value check. It fails the same way on `main` from the morning of 4 Nov (8bdbf4f), so it is older than these changes. On screen, Temperature sits below the capped controls area of the portrait video editor. Cause not confirmed.
+- `CustomPresetUITests.testVideoCustomSliders` failed at the Temperature value check, also on `main` from the morning of 4 Nov (8bdbf4f). Cause: Temperature sat below the capped controls area, and XCUITest `adjust` does not scroll. Fixed in the test later the same day (see "Custom Reset asks first"); it passes now.
 - Not run in the signed Mac app. Not run on a device.
 - The App Review notes (iPhone and Mac) and `MacApp.md` now describe these rules. Jake has not reviewed the new sentences.
 

@@ -12508,6 +12508,47 @@
           }
         }
       }
+    },
+    "Reset all Custom sliders to 0?" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset all Custom sliders to 0?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Restablecer a 0 todos los controles de Personalizado?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カスタムのスライダーをすべて0にリセットしますか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사용자 슬라이더를 모두 0으로 재설정할까요?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "要将所有自定义滑块重置为 0 吗？"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "要將所有自訂滑桿重設為 0 嗎？"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

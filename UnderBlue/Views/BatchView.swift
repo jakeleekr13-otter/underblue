@@ -126,7 +126,7 @@ struct BatchView: View {
             ProgressView(value: Double(model.savedCount), total: Double(max(1, model.saveTotal))).frame(width: 220)
             Text("Saving \(min(model.savedCount + 1, model.saveTotal)) of \(model.saveTotal)…")
             Text("Keep UnderBlue open until saving finishes.").font(.footnote)
-            Button("Cancel") { model.saveTask?.cancel() }.frame(minHeight: 44)
+            Button("Cancel") { model.cancelSave() }.frame(minHeight: 44)
         }.padding(30).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
     }
 }

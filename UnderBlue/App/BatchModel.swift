@@ -136,7 +136,7 @@ final class BatchModel: Identifiable {
         saveTotal = pendingCount
         interruption = nil
         backgroundTask.begin("Finish batch save") { [weak self] in
-            Task { @MainActor in self?.saveTask?.cancel() }
+            Task { @MainActor in self?.stop(because: String(localized: "Saving stopped because UnderBlue went into the background. Keep the app open and try again.")) }
         }
         saveTask = Task {
             defer {
@@ -178,24 +178,39 @@ final class BatchModel: Identifiable {
                     if Failure.classify(error, operation: .save).kind == .permission { break }
                 }
             }
-            // Count every selected photo, including ones that never opened, so partial success never reads as full.
-            let total = items.count
-            let unopened = items.filter { $0.state == .failed }.count
-            var parts = [savedCount == total && failed == 0
-                ? String(localized: "Saved to Photos: \(savedCount)")
-                : String(localized: "Saved to Photos: \(savedCount) of \(total)")]
-            if unopened > 0 { parts.append(String(localized: "Couldn’t open: \(unopened)")) }
-            if let interruption { parts.append(interruption) }
             ReviewPrompt().recordSaves(savedCount)
             offersReview = !targets.isEmpty && savedCount == targets.count && interruption == nil
-            summary = parts.joined(separator: "\n")
+            summary = Self.summaryText(saved: savedCount, total: items.count, saveFailed: failed,
+                                       unopened: items.filter { $0.state == .failed }.count,
+                                       left: targets.count - savedCount - failed, stop: interruption)
         }
+    }
+
+    /// The summary after Save All (flow review 6.9, Jake 4 Nov 2026). Every selected photo counts, including ones
+    /// that never opened, so partial success never reads as full. Save failures have their own line. `stop` says
+    /// why the run ended early; it shows only when photos were left, so a late Cancel does not mark a full run.
+    static func summaryText(saved: Int, total: Int, saveFailed: Int, unopened: Int, left: Int, stop: String?) -> String {
+        var parts = [saved == total && saveFailed == 0
+            ? String(localized: "Saved to Photos: \(saved)")
+            : String(localized: "Saved to Photos: \(saved) of \(total)")]
+        if saveFailed > 0 { parts.append(String(localized: "Couldn’t save: \(saveFailed)")) }
+        if unopened > 0 { parts.append(String(localized: "Couldn’t open: \(unopened)")) }
+        if left > 0, let stop { parts.append(stop) }
+        return parts.joined(separator: "\n")
+    }
+    /// The Cancel button while saving.
+    func cancelSave() { stop(because: String(localized: "Cancelled")) }
+    /// Ends Save All early and keeps the first reason for the summary.
+    private func stop(because reason: String) {
+        guard saving else { return }
+        if interruption == nil { interruption = reason }
+        saveTask?.cancel()
     }
 
     func memoryWarning() {
         let failure = Failure(kind: .memoryPressure, domain: "UnderBlue", code: 0)
         Task { await diagnostics.record(failure, operation: .export) }
-        if saving { interruption = failure.message; saveTask?.cancel() }
+        stop(because: failure.message)
     }
 
     func recordPreviewFailure(_ error: Error) async { await record(error, operation: .preview) }

@@ -311,6 +311,17 @@ The optional promoted-IAP image is not used. Leave **App Store Image** empty and
 
 **Website:** https://jakeleekr13-otter.github.io/underblue-support/ (six languages; built from this file, see AppStoreRelease.md)
 
+**Marketing URL** (not set yet; add it with the next version). It is localized and cannot be changed after release (Apple's property table, checked 4 Nov 2026):
+
+| App Store language | Marketing URL |
+|---|---|
+| English (U.S.) | https://jakeleekr13-otter.github.io/underblue-support/ |
+| Korean | https://jakeleekr13-otter.github.io/underblue-support/ko/ |
+| Japanese | https://jakeleekr13-otter.github.io/underblue-support/ja/ |
+| Chinese (Simplified) | https://jakeleekr13-otter.github.io/underblue-support/zh-hans/ |
+| Chinese (Traditional) | https://jakeleekr13-otter.github.io/underblue-support/zh-hant/ |
+| Spanish (Spain) | https://jakeleekr13-otter.github.io/underblue-support/es/ |
+
 **Support:** https://jakeleekr13-otter.github.io/underblue-support/support/
 
 **Privacy Policy:** https://jakeleekr13-otter.github.io/underblue-support/privacy/

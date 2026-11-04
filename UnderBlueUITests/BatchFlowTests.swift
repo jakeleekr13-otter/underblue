@@ -97,10 +97,52 @@ final class BatchFlowTests: XCTestCase {
         let denied = app.staticTexts["Allow UnderBlue to add to Photos in Settings, then try saving again."]
         XCTAssertTrue(denied.waitForExistence(timeout: 10), "No access alert: \(app.debugDescription)")
         attach(app, "2-access-alert")
+        XCTAssertTrue(app.alerts.buttons["Open Settings"].exists, "The access alert should open Settings (flow review 6.14)")
         app.alerts.buttons["OK"].tap()
         let summary = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Saved to Photos'")).firstMatch
         XCTAssertFalse(summary.waitForExistence(timeout: 20), "The batch ran after access was denied")
         XCTAssertTrue(saveAll.exists, "Save All should still offer all 3 photos")
+    }
+
+    /// Needs Pro on a device. A single export with add access denied: the save alert offers Open Settings and the
+    /// finished file stays (flow review 6.14). Nothing reaches the library, because access is denied.
+    @MainActor
+    func testSingleSaveWithPhotosAccessDeniedOffersSettings() throws {
+        let app = XCUIApplication()
+        app.resetAuthorizationStatus(for: .photos)
+        addTeardownBlock { @MainActor in app.resetAuthorizationStatus(for: .photos) }
+        app.launchArguments = ["--ui-test-keychain=single-denied", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        let select = app.buttons["Select Photos"]
+        guard select.waitForExistence(timeout: 10) else { throw XCTSkip("Not Pro: Home shows no multi-photo picker") }
+        select.tap()
+        let cell = app.images.matching(identifier: "PXGGridLayout-Info").firstMatch
+        XCTAssertTrue(cell.waitForExistence(timeout: 30), "Picker contents: \(app.debugDescription)")
+        cell.tap()
+        let add = ["Add", "Done"].map { app.buttons[$0] }.first { $0.exists }
+        guard let add else { XCTFail("No picker confirm button: \(app.debugDescription)"); return }
+        add.tap()
+        let export = app.buttons["Export"]
+        XCTAssertTrue(export.waitForExistence(timeout: 30))
+        expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: export)
+        waitForExpectations(timeout: 120)
+        export.tap()
+        let confirm = app.buttons["export-confirm"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10))
+        confirm.tap()
+        XCTAssertTrue(app.buttons["Save to Photos"].waitForExistence(timeout: 120))
+        app.buttons["Save to Photos"].tap()
+        let prompt = XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.firstMatch
+        XCTAssertTrue(prompt.waitForExistence(timeout: 15), "No Photos access prompt")
+        prompt.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.alerts["Couldn’t save"].waitForExistence(timeout: 10), "No save alert: \(app.debugDescription)")
+        attach(app, "single-access-alert")
+        XCTAssertTrue(app.alerts.buttons["Open Settings"].exists, "The access alert should open Settings")
+        app.alerts.buttons["OK"].tap()
+        XCTAssertTrue(app.buttons["Save to Photos"].exists, "The finished file stays for a second try")
+        app.buttons["Discard"].tap()
+        let discard = app.buttons["Discard export"]
+        XCTAssertTrue(discard.waitForExistence(timeout: 5)); discard.tap()
     }
 
     @MainActor private func attach(_ app: XCUIApplication, _ name: String) {

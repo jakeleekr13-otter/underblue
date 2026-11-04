@@ -100,7 +100,9 @@ final class EditorModel {
     private var previewGeneration = PreviewGeneration()
     var exporting = false
     var progress: Double = 0
-    var error: String?
+    var error: String? { didSet { if error == nil { errorNeedsSettings = false } } }
+    /// True when `error` is a Photos permission error. The save alert then offers Open Settings (flow review 6.14).
+    private(set) var errorNeedsSettings = false
     var notice: String?
     var exportTask: Task<Void, Never>?
     init(media: ImportedMedia, diagnostics: DiagnosticRecorder, adjustmentStore: CustomAdjustmentsStore = .init(),
@@ -537,7 +539,7 @@ final class EditorModel {
         guard failure.kind != .cancelled else { return }
         Task { await diagnostics.record(failure, operation: operation) }
         // Keep one actionable alert visible instead of presenting a stream of duplicates.
-        if self.error == nil { self.error = failure.message }
+        if self.error == nil { self.error = failure.message; errorNeedsSettings = failure.kind == .permission }
     }
     func close() { cancelEstimates(); stopClip(rewind: false); player?.pause(); exportTask?.cancel(); discardCompleted(); TemporaryFiles.remove(media.url) }
 }

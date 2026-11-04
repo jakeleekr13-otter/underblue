@@ -120,6 +120,13 @@ struct EditorView: View {
                         .background(.regularMaterial, in: Capsule())
                         .accessibilityElement(children: .combine)
                 }.frame(maxHeight: .infinity, alignment: .top).padding(.top, 12)
+            } else if let failure = model.loadFailure {
+                // Nothing opened. Say why and offer to try again (flow review 6.11, Jake 4 Nov 2026).
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle").font(.largeTitle).foregroundStyle(.orange).accessibilityHidden(true)
+                    Text(failure).multilineTextAlignment(.center).padding(.horizontal, 24)
+                    Button("Try again") { Task { await model.retryLoad() } }.buttonStyle(.bordered).frame(minHeight: 44)
+                }
             }
         }.frame(maxWidth: .infinity, maxHeight: .infinity).clipped()
     }
@@ -137,7 +144,7 @@ struct EditorView: View {
         // The look controls wait for the analysis and the first preview. A photo's first render uses the settings
         // it started with, so a change made during it never showed (flow review 6.4, Jake 4 Nov 2026).
         // A video shows the original until its analysis ends, so a change there showed nothing either.
-        let busy = model.loading || model.analyzing
+        let busy = model.loading || model.analyzing || model.loadFailure != nil
         return VStack(spacing: 18) {
             if model.previewPaused { Button("Retry preview") { Task { await model.retryPreview() } } }
             if model.metadata?.isHDR == true || (model.media.kind == .photo && model.capability.hdrAvailable) { Text("HDR source · SDR preview").font(.caption).foregroundStyle(.secondary) }

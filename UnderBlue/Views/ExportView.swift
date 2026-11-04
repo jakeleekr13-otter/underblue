@@ -119,6 +119,7 @@ struct ExportView: View {
 }
 struct ExportCompleteView: View {
     @Bindable var model: EditorModel
+    @State private var confirmDiscard = false
     /// A free video export cuts the clip at the trial limit. Say so when the clip was longer.
     private var trimmed: Bool {
         guard model.media.kind == .video, let limit = model.options.durationLimit, let duration = model.metadata?.duration else { return false }
@@ -132,11 +133,22 @@ struct ExportCompleteView: View {
                 Text("Your export has been checked and is ready for Photos.").foregroundStyle(.secondary).multilineTextAlignment(.center)
                 if trimmed { Text("Only the first 10 seconds were exported. Pro exports the full video.").font(.subheadline).multilineTextAlignment(.center) }
                 if model.options.watermark { Text("This free export carries an UnderBlue watermark. Pro removes it.").font(.subheadline).multilineTextAlignment(.center) }
-                Button("Save to Photos") { Task { await model.saveCompleted() } }.buttonStyle(.borderedProminent).disabled(model.saving)
+                Button("Save to Photos") { Task { await model.saveCompleted() } }.buttonStyle(.borderedProminent).controlSize(.large).disabled(model.saving)
                 if model.saving { ProgressView("Saving…") }
-                Button("Discard export", role: .destructive) { model.discardCompleted() }.disabled(model.saving)
             }.padding(30).navigationTitle("Export complete").navigationBarTitleDisplayMode(.inline)
+                // Discard sits in the top corner, away from Save, and asks first. A swipe never closes the sheet,
+                // because closing deletes the file (Jake, 4 Nov 2026).
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Discard", role: .destructive) { confirmDiscard = true }.disabled(model.saving)
+                    }
+                }
+                .confirmationDialog("Discard this export?", isPresented: $confirmDiscard, titleVisibility: .visible) {
+                    Button("Discard export", role: .destructive) { model.discardCompleted() }
+                } message: {
+                    if model.options.watermark { Text("Your trial won’t be used.") }
+                }
                 .alert("Couldn’t save", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) { Button("OK") { model.error = nil } } message: { Text(model.error ?? "") }
-        }.interactiveDismissDisabled(model.saving).presentationDetents([.medium])
+        }.interactiveDismissDisabled().presentationDetents([.medium])
     }
 }

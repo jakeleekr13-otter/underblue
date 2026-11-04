@@ -85,6 +85,9 @@ final class EditorModel {
     var offersReview = false
     /// Fixed when the export finishes, so the name matches the look that was exported.
     private var completedName: String?
+    /// A free export keeps its trial reservation until the file is in Photos. Save commits it. Discard and
+    /// closing the editor give it back, so a file the person never got does not use the trial (Jake, 4 Nov 2026).
+    private var completedTrial: (store: TrialStore, kind: ImportedMedia.Kind)?
     var saving = false
     var loading = true
     /// True while scene analysis (depth + water model) runs. Export waits for it, so the file matches the preview.
@@ -351,7 +354,7 @@ final class EditorModel {
                 }
                 do {
                     try Task.checkCancellation()
-                    if reserved { try trial.commit(media.kind); reserved = false }
+                    if reserved { completedTrial = (trial, media.kind); reserved = false }
                     completedName = ExportNaming.fileName(source: media.originalName, preset: chosenSettings.preset,
                                                           extension: output.pathExtension)
                     completedURL = output
@@ -370,6 +373,7 @@ final class EditorModel {
         defer { saving = false }
         do {
             try await PhotoLibrarySaver().save(completedURL, kind: media.kind, fileName: completedName)
+            commitCompletedTrial()
             TemporaryFiles.remove(completedURL)
             self.completedURL = nil
             ReviewPrompt().recordSaves(1)
@@ -377,7 +381,23 @@ final class EditorModel {
             notice = String(localized: "Saved to Photos")
         } catch { report(error, operation: .save) }
     }
-    func discardCompleted() { TemporaryFiles.remove(completedURL); completedURL = nil; completedName = nil }
+    func discardCompleted() {
+        if let completedTrial {
+            self.completedTrial = nil
+            do { try completedTrial.store.rollback() } catch { recordTrialFailure(error) }
+        }
+        TemporaryFiles.remove(completedURL); completedURL = nil; completedName = nil
+    }
+    private func commitCompletedTrial() {
+        guard let completedTrial else { return }
+        self.completedTrial = nil
+        // The file is already in Photos, so a failed write is only recorded. The next launch clears the reservation.
+        do { try completedTrial.store.commit(completedTrial.kind) } catch { recordTrialFailure(error) }
+    }
+    private func recordTrialFailure(_ error: Error) {
+        let failure = Failure.classify(error, operation: .trial)
+        Task { await diagnostics.record(failure, operation: .trial) }
+    }
     /// Video: the export waits while the app is not active and goes on when the app is back. iOS gives about
     /// 30 s in the background; when that ends, the background task cancels the export (`startExport`).
     /// Photo: one render that cannot wait, so the background cancels it.

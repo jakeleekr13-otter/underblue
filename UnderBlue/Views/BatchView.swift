@@ -3,6 +3,7 @@ import StoreKit
 
 struct BatchView: View {
     @Environment(PurchaseStore.self) private var purchases
+    @Environment(TrialStore.self) private var trial
     @Environment(\.horizontalSizeClass) private var widthClass
     @Environment(\.requestReview) private var requestReview
     @State var model: BatchModel
@@ -31,7 +32,7 @@ struct BatchView: View {
         .onDisappear { model.close() }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in model.memoryWarning() }
         .overlay { if model.saving { savingProgress } }
-        .sheet(isPresented: $model.showPro) { ProView() }
+        .sheet(isPresented: $model.showPro, onDismiss: { model.proReason = nil }) { ProView(reason: model.proReason) }
         .fullScreenCover(item: Binding(get: { detail.map(DetailID.init) }, set: { detail = $0?.id })) { start in
             BatchDetailView(model: model, selection: start.id)
         }
@@ -115,9 +116,10 @@ struct BatchView: View {
                 // The bar sits over the grid, so the five sliders scroll instead of covering it.
                 ScrollView { CustomAdjustmentControls(adjustments: $model.adjustments) }.frame(maxHeight: 200)
             }
-            Button { model.saveAll(purchases: purchases) } label: {
+            Button { model.saveAll(purchases: purchases, trial: trial) } label: {
                 Text("Save All (\(model.pendingCount))").frame(maxWidth: .infinity, minHeight: 44)
             }.buttonStyle(.borderedProminent).disabled(model.pendingCount == 0)
+            if !purchases.isPro { Text("Free export with an UnderBlue watermark.").font(.footnote).foregroundStyle(.secondary) }
         }.padding(.horizontal).padding(.vertical, 8)
     }
 

@@ -11,8 +11,8 @@ final class AppStoreScreenshotTests: XCTestCase {
         ]
         app.launch()
 
-        XCTAssertTrue(app.buttons["Select Photo"].waitForExistence(timeout: 10))
-        app.buttons["Select Photo"].tap()
+        XCTAssertTrue(app.selectPhotoButton.waitForExistence(timeout: 10))
+        app.selectPhotoButton.tap()
 
         let photo = app.images.matching(identifier: "PXGGridLayout-Info").firstMatch
         // A freshly booted simulator shows "Loading…" in the picker for longer than 8 s.
@@ -21,6 +21,7 @@ final class AppStoreScreenshotTests: XCTestCase {
             return
         }
         photo.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        app.confirmPhotoPicker()
 
         XCTAssertTrue(app.buttons["Compare"].waitForExistence(timeout: 30))
         XCTAssertTrue(app.buttons["Deep Dive"].waitForExistence(timeout: 5))

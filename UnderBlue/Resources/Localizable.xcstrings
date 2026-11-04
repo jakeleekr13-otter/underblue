@@ -12467,6 +12467,47 @@
           }
         }
       }
+    },
+    "Only the first %lld photos were opened. Pro can batch correct up to %lld photos." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only the first %lld photos were opened. Pro can batch correct up to %lld photos."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo se han abierto las primeras %lld fotos. Con Pro puedes corregir hasta %lld fotos en lote."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最初の%lld枚の写真だけを開きました。Proなら最大%lld枚を一括補正できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "처음 %lld장의 사진만 열었습니다. Pro에서는 최대 %lld장을 일괄 보정할 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "仅打开了前 %lld 张照片。Pro 可一次批量校正最多 %lld 张照片。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "僅開啟了前 %lld 張照片。Pro 可一次批次校正最多 %lld 張照片。"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

@@ -47,6 +47,8 @@ final class BatchModel: Identifiable {
     var offersReview = false
     var error: String?
     var showPro = false
+    /// Why the Pro screen opened from Save All, for example the wait for the next free photo.
+    var proReason: String?
     var saveTask: Task<Void, Never>?
     private var interruption: String?
     private var backgroundTask = BackgroundTask()
@@ -128,7 +130,9 @@ final class BatchModel: Identifiable {
         items[index].override = look == shared ? nil : look
     }
 
-    func saveAll(purchases: PurchaseStore) {
+    /// Pro saves every photo. Without Pro, Save All runs as the free trial when the photos fit its allowance
+    /// (3 welcome photos in one run, Jake 4 Nov 2026): SDR with the watermark, one free photo per saved photo.
+    func saveAll(purchases: PurchaseStore, trial: TrialStore) {
         guard !saving else { return }
         guard pendingCount > 0 else { return }
         saving = true
@@ -144,11 +148,17 @@ final class BatchModel: Identifiable {
                 backgroundTask.end()
             }
             await purchases.refreshEntitlement()
-            guard purchases.isPro else { showPro = true; return }
+            let free = !purchases.isPro
+            let targets = items.indices.filter { items[$0].analysis != nil && items[$0].state != .saved }
+            if free, targets.count > trial.allowance(.photo) {
+                proReason = trial.waitReason(.photo); showPro = true; return
+            }
             // Ask for Photos access before any render. Without it every photo rendered and then failed to save
             // (flow review 6.5, Jake 4 Nov 2026). The alert names Settings.
             do { try await PhotoLibrarySaver.requireAddAccess() } catch { await record(error, operation: .save); return }
-            let targets = items.indices.filter { items[$0].analysis != nil && items[$0].state != .saved }
+            if free {
+                do { try trial.reserve([.photo: targets.count]) } catch { await record(error, operation: .save); return }
+            }
             let format = format
             var failed = 0
             for index in targets {
@@ -156,8 +166,9 @@ final class BatchModel: Identifiable {
                 let output: URL
                 do {
                     try StorageCheck.require(bytes: 100_000_000)
-                    // Batch has no SDR/HDR choice: HDR photos stay HDR, SDR photos stay SDR.
-                    output = try await photos.export(items[index].url, settings: settings(for: items[index]), keepHDR: true, format: format)
+                    // Batch has no SDR/HDR choice: HDR photos stay HDR, SDR photos stay SDR. Free exports are SDR with the mark.
+                    output = try await photos.export(items[index].url, settings: settings(for: items[index]), keepHDR: !free,
+                                                     format: format, watermark: free)
                 } catch is CancellationError { break } catch {
                     items[index].state = .saveFailed; failed += 1
                     await record(error, operation: .export)
@@ -177,6 +188,10 @@ final class BatchModel: Identifiable {
                     // Access was turned off during the run. The rest would render and fail the same way.
                     if Failure.classify(error, operation: .save).kind == .permission { break }
                 }
+            }
+            if free {
+                do { if savedCount > 0 { try trial.commit([.photo: savedCount]) } else { try trial.rollback() } }
+                catch { await record(error, operation: .save) }
             }
             ReviewPrompt().recordSaves(savedCount)
             offersReview = !targets.isEmpty && savedCount == targets.count && interruption == nil

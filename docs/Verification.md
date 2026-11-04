@@ -14,6 +14,26 @@ Why: finding 6.9 of the flow review (`Roadmap.md`).
 
 Checked: `BatchTests.testSummaryNamesSaveFailuresAndWhyItStopped` and the other 3 `BatchTests` pass on the iPhone 18 Pro simulator (iOS 27.2). The Mac app builds. Not run: Save All itself (it needs Pro), and a real Cancel on a device. A device run would save real photos to the library.
 
+## Free trial: one run takes the free exports left (4 Nov 2026, merged to `main`)
+
+Rules (Jake, 4 Nov 2026, flow review 6.10):
+- Without Pro, a queue or a batch takes the free exports left: the welcome photos (3 on a first install, else 1) and 1 video. At least 1 of each, so a person who waits can still look at a file.
+- Mac: more files are not added, and the paywall says why. One Correct runs them all. Each saved file uses one free export; a failed one uses nothing.
+- iPhone: "Select Photos" takes up to 3 photos on a first install and opens the batch screen. Save All runs as the free trial: SDR, with the mark, one free photo per saved photo. After that, Home offers one photo again.
+- `TrialStore` now reserves several exports at once ("photo:3,video:1"). The old value "photo" still reads as one. A new launch still clears a reservation.
+
+Checked:
+- `TrialTests` (12, 2 new), `BatchTests` (4), `WatermarkTests` (5) pass on the iPhone 18 Pro simulator (iOS 27.2).
+- New UI test `testFreeFirstInstallSavesThreePhotosInOneBatch` passes: a fresh trial picks 3 photos, Save All gives "Saved to Photos: 3", and Home then shows "Select Photo".
+- `UnderBlueUITests` (5), `AppStoreScreenshotTests` (2) and `testPhotoCustomSlidersPersistAndReset` pass. The tests now find "Select Photo" or "Select Photos" and tap Add when the picker takes several photos.
+- Mac: 29 unit tests pass, 2 skipped. New: `testFreeQueueKeepsTheAllowanceOfEachKind`, `testSavedKindsCountOnlyThisRun`.
+- New strings in six languages (three keys). No reviewer has checked them yet.
+
+Open:
+- `CustomPresetUITests.testVideoCustomSliders` fails at the Temperature value check. It fails the same way on `main` from the morning of 4 Nov (8bdbf4f), so it is older than these changes. On screen, Temperature sits below the capped controls area of the portrait video editor. Cause not confirmed.
+- Not run in the signed Mac app. Not run on a device.
+- The App Review notes (iPhone and Mac) and `MacApp.md` now describe these rules. Jake has not reviewed the new sentences.
+
 ## Mac: a share during a batch is added when it ends (4 Nov 2026, merged to `main`)
 
 What changed (Jake, 4 Nov 2026):

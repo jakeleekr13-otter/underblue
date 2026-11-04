@@ -1,19 +1,29 @@
 import XCTest
 
+extension XCUIApplication {
+    /// "Select Photos" when the free trial or Pro allows several photos, else "Select Photo" (4 Nov 2026).
+    var selectPhotoButton: XCUIElement { buttons.matching(NSPredicate(format: "label BEGINSWITH 'Select Photo'")).firstMatch }
+    /// A picker for several photos needs Add (or Done). A picker for one closes on the tap.
+    func confirmPhotoPicker() {
+        for label in ["Add", "Done"] where buttons[label].waitForExistence(timeout: 2) { buttons[label].tap(); return }
+    }
+}
+
 final class UnderBlueUITests: XCTestCase {
     @MainActor
     func testPhotoImportPresetsCompareExportSaveAndTrialGate() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-test-keychain=\(UUID().uuidString)", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        XCTAssertTrue(app.buttons["Select Photo"].waitForExistence(timeout: 10))
-        app.buttons["Select Photo"].tap()
+        XCTAssertTrue(app.selectPhotoButton.waitForExistence(timeout: 10))
+        app.selectPhotoButton.tap()
         let cell = app.images.matching(identifier: "PXGGridLayout-Info").firstMatch
         // A freshly booted simulator shows "Loading…" in the picker for longer than 8 s.
         guard cell.waitForExistence(timeout: 30) else {
             XCTFail("Photo picker contents: \(app.debugDescription)"); return
         }
         cell.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        app.confirmPhotoPicker()
         XCTAssertTrue(app.buttons["Deep Dive"].waitForExistence(timeout: 15))
         // The presets wait for the analysis, as Export does. Read the preset first: once it is enabled,
         // Export cannot turn disabled again, so this never fails by timing alone.
@@ -46,12 +56,13 @@ final class UnderBlueUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-test-keychain=\(UUID().uuidString)", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
-        XCTAssertTrue(app.buttons["Select Photo"].waitForExistence(timeout: 10))
-        app.buttons["Select Photo"].tap()
+        XCTAssertTrue(app.selectPhotoButton.waitForExistence(timeout: 10))
+        app.selectPhotoButton.tap()
         let cell = app.images.matching(identifier: "PXGGridLayout-Info").firstMatch
         // A freshly booted simulator shows "Loading…" in the picker for longer than 8 s.
         XCTAssertTrue(cell.waitForExistence(timeout: 30))
         cell.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        app.confirmPhotoPicker()
         XCTAssertTrue(app.buttons["Deep Dive"].waitForExistence(timeout: 15))
         waitUntilEnabled(app.buttons["Export"])
         app.buttons["Export"].tap()
@@ -87,6 +98,33 @@ final class UnderBlueUITests: XCTestCase {
         let start = app.buttons["export-confirm"]
         XCTAssertTrue(start.waitForExistence(timeout: 5))
         start.tap()
+    }
+    /// A first install takes its 3 welcome photos in one batch, with the mark. After that Home offers one photo
+    /// again (Jake, 4 Nov 2026). Saves 3 photos to the simulator library.
+    @MainActor
+    func testFreeFirstInstallSavesThreePhotosInOneBatch() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--ui-test-keychain=\(UUID().uuidString)", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+        let select = app.buttons["Select Photos"]
+        XCTAssertTrue(select.waitForExistence(timeout: 10), "A first install should offer 3 photos")
+        select.tap()
+        let cells = app.images.matching(identifier: "PXGGridLayout-Info")
+        XCTAssertTrue(cells.firstMatch.waitForExistence(timeout: 30), "Picker contents: \(app.debugDescription)")
+        for index in 0..<3 { cells.element(boundBy: index).tap() }
+        app.confirmPhotoPicker()
+        let saveAll = app.buttons["Save All (3)"]
+        XCTAssertTrue(saveAll.waitForExistence(timeout: 60), "Batch screen did not load 3 photos")
+        waitUntilEnabled(saveAll)
+        XCTAssertTrue(app.staticTexts["Free export with an UnderBlue watermark."].exists)
+        saveAll.tap()
+        let summary = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Saved to Photos'")).firstMatch
+        XCTAssertTrue(summary.waitForExistence(timeout: 120), "No save summary: \(app.debugDescription)")
+        XCTAssertEqual(summary.label, "Saved to Photos: 3")
+        app.alerts.buttons["OK"].tap()
+        if app.buttons["Not Now"].waitForExistence(timeout: 2) { app.buttons["Not Now"].tap() }
+        app.navigationBars.buttons["UnderBlue"].tap()
+        XCTAssertTrue(app.buttons["Select Photo"].waitForExistence(timeout: 10), "The welcome photos should be used")
     }
     @MainActor
     func testVideoImportAndLandscapeEditor() {

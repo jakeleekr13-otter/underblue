@@ -93,6 +93,8 @@ final class EditorModel {
     /// True while scene analysis (depth + water model) runs. Export waits for it, so the file matches the preview.
     var analyzing = false
     var ready = false
+    /// Why the media did not open. The editor shows it with Try again instead of a black preview (flow review 6.11).
+    private(set) var loadFailure: String?
     var previewPaused = false
     private var previewFailures = 0
     private var previewGeneration = PreviewGeneration()
@@ -177,7 +179,24 @@ final class EditorModel {
                 }
             }
             ready = media.kind == .photo ? preview != nil : player != nil
-        } catch is CancellationError { } catch { report(error, operation: .inspection) }
+            // A photo whose first preview failed has nothing to show either. Show its error in place, not as an alert.
+            if !ready, !Task.isCancelled {
+                loadFailure = error ?? Failure.classify(UnderBlueError.unreadable, operation: .inspection).message
+                error = nil
+            }
+        } catch is CancellationError { } catch {
+            let failure = Failure.classify(error, operation: .inspection)
+            guard failure.kind != .cancelled else { return }
+            Task { await diagnostics.record(failure, operation: .inspection) }
+            loadFailure = failure.message
+        }
+    }
+    /// The Try again button after a failed open: runs the whole open again.
+    func retryLoad() async {
+        loadFailure = nil; error = nil
+        previewFailures = 0; previewPaused = false
+        loading = true
+        await load()
     }
     func refreshPreview() async {
         guard !previewPaused else { return }

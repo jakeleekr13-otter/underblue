@@ -14,6 +14,16 @@ Why: finding 6.9 of the flow review (`Roadmap.md`).
 
 Checked: `BatchTests.testSummaryNamesSaveFailuresAndWhyItStopped` and the other 3 `BatchTests` pass on the iPhone 18 Pro simulator (iOS 27.2). The Mac app builds. Not run: Save All itself (it needs Pro), and a real Cancel on a device. A device run would save real photos to the library.
 
+## iPhone editor: a failed open says why and offers Try again (4 Nov 2026, merged to `main`)
+
+What changed (Jake, 4 Nov 2026): when a photo or video cannot be opened, the preview area shows a warning, the reason and "Try again". Try again runs the whole open again. The look controls stay disabled. Before, an alert came once, then a black preview stayed with working controls and no retry. A photo whose first preview failed now counts as a failed open too.
+
+Why: finding 6.11 of the flow review (`Roadmap.md`).
+
+Checked on the iPhone 18 Pro simulator (iOS 27.2):
+- New `EditorLoadTests.testFailedOpenShowsTheReasonAndTryAgainOpens`: a missing file sets the reason and no alert; after the file exists, Try again opens it. `CustomPresetTests` and `PhotoFormatTests` pass, except the known JPEG colour resolution failure.
+- By eye: a broken JPEG opened through `--ui-test-open` shows "This media couldn’t be opened. Try another photo or video." with Try again. Compare and Export are dimmed.
+
 ## Free trial: one run takes the free exports left (4 Nov 2026, merged to `main`)
 
 Rules (Jake, 4 Nov 2026, flow review 6.10):

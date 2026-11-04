@@ -130,7 +130,7 @@ Korean text: write after Jake approves the English text.
 
 | Risk | Prepare |
 |---|---|
-| Reviewer cannot find the Pro feature | Review notes say batch is Pro. Paywall names batch. |
+| Reviewer cannot find the Pro feature | Review notes say larger batches are Pro. Paywall names batch. |
 | Reviewer has no underwater media | Ship no sample media. Say in the notes that any photo or video works. **Unverified:** whether review needs sample files. |
 | Sandbox write failure after relaunch | Run the bookmark test above before every upload. |
 | Metadata claims what the app does not do | Check every "confirm" line against the build. |
@@ -183,3 +183,4 @@ Measured on the iPhone 1.1.7 (13) archive (27 Oct 2026). The Mac archive is not 
 4. Run the signed-build checks: folder write after a relaunch, Finder share menu, Pro after a relaunch, Restore Purchase.
 5. Free Offer codes for friends? (iOS method: IAP → Offer Codes, only after the app is approved.)
 6. Japanese and Chinese translations have no native review. Ship as they are, or review first?
+7. Review the changed review-notes sentence about free runs (Part C, 4 Nov 2026). Paste the notes with the next Mac build. The 1.0 (1) build in review has the old trial.

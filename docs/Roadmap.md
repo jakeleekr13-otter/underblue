@@ -1,13 +1,14 @@
 # UnderBlue roadmap
 
-Status: draft, updated 3 Nov 2026 (iPhone 1.1.9 on the App Store, 1.1.10 in App Review). Nothing here is decided unless a line says "Jake".
+Status: draft, updated 4 Nov 2026 (iPhone 1.1.10 on the App Store). Nothing here is decided unless a line says "Jake".
 
 This page only collects open work. Each row points to the document that holds the details.
 
-## Where we are (3 Nov 2026)
+## Where we are (4 Nov 2026)
 
-- iPhone 1.1.10 (16) is in App Review (Jake, 3 Nov 2026). New: the free trial with a watermark (row 1.7).
-- iPhone 1.1.9 (15) is on the App Store. It was released on 1 Nov 2026 at 21:53 UTC (App Store lookup, 3 Nov 2026).
+- iPhone 1.1.10 (16) is on the App Store. It was released on 3 Nov 2026 at 16:57 UTC (App Store lookup, 4 Nov 2026). New: the free trial with a watermark (row 1.7).
+- The landing pages describe the new trial since 4 Nov 2026 (`underblue-support` 3aa32ac).
+- iPhone 1.1.9 (15) was released on 1 Nov 2026 at 21:53 UTC (App Store lookup, 3 Nov 2026).
 - iPhone 1.1.8 (14) was released on 31 Oct 2026 at 17:10 UTC (Jake; App Store lookup, 1 Nov 2026). New since 1.1.7 ([AppStoreRelease](AppStoreRelease.md)):
   - each video scene fits its reef colour to the photo rule
   - the restored path no longer takes the cast off twice
@@ -15,13 +16,13 @@ This page only collects open work. Each row points to the document that holds th
   - a video export pauses in the background and goes on when the app is back
   - a rating prompt from the 10th save, only online
 - The 1.1.8 code is on `main` and pushed.
-- The Mac app 1.0 (1): App Review rejected it on 27 Oct 2026 for "for Mac" in the name (Guideline 5.2.5). It was resubmitted on 28 Oct 2026 with the same build and a new name ([MacAppStoreRelease](MacAppStoreRelease.md)). Jake, 3 Nov 2026: the review is still in progress. An App Store lookup by bundle ID on 3 Nov 2026 found no Mac app.
+- The Mac app 1.0 (1): App Review rejected it on 27 Oct 2026 for "for Mac" in the name (Guideline 5.2.5). It was resubmitted on 28 Oct 2026 with the same build and a new name ([MacAppStoreRelease](MacAppStoreRelease.md)). Jake, 3 Nov 2026: the review is still in progress. An App Store lookup by bundle ID on 4 Nov 2026 found no Mac app.
 - The restoration run is done for photos ([RestorationExperiments](RestorationExperiments.md)).
 - 28 Oct 2026: the website has landing pages in six languages, and Google Search Console is set up ([AppStoreRelease](AppStoreRelease.md#website-and-google-search-console-28-oct-2026)).
 
 ## 1. iPhone device checks (on hold)
 
-Most rows are Jake's checks on the iPhone. Jake, 3 Nov 2026: not now.
+Most rows are Jake's checks on the iPhone. Jake, 3 Nov 2026: not now. Jake, 4 Nov 2026: still later.
 
 | # | Work | State | Source |
 |---|---|---|---|
@@ -31,7 +32,7 @@ Most rows are Jake's checks on the iPhone. Jake, 3 Nov 2026: not now.
 | 1.4 | Labs orb switch: export takes longer when on | 26 Oct: about 4.5 s longer. After the 48 MP fix: 4.2-4.4 s off, 5.1-5.8 s on (20 MP). Not explained. Labs only, off by default. | [Verification](Verification.md) |
 | 1.5 | Jake's iPhone checks: jellyfish legs and fins clip 31% (source 23.6%); napoleon clip at 6.7 s, the red rise is smaller, not gone; shallow-water shark photo (3 Oct); subject strength slider drag | Open. Jake checks. If the slider still lags, cache the frame before the lift. | [Verification](Verification.md), [ManualSubject](ManualSubject.md) |
 | 1.6 | JPEG colour resolution test fails on the simulator (2x2 sampling) | Open. It also fails before the 31 Oct changes. Not checked on a device. | [Verification](Verification.md) |
-| 1.7 | Free trial with watermark: 3 photos, then 1 photo every 24 hours; 1 video every 24 hours; a mark on every free export (Jake, 2 Nov) | On `main`, in iPhone 1.1.10 (16), in App Review. Device checks are open. Store text and What's New are in [AppStoreMetadata](AppStoreMetadata.md). Run the landing script only after release ([AppStoreRelease](AppStoreRelease.md)). The Mac 1.0 build in review has the old trial; the next Mac build gets the new one. | [Verification](Verification.md) |
+| 1.7 | Free trial with watermark: 3 photos, then 1 photo every 24 hours; 1 video every 24 hours; a mark on every free export (Jake, 2 Nov) | In iPhone 1.1.10 (16), on the App Store since 3 Nov 2026. Device checks are open. Store text and What's New are in [AppStoreMetadata](AppStoreMetadata.md). Landing pages updated on 4 Nov 2026 ([AppStoreRelease](AppStoreRelease.md)). The Mac 1.0 build in review has the old trial; the next Mac build gets the new one. | [Verification](Verification.md) |
 
 ## 2. Mac app 1.0 release (after the first review)
 
@@ -76,12 +77,13 @@ Order matters. The hardening changes the binary, so it comes before the archive 
 | 5.2 | iPhone Duo, stage 2 | Waits for Xcode 27.1. | [iPhoneDuoSupportPlan](iPhoneDuoSupportPlan.md) |
 | 5.3 | ProRAW 48 MP and many 48 MP photos in one batch | Jake: accepted as open (26 Oct). | [Verification](Verification.md) |
 | 5.4 | "Changes waiting for the final round" (5 commits) | The list dates from 29 Sep. Not updated since. Jake: run the round, or close the list. | [Verification](Verification.md) |
+| 5.5 | Video: after 3s Preview, the player's own play button plays on to the end (Jake, 4 Nov 2026) | Code read only, not run. Only the 3s Preview button stops after 3 s. The player's play button has no 3 s stop. Jake decides if this is wrong. | [Verification](Verification.md) |
 
 Decided against for now (Jake): finishing an export in the background, a call during export (follows the background rule), and Android.
 
 ## Recommended order
 
-1. Wait for two reviews: iPhone 1.1.10 and Mac 1.0. Section 1 device checks are on hold (Jake, 3 Nov 2026).
+1. Wait for the Mac 1.0 review. Section 1 device checks are on hold (Jake, 3 and 4 Nov 2026).
 2. Section 2, after the Mac review ends: the Mac release, hardening first. The app is built, and the Mac price is the higher one ([MacApp](MacApp.md)).
 3. Section 3: 3.1 and 3.3 shipped in 1.1.8 and wait for Jake's check on the iPhone. 3.2 waits for real Log clips.
 4. Sections 4 and 5 only when a real photo or a user asks for it.

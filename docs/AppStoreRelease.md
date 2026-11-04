@@ -1,20 +1,20 @@
 # App Store release checklist
 
-Last reviewed: 2026-11-03
+Last reviewed: 2026-11-04
 
 ## Current release: iPhone 1.1.10 (build 16), 3 Nov 2026
 
 iPhone only. The Mac targets stay at 1.0 (1).
 
-- 1.1.9 (15) was submitted for App Review on 1 Nov 2026 (Jake). Its later state is not recorded here.
-- 1.1.10 (16) is archived (3 Nov 2026). It is not uploaded. New since 1.1.9:
+- 1.1.9 (15) was released on 1 Nov 2026 at 21:53 UTC (App Store lookup, 3 Nov 2026).
+- 1.1.10 (16) is on the App Store. It was released on 3 Nov 2026 at 16:57 UTC (App Store lookup, 4 Nov 2026). New since 1.1.9:
   - Free trial: 3 photo exports, then 1 photo every 24 hours. 1 video export (first 10 s) every 24 hours.
   - Every free export carries a small UnderBlue watermark. Pro exports have none.
 - Archive: Xcode 27.2 (27B52), `~/Library/Developer/Xcode/Archives/2026-11-03/UnderBlue 1.1.10 (16).xcarchive`. Checked: app and share extension are both 1.1.10 (16); iPhone only (device family 1); both have the App Group `group.com.underblue.app`; dSYMs for both.
 - Release note: `AppStoreMetadata.md`, "What's New (1.1.10)". The description sections and the App Review notes also describe the new trial. Paste them with this version.
 - Tests (3 Nov 2026): 311 iOS unit tests on the iPhone 18 Pro simulator (iOS 27.0): 1 known failure (JPEG colour resolution), 13 skipped probes. 24 Mac unit tests: no failure, 2 skipped. `PurchaseTests` not run (decision). UI tests not run.
-- Checks: `Verification.md`, "Free trial with watermark". The device checks are open.
-- Landing pages: run `build_landing.py` only after 1.1.10 is live (see "Website" below).
+- Checks: `Verification.md`, "Free trial with watermark". The device checks are open. Jake, 4 Nov 2026: they wait.
+- Landing pages: rebuilt on 4 Nov 2026, after the release (`underblue-support` 3aa32ac). Only the trial text changed, on the six home pages.
 - The IAP description now names the watermark in all six languages (`AppStoreMetadata.md`). Submit the IAP change with 1.1.10.
 - Jake approved the IAP description and the What's New text in all six languages on 3 Nov 2026. The ja, zh and es lines were also checked by a reviewer agent.
 
@@ -131,7 +131,7 @@ The complete English and Korean descriptions, promotional text, keywords and rev
   - Page titles and the Mac text are in the script itself.
   - The script also rewrites `sitemap.xml`.
   - GitHub Pages does not publish `_build/`.
-  - Since 2 Nov 2026 the description sections describe the watermark trial. The live app does not have it yet. Run the script only after the version with that trial is live.
+  - Since 2 Nov 2026 the description sections describe the watermark trial. 1.1.10 has that trial. The script ran on 4 Nov 2026, after its release.
 - The App Store badge links to the iPhone app (`id6815881625`). The Mac section says "coming soon" until `MAC_APP_STORE` is set in the script.
 - Search Console:
   - The property is the URL prefix above. A Domain property is not possible on github.io.

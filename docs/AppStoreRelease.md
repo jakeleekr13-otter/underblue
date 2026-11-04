@@ -2,6 +2,20 @@
 
 Last reviewed: 2026-11-04
 
+## Next iPhone submission (after 1.1.10)
+
+To do when the next version is submitted:
+- Paste the App Review notes again (`AppStoreMetadata.md`, "App Review notes"). Changed on 4 Nov 2026: the free trial opens its 3 welcome photos together. Jake has not reviewed the new sentence yet.
+- Write What's New from the changes below. Check each against `Verification.md` first.
+
+On `main` since 1.1.10, not released (4 Nov 2026, flow review in `Roadmap.md` section 6):
+- A swipe no longer deletes a finished export; Discard asks first; a free export uses the trial only when saved (6.1).
+- Cancel while importing (6.3).
+- The look controls wait for the analysis (6.4).
+- Batch: Photos access is checked before any render (6.5); the summary names save failures and why it stopped (6.9).
+- After buying Pro in the editor, the export options come back to the full choice (6.6).
+- A first install takes its 3 free photos in one batch (6.10).
+
 ## Current release: iPhone 1.1.10 (build 16), 3 Nov 2026
 
 iPhone only. The Mac targets stay at 1.0 (1).

@@ -94,6 +94,21 @@ final class ShareFlowTests: XCTestCase {
         model.remove(try XCTUnwrap(model.engine.items.first).id)
     }
 
+    /// A share that waited for a batch is added when the run ends. Its line goes below the Done line, so the
+    /// run's result stays visible (flow review 6.8, 4 Nov 2026).
+    func testShareAfterABatchKeepsTheDoneLine() async throws {
+        let source = try makeFolder(), inbox = try makeFolder()
+        let extensionSide = ShareModel(inboxRoot: { inbox })
+        extensionSide.start([provider(for: try makeFile("C.jpg", in: source, bytes: "c"))])
+        try await waitUntilFinished(extensionSide)
+        let model = MacModel()
+        Self.alive.append(model)
+        model.notice = "Done: 1 saved."
+        await model.importShared(appendNotice: true, takeShared: { await FileImport.takeShared(inbox: inbox) })
+        XCTAssertEqual(model.notice, "Done: 1 saved.\nAdded 1 from the share menu.")
+        for item in model.engine.items { model.remove(item.id) }
+    }
+
     func testRemovingAFileYouAddedNeverDeletesTheFile() async throws {
         let folder = try makeFolder()
         let file = try makeFile("mine.jpg", in: folder, bytes: "mine")

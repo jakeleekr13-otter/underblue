@@ -195,9 +195,16 @@ final class MacModel {
 
     /// Adds the newest share from the Mac share menu. The share extension copies files into the App Group inbox
     /// and opens `underblue://share`. UnderBlue also looks when it becomes active, so a refused open is not lost.
-    /// While a batch runs the share waits in the inbox for the next call. `takeShared` is replaceable for tests.
-    func importShared(takeShared: () async -> (media: [ImportedMedia], failed: Int)? = { await FileImport.takeShared() }) async {
-        guard !engine.running, !importingShared else { return }
+    /// While a batch runs the share waits in the inbox. The run calls this again when it ends (flow review 6.8).
+    /// `fromShareMenu`: the share extension opened the app, so a share is known to wait; say so during a batch.
+    /// `appendNotice` keeps the Done line of the run that just ended. `takeShared` is replaceable for tests.
+    func importShared(fromShareMenu: Bool = false, appendNotice: Bool = false,
+                      takeShared: () async -> (media: [ImportedMedia], failed: Int)? = { await FileImport.takeShared() }) async {
+        if engine.running {
+            if fromShareMenu { notice = String(localized: "Shared files will be added when the batch ends.") }
+            return
+        }
+        guard !importingShared else { return }
         importingShared = true
         defer { importingShared = false }
         guard let shared = await takeShared() else { return }
@@ -206,8 +213,9 @@ final class MacModel {
         engine.add(fresh)
         if let first = fresh.first { selection = engine.items.first { $0.url == first.url }?.id }
         if fresh.isEmpty, shared.failed == 0 { return }
-        notice = shared.failed == 0 ? String(localized: "Added \(fresh.count) from the share menu.")
+        let message = shared.failed == 0 ? String(localized: "Added \(fresh.count) from the share menu.")
             : String(localized: "Added \(fresh.count) from the share menu. Couldn’t add \(shared.failed).")
+        notice = appendNotice ? [notice, message].compactMap { $0 }.joined(separator: "\n") : message
     }
 
     func remove(_ id: BatchEngine.Item.ID) {
@@ -383,6 +391,8 @@ final class MacModel {
             let result = Self.runResult(engine.items, runIDs: runIDs)
             if let trialKind { finishTrial(trialKind, saved: result.done > 0) }
             announceFinished(result)
+            // A share that arrived during the run waited in the inbox. Add it now, below the Done line.
+            await importShared(appendNotice: true)
             if runWithoutEmphasis { runWithoutEmphasis = false; syncSubjectsToEngine() }
         }
     }

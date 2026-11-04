@@ -84,7 +84,7 @@ Kept as is (Jake, 4 Nov 2026): the player's own play button plays the whole vide
 
 ## 6. Flow review findings (4 Nov 2026)
 
-A static code review of the user flows on iPhone and Mac. Each row was confirmed by reading the code. Jake reviews them one at a time. 16 more candidates are not listed: 12 need a run before they count, and 4 were not checked again (mostly Labs subject picking).
+A static code review of the user flows on iPhone and Mac. Rows 6.1 to 6.15 were confirmed by reading the code; 6.16 was found on the iPhone 17 while checking 6.14. Jake reviews them one at a time. 16 more candidates are not listed: 12 need a run before they count, and 4 were not checked again (mostly Labs subject picking).
 
 | # | Area | Finding | Code | State |
 |---|---|---|---|---|
@@ -102,8 +102,8 @@ A static code review of the user flows on iPhone and Mac. Each row was confirmed
 | 6.12 | iPhone Custom | Reset sets the saved sliders to 0 at once, with no undo | `CustomAdjustmentControls.swift:53` | Fixed (Jake, 4 Nov): Reset asks first. See [Verification](Verification.md) |
 | 6.13 | iPhone purchase | After a purchase, the Pro screen still shows the wait for the next free photo | `ProView.swift:17` | Fixed (Jake, 4 Nov). Builds only, not run. See [Verification](Verification.md) |
 | 6.14 | iPhone save | The Photos permission alert has no "Open Settings" button | `ExportView.swift:151` | Fixed (Jake, 4 Nov). Checked on the iPhone 17. See [Verification](Verification.md) |
-| 6.16 | iPhone export | A failed save in "Ready to save" closed the sheet and deleted the file. Found on the iPhone 17 while checking 6.14 | `EditorView.swift:52` | Fixed (4 Nov). Checked on the iPhone 17 |
 | 6.15 | Share extension | Cancel during the last copy can still finish the share; the effect needs a run | `ShareModel.swift:28` | Fixed (Jake, 4 Nov). See [Verification](Verification.md) |
+| 6.16 | iPhone export | A failed save in "Ready to save" closed the sheet and deleted the file. Found on the iPhone 17 while checking 6.14 | `EditorView.swift:52` | Fixed (4 Nov). Checked on the iPhone 17 |
 
 ## Recommended order
 

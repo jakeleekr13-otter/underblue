@@ -22,6 +22,10 @@ struct SettingsView: View {
                     }
                 }
             }
+            // A run keeps the place it started with. A change here made Show in Finder open the new place, so the
+            // saved files could not be found from the app (flow review 6.7, Jake 4 Nov 2026). The toolbar folder
+            // button is locked the same way.
+            .disabled(model.engine.running)
             Section("Photos") {
                 Picker("Format", selection: $model.format) {
                     ForEach(ExportOptions.PhotoFormat.available) { Text($0.name).tag($0) }

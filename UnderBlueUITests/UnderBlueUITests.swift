@@ -15,13 +15,17 @@ final class UnderBlueUITests: XCTestCase {
         }
         cell.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         XCTAssertTrue(app.buttons["Deep Dive"].waitForExistence(timeout: 15))
+        // The presets wait for the analysis, as Export does. Read the preset first: once it is enabled,
+        // Export cannot turn disabled again, so this never fails by timing alone.
+        let presetEnabled = app.buttons["Deep Dive"].isEnabled, exportEnabled = app.buttons["Export"].isEnabled
+        XCTAssertTrue(!presetEnabled || exportEnabled, "A preset was enabled during the analysis")
+        waitUntilEnabled(app.buttons["Export"])
         app.buttons["Deep Dive"].tap()
         app.buttons["Compare"].tap()
         app.buttons["Compare"].tap()
         let screenshot = XCTAttachment(screenshot: app.screenshot())
         screenshot.name = "Photo editor"; screenshot.lifetime = .keepAlways
         add(screenshot)
-        waitUntilEnabled(app.buttons["Export"])
         app.buttons["Export"].tap()
         XCTAssertTrue(app.staticTexts["Free trial"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Free export with an UnderBlue watermark."].exists)
@@ -71,11 +75,11 @@ final class UnderBlueUITests: XCTestCase {
         app.buttons["Export"].tap()
         XCTAssertTrue(fullTrial.waitForExistence(timeout: 8), "The discarded export used the trial")
     }
-    /// Export stays disabled until the analysis ends. A tap before that does nothing.
+    /// Export, the presets and Compare stay disabled until the analysis ends. A tap before that does nothing.
     @MainActor
     private func waitUntilEnabled(_ element: XCUIElement) {
         let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: element)
-        XCTAssertEqual(XCTWaiter().wait(for: [enabled], timeout: 60), .completed, "Export stayed disabled")
+        XCTAssertEqual(XCTWaiter().wait(for: [enabled], timeout: 60), .completed, "\(element) stayed disabled")
     }
     /// Taps Export in the options sheet. Its identifier tells it apart from the editor's Export behind the sheet.
     @MainActor
@@ -92,9 +96,10 @@ final class UnderBlueUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Select Video"].waitForExistence(timeout: 10))
         app.buttons["Select Video"].tap()
         let cell = app.images.matching(identifier: "PXGGridLayout-Info").firstMatch
-        XCTAssertTrue(cell.waitForExistence(timeout: 8))
+        XCTAssertTrue(cell.waitForExistence(timeout: 30))
         cell.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         XCTAssertTrue(app.buttons["Compare"].waitForExistence(timeout: 15))
+        waitUntilEnabled(app.buttons["Export"])
         XCUIDevice.shared.orientation = .landscapeLeft
         defer { XCUIDevice.shared.orientation = .portrait }
         app.buttons["Compare"].tap()

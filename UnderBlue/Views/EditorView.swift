@@ -134,6 +134,10 @@ struct EditorView: View {
     }
     private func controls(presetGrid: Bool = false) -> some View {
         @Bindable var model = model
+        // The look controls wait for the analysis and the first preview. A photo's first render uses the settings
+        // it started with, so a change made during it never showed (flow review 6.4, Jake 4 Nov 2026).
+        // A video shows the original until its analysis ends, so a change there showed nothing either.
+        let busy = model.loading || model.analyzing
         return VStack(spacing: 18) {
             if model.previewPaused { Button("Retry preview") { Task { await model.retryPreview() } } }
             if model.metadata?.isHDR == true || (model.media.kind == .photo && model.capability.hdrAvailable) { Text("HDR source · SDR preview").font(.caption).foregroundStyle(.secondary) }
@@ -156,20 +160,20 @@ struct EditorView: View {
                 } label: {
                     Label("Compare", systemImage: model.comparing ? "eye.fill" : "eye").lineLimit(1).fixedSize()
                 }
-                    .buttonStyle(.bordered).frame(minHeight: 44)
+                    .buttonStyle(.bordered).frame(minHeight: 44).disabled(busy)
                     .accessibilityValue(model.comparing ? "Original" : "Corrected")
                     .accessibilityHint("Show original media without correction")
             }.padding(.horizontal)
-            presetPicker(grid: presetGrid)
-            if model.media.kind == .photo, model.subjectPickerEnabled { subjectsRow }
+            presetPicker(grid: presetGrid).disabled(busy)
+            if model.media.kind == .photo, model.subjectPickerEnabled { subjectsRow.disabled(busy) }
             if model.settings.preset == .custom {
                 // Custom has no intensity: it renders at the default intensity (0.8) and has its own sliders.
-                CustomAdjustmentControls(adjustments: $model.settings.adjustments).padding(.horizontal)
+                CustomAdjustmentControls(adjustments: $model.settings.adjustments).padding(.horizontal).disabled(busy)
             } else {
                 VStack {
                     HStack { Text("Intensity"); Spacer(); Text(model.settings.intensity, format: .percent.precision(.fractionLength(0))).monospacedDigit() }
                     Slider(value: $model.settings.intensity, in: 0...1).accessibilityLabel("Filter intensity")
-                        .disabled(model.settings.preset == .original)
+                        .disabled(busy || model.settings.preset == .original)
                 }.padding(.horizontal)
             }
             Button("Export") { Task { await model.requestExport(purchases: purchases, trial: trial) } }

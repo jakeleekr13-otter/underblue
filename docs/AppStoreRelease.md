@@ -167,6 +167,9 @@ The complete English and Korean descriptions, promotional text, keywords and rev
   - A second Search Console property, `https://jakeleekr13-otter.github.io/`, verified on its own with that file. It has the robots.txt and crawl stats reports. Google fetched the root robots.txt at 09:41 CST on 4 Nov.
   - The indexing-request quota is not per property. About 12 requests a day in total.
   - `support/` and `privacy/` are hand-written, not generated. Since 4 Nov their footers link to the landing page, because the App Store links only to these two pages.
+  - 5 Nov 2026: indexing is now requested for all 21 guide URLs (the last 9 today, all "색인 생성 요청됨").
+  - 5 Nov 2026, landing property: the sitemap still reads "가져올 수 없음" with 0 pages. The Pages report still says it is processing data. The landing root is still unknown to Google.
+  - 5 Nov 2026, root property: the root hub `https://jakeleekr13-otter.github.io/` is indexed. Google crawled it on 4 Nov at 10:31 CST (Googlebot smartphone). Indexing was requested again. Crawl stats (updated 3 Nov): 5 requests, no host problems. The only 404 is `/favicon.ico`, because the root site has none.
 
 Both pages are publicly available over HTTPS. Their email addresses are clickable `mailto:` links. The repository's `main` branch blocks force pushes and deletion and needs a linear history (no merge commits); only the owner has direct repository access.
 

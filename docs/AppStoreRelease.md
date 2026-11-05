@@ -158,6 +158,7 @@ The complete English and Korean descriptions, promotional text, keywords and rev
   - GitHub Pages does not publish `_build/`.
   - Since 2 Nov 2026 the description sections describe the watermark trial. 1.1.10 has that trial. The script ran on 4 Nov 2026, after its release.
 - The App Store badge links to the iPhone app (`id6815881625`). The Mac section says "coming soon" until `MAC_APP_STORE` is set in the script.
+- Since 5 Nov 2026 every landing page ends with an "Also by Enheart" card for Bubbly Dive Logbook (`id6813368660`, same seller). Its link and text are `SISTER_APP` and `sister_h`/`sister_p` in the script (Jake). The root hub links it too.
 - Search Console:
   - The property is the URL prefix above. A Domain property is not possible on github.io.
   - It is verified by `google98d8e981a7645ba2.html` at the site root. Never delete that file.

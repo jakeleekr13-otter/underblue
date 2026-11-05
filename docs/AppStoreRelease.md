@@ -7,7 +7,7 @@ Last reviewed: 2026-11-05
 iPhone only. The Mac targets stay at 1.0 (1).
 
 - 1.1.10 (16) is on the App Store since 3 Nov 2026 at 16:57 UTC.
-- 1.1.11 (17) is archived (5 Nov 2026). It is not uploaded.
+- 1.1.11 (17) is submitted for App Review (Jake, 5 Nov 2026). The text Jake entered in App Store Connect was not checked here.
 - Archive: Xcode 27.2 (27B52), iOS SDK 27.2, `~/Library/Developer/Xcode/Archives/2026-11-05/UnderBlue 1.1.11 (17).xcarchive`. Checked: app and share extension are both 1.1.11 (17); iPhone only (device family 1); both have the App Group `group.com.underblue.app`; dSYMs for both.
 - Release note: `AppStoreMetadata.md`, "What's New (1.1.11)". Jake, 5 Nov 2026: say only that usability and stability improved.
 - App Review notes: paste them again (`AppStoreMetadata.md`, "App Review notes"). Changed on 4 Nov 2026: the free trial opens its 3 welcome photos together.

@@ -1,10 +1,12 @@
 # UnderBlue roadmap
 
-Status: draft, updated 4 Nov 2026 (iPhone 1.1.10 on the App Store). Nothing here is decided unless a line says "Jake".
+Status: draft, updated 5 Nov 2026 (iPhone 1.1.10 on the App Store, 1.1.11 in App Review). Nothing here is decided unless a line says "Jake".
 
 This page only collects open work. Each row points to the document that holds the details.
 
-## Where we are (4 Nov 2026)
+## Where we are (5 Nov 2026)
+
+- iPhone 1.1.11 (17) is in App Review (Jake, 5 Nov 2026). It holds the flow review fixes of section 6. Release note: usability and stability only (Jake).
 
 - iPhone 1.1.10 (16) is on the App Store. It was released on 3 Nov 2026 at 16:57 UTC (App Store lookup, 4 Nov 2026). New: the free trial with a watermark (row 1.7).
 - The landing pages describe the new trial since 4 Nov 2026 (`underblue-support` 3aa32ac).

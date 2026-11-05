@@ -180,6 +180,22 @@ UnderBlue está pensada para los recuerdos del buceo recreativo. No es una herra
 
 **Spanish (Spain):** buceo,submarinismo,snorkel,fotosub,submarino,fotos,vídeo,arrecife,coral,corregir,filtro,restaurar (98 bytes)
 
+## What's New (1.1.11)
+
+Jake, 5 Nov 2026: say only that usability and stability improved. The changes are listed in `AppStoreRelease.md`.
+
+**English:** Improved usability and stability.
+
+**Korean:** 사용성과 안정성을 높였습니다.
+
+**Japanese:** 使いやすさと安定性を向上しました。
+
+**Simplified Chinese:** 提升了易用性和稳定性。
+
+**Traditional Chinese:** 提升了易用性與穩定性。
+
+**Spanish (Spain):** Mejoras de usabilidad y estabilidad.
+
 ## What's New (1.1.10)
 
 **English:** Try UnderBlue free for longer: 3 free photo exports, then 1 photo every 24 hours, and the first 10 seconds of 1 video every 24 hours. Free exports carry a small UnderBlue watermark. UnderBlue Pro exports have none.

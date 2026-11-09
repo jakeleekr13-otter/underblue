@@ -107,6 +107,48 @@ A static code review of the user flows on iPhone and Mac. Rows 6.1 to 6.15 were 
 | 6.15 | Share extension | Cancel during the last copy can still finish the share; the effect needs a run | `ShareModel.swift:28` | Fixed (Jake, 4 Nov). See [Verification](Verification.md) |
 | 6.16 | iPhone export | A failed save in "Ready to save" closed the sheet and deleted the file. Found on the iPhone 17 while checking 6.14 | `EditorView.swift:52` | Fixed (4 Nov). Checked on the iPhone 17 |
 
+## 7. Video export speed (Jake, 9 Nov 2026)
+
+Today the export filters and renders every source frame (`VideoExporter.swift`, frame loop). So a 120 fps clip renders 4x the frames of a 30 fps clip. The time estimate exports the first 1 s of the source, once per output size (`VideoExporter.swift:344`).
+
+| # | Work | State | Source |
+|---|---|---|---|
+| 7.1 | Quick export: 720p and 30 fps, with its own time estimate | Jake, 9 Nov 2026: add to the roadmap. Not built. | This section |
+| 7.2 | A 30 fps choice for the 1080p export | Jake, 9 Nov 2026: add to the roadmap. Not built. | This section |
+| 7.3 | Estimate probe: a fixed frame count (for example 30) in place of 1 s | Proposed on 9 Nov 2026, not decided. A 120 fps probe then renders 1/4 of its frames. | `VideoExporter.swift:344` |
+| 7.4 | Estimate with no probe: frame count × this device's time per frame | Jake, 9 Nov 2026: add to the roadmap. Not built. Do it with 7.5. | Notes for 7.4 |
+| 7.5 | Remove the downsizing choice (the 1080p option) from the export options | Jake, 9 Nov 2026: planned. Not built. | `ExportOptions.swift` |
+
+Notes for 7.1 and 7.2:
+
+- Speed gain: not measured. If the loop skips frames, the reader still decodes them.
+- Pick frames by time, not every n-th frame. The export keeps variable source timing (`VideoExporter.swift:83`).
+- Also change the bitrate and the encoder frame rate (`VideoExporter.swift:63`, `:104`).
+- Also change the duration check in `OutputValidator.swift:25`. It uses the source frame rate.
+- The estimate caches each result by output size only (`EditorModel.swift:299`). 1080p at 30 fps has the same size as 1080p. So the key must also hold the frame rate.
+- Each new size adds one probe, so the estimate takes longer. 7.3 makes each probe shorter.
+- The particle filter looks 3 frames ahead. Wider frame gaps can change its result. It is off by default (row 3.4).
+- Proposed: a source at 30 fps or less keeps its rate. A source at 720p or less keeps its size.
+
+Notes for 7.4 and 7.5:
+
+- The frame count, size and length are known at import (`VideoMetadata`). The device speed is not.
+- Analysis does not time the export. It runs depth on keyframes only. `observedProcessingFPS` is always nil.
+- Save the time per frame on the device, with its output size. Take it from each probe and each finished export.
+- Saved value present: show the estimate at once, with no probe and no memory risk.
+- No saved value: one 1080p probe when memory allows. Otherwise show no time.
+- Other sizes: scale the time per frame by the pixel count.
+- Measured basis (iPhone 17, 9 Nov 2026, from 1 s probes, not full exports): the time per frame was about the same at 60 and 120 fps. HEVC 1182 × 2560: 56-57 ms. HEVC 886 × 1920: 37-41 ms. H.264: 53-55 ms and 35 ms.
+- Pixel scaling overestimates. From 886 × 1920 to 1182 × 2560 the pixels grow 1.78x, but the time grew 1.39-1.55x.
+- Since 1.1.12 the probe runs only when its export passes the memory check (`EditorModel.shouldEstimate`). 7.4 replaces that probe, and 7.3 too.
+- 7.5 open point: 7.1 and 7.2 add smaller outputs (720p, 30 fps). Jake to say how they fit with 7.5.
+- 7.5 and the free trial: a free export stays at most 1080p (decided below). With no choice, the app sets it.
+
+Decided (Jake, 9 Nov 2026):
+
+- Free users: no change. A free video export stays 1080p SDR, time-limited, with a mark. So Quick and the 30 fps choice are Pro only.
+- Quick and 1080p at 30 fps both allow HDR.
+
 ## Recommended order
 
 1. Wait for the Mac 1.0 review. Section 1 device checks are on hold (Jake, 3 and 4 Nov 2026).
@@ -114,3 +156,4 @@ A static code review of the user flows on iPhone and Mac. Rows 6.1 to 6.15 were 
 3. Section 3: 3.1 and 3.3 shipped in 1.1.8 and wait for Jake's check on the iPhone. 3.2 waits for real Log clips.
 4. Sections 4 and 5 only when a real photo or a user asks for it.
 5. Section 6 runs beside these: Jake reviews one finding at a time.
+6. Section 7: Jake has not set a time yet.

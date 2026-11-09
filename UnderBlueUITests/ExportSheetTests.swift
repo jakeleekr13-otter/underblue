@@ -14,7 +14,8 @@ final class ExportSheetTests: XCTestCase {
         XCTAssertTrue(app.buttons["Select Video"].waitForExistence(timeout: 10))
         app.buttons["Select Video"].tap()
         let video = app.images.matching(identifier: "PXGGridLayout-Info").firstMatch
-        guard video.waitForExistence(timeout: 8) else {
+        // The picker can show "Loading…" for more than 8 s (the photo tests wait 30 s too).
+        guard video.waitForExistence(timeout: 30) else {
             XCTFail("Video picker contents: \(app.debugDescription)")
             return
         }

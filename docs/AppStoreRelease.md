@@ -1,13 +1,29 @@
 # App Store release checklist
 
-Last reviewed: 2026-11-05
+Last reviewed: 2026-11-09
 
-## Current release: iPhone 1.1.11 (build 17), 5 Nov 2026
+## Current release: iPhone 1.1.12 (build 18), 9 Nov 2026
+
+iPhone only. The Mac targets stay at 1.0 (1).
+
+- 1.1.11 (17) is on the App Store since 5 Nov 2026 at 17:35 UTC (App Store lookup, 9 Nov 2026).
+- 1.1.12 (18) was uploaded to App Store Connect on 9 Nov 2026 with `xcodebuild -exportArchive` (method `app-store-connect`, destination `upload`, symbols included). The upload succeeded and was processing. It is not submitted for App Review yet.
+- Archive: Xcode 27.2 (27B52), iOS SDK 27.2, `~/Library/Developer/Xcode/Archives/2026-11-09/UnderBlue 1.1.12 (18).xcarchive`. Checked: app and share extension are both 1.1.12 (18); iPhone only (device family 1); both have the App Group `group.com.underblue.app`; dSYMs for both.
+- Release note: `AppStoreMetadata.md`, "What's New (1.1.12)". It names the fix (Jake, 9 Nov 2026).
+- Tests (9 Nov 2026): 318 iOS unit tests on the iPhone 18 Pro simulator (iOS 27.2): 1 known failure (JPEG colour resolution), 13 skipped probes. `PurchaseTests` not run (decision). `ExportSheetTests` UI test passes on the iPhone 17 simulator (iOS 27.2). Mac tests not run (no Mac change).
+- Device check (iPhone 17, Debug build, 9 Nov 2026): the editor estimate with a 1182 × 2560 120 fps HEVC clip. With 333 MB free it ran no probe and the app stayed alive. With 888 MB free it showed both estimates.
+
+New since 1.1.11:
+- The export time estimate no longer ends the app when memory is low. The estimate runs a real 1 s export for each size. A 1182 × 2560 120 fps probe took 370-570 MB on an iPhone 17. Started with 344 MB free, it ended the app process. Now a size is measured only when its export could start (the same memory check as Export).
+- A free user gets no estimate for an original above 1080p. That choice is disabled for free users anyway.
+- On the simulator, free memory is read from the Mac. `os_proc_available_memory` returned 0 there, so the memory check always reported a shortage.
+
+## iPhone 1.1.11 (build 17), 5 Nov 2026 (history)
 
 iPhone only. The Mac targets stay at 1.0 (1).
 
 - 1.1.10 (16) is on the App Store since 3 Nov 2026 at 16:57 UTC.
-- 1.1.11 (17) is submitted for App Review (Jake, 5 Nov 2026). The text Jake entered in App Store Connect was not checked here.
+- 1.1.11 (17) was submitted for App Review on 5 Nov 2026 (Jake). It was released on 5 Nov 2026 at 17:35 UTC (App Store lookup, 9 Nov 2026).
 - Archive: Xcode 27.2 (27B52), iOS SDK 27.2, `~/Library/Developer/Xcode/Archives/2026-11-05/UnderBlue 1.1.11 (17).xcarchive`. Checked: app and share extension are both 1.1.11 (17); iPhone only (device family 1); both have the App Group `group.com.underblue.app`; dSYMs for both.
 - Release note: `AppStoreMetadata.md`, "What's New (1.1.11)". Jake, 5 Nov 2026: say only that usability and stability improved.
 - App Review notes: paste them again (`AppStoreMetadata.md`, "App Review notes"). Changed on 4 Nov 2026: the free trial opens its 3 welcome photos together.

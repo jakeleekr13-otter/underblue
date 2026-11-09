@@ -180,6 +180,22 @@ UnderBlue está pensada para los recuerdos del buceo recreativo. No es una herra
 
 **Spanish (Spain):** buceo,submarinismo,snorkel,fotosub,submarino,fotos,vídeo,arrecife,coral,corregir,filtro,restaurar (98 bytes)
 
+## What's New (1.1.12)
+
+Jake, 9 Nov 2026: use the text that names the fix. The ja, zh and es lines were checked by a reviewer agent. The change is listed in `AppStoreRelease.md`.
+
+**English:** Fixed an issue where the app could close while it estimated a video's export time.
+
+**Korean:** 동영상 내보내기 예상 시간을 측정하는 동안 앱이 종료될 수 있던 문제를 수정했습니다.
+
+**Japanese:** ビデオの書き出しの予想時間を測定している間に、アプリが終了することがある問題を修正しました。
+
+**Simplified Chinese:** 修复了在测量视频导出预计时间时应用可能会意外退出的问题。
+
+**Traditional Chinese:** 修正了在測量影片匯出預估時間時 App 可能會意外關閉的問題。
+
+**Spanish (Spain):** Se ha corregido un problema por el que la app podía cerrarse mientras medía el tiempo estimado de exportación de un vídeo.
+
 ## What's New (1.1.11)
 
 Jake, 5 Nov 2026: say only that usability and stability improved. The changes are listed in `AppStoreRelease.md`.

@@ -267,9 +267,10 @@ actor VideoExporter {
     static let memoryReserveMB = 512
 
     /// The memory that is free now: what the system still lets this app use on an iPhone, the free and
-    /// reclaimable memory of the Mac.
+    /// reclaimable memory of the Mac. The simulator has no app memory limit and `os_proc_available_memory`
+    /// gave 0 there (iOS 26.5, 9 Nov 2026), so `memoryShortage` always reported a shortage. It reads the Mac instead.
     static func availableMemoryBytes() -> UInt64 {
-        #if os(iOS)
+        #if os(iOS) && !targetEnvironment(simulator)
         UInt64(os_proc_available_memory())
         #else
         SystemMemoryProbe().availableBytes()

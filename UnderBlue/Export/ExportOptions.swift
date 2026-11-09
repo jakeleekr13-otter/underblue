@@ -59,6 +59,10 @@ struct ExportOptions: Sendable {
     static func isBest(_ source: CGSize) -> Bool {
         max(ExportOptions().size(for: source).width, ExportOptions().size(for: source).height) >= maximumLongSide - 2
     }
+    /// A free export is at most 1080p, so a larger original is not offered. The picker and the time estimate both use this.
+    static func allows(_ resolution: Resolution, source: CGSize, pro: Bool) -> Bool {
+        pro || resolution != .source || max(source.width, source.height) <= 1920
+    }
     func size(for source: CGSize) -> CGSize {
         let longSide = max(source.width, source.height), shortSide = min(source.width, source.height)
         let hdScale = resolution == .hd ? min(1, 1920 / longSide, 1080 / shortSide) : 1

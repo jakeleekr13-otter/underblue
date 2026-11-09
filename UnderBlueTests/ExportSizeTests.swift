@@ -101,4 +101,35 @@ final class ExportSizeTests: XCTestCase {
         // A small output still starts when the same free memory is too little for 4K.
         XCTAssertNil(VideoExporter.memoryShortage(outputSize: CGSize(width: 1920, height: 1080), availableMB: 980))
     }
+
+    /// The time estimate is a real 1 s export. A 2K 120 fps probe started with 344 MB free ended the app process on an
+    /// iPhone 17 (9 Nov 2026). The estimate now runs only where the export itself could start: 793 MB for 1182 × 2560, 506 MB at 1080p.
+    func testEstimateSkipsWhatTheExportWouldRefuse() {
+        let twoK = CGSize(width: 1182, height: 2560)
+        func estimates(_ resolution: ExportOptions.Resolution, _ availableMB: Int) -> Bool {
+            EditorModel.shouldEstimate(resolution, source: twoK, base: ExportOptions(), pro: true, availableMB: availableMB)
+        }
+        XCTAssertFalse(estimates(.source, 344))
+        XCTAssertFalse(estimates(.hd, 344))
+        XCTAssertFalse(estimates(.source, 600))
+        XCTAssertTrue(estimates(.hd, 600))
+        XCTAssertTrue(estimates(.source, 900))
+        XCTAssertTrue(estimates(.hd, 900))
+    }
+
+    /// A free user cannot pick an original above 1080p, so it gets no probe either.
+    func testFreeEstimateSkipsAnOriginalAbove1080p() {
+        var free = ExportOptions()
+        free.applyTrial(true)
+        XCTAssertFalse(EditorModel.shouldEstimate(.source, source: CGSize(width: 1182, height: 2560), base: free, pro: false, availableMB: 3000))
+        XCTAssertTrue(EditorModel.shouldEstimate(.hd, source: CGSize(width: 1182, height: 2560), base: free, pro: false, availableMB: 3000))
+        XCTAssertTrue(EditorModel.shouldEstimate(.source, source: CGSize(width: 1920, height: 1080), base: free, pro: false, availableMB: 3000))
+        XCTAssertFalse(ExportOptions.allows(.source, source: CGSize(width: 1182, height: 2560), pro: false))
+        XCTAssertTrue(ExportOptions.allows(.source, source: CGSize(width: 1182, height: 2560), pro: true))
+    }
+
+    /// The simulator has no app memory limit; it reads the Mac's free memory, not 0.
+    func testFreeMemoryIsReadOnEveryPlatform() {
+        XCTAssertGreaterThan(VideoExporter.availableMemoryBytes(), 0)
+    }
 }

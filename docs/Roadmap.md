@@ -149,6 +149,26 @@ Decided (Jake, 9 Nov 2026):
 - Free users: no change. A free video export stays 1080p SDR, time-limited, with a mark. So Quick and the 30 fps choice are Pro only.
 - Quick and 1080p at 30 fps both allow HDR.
 
+## 8. Video preview zoom (Jake, 10 Nov 2026)
+
+Today only the photo preview zooms: pinch, double tap, and pan while zoomed, up to 4x (`ZoomablePreview.swift`). The video preview is a plain `VideoPlayer` with no zoom (`EditorView.swift:91`, Mac `PreviewPane.swift:65`).
+
+| # | Work | State | Source |
+|---|---|---|---|
+| 8.1 | Zoom on the video preview, while paused and while playing | Jake, 10 Nov 2026: add to the roadmap. Not built. | This section |
+
+Decided (Jake, 10 Nov 2026):
+
+- The same gestures as the photo preview: pinch, double tap, and pan while zoomed.
+- No zoom during analysis. Today the player takes no touches then (`EditorView.swift:91`).
+
+Notes for 8.1:
+
+- `PreviewZoom` already holds the photo limits: up to 4x, double tap to 2.5x.
+- The preview can render below full size to stay inside the pixel-rate budget (`VideoPreview.swift:75`). So a zoomed frame can look softer than the export.
+- The player has its own controls. How these gestures share touches with them: not checked.
+- Mac: Jake did not say. The Mac preview uses the same `VideoPlayer`.
+
 ## Recommended order
 
 1. Wait for the Mac 1.0 review. Section 1 device checks are on hold (Jake, 3 and 4 Nov 2026).
@@ -157,3 +177,4 @@ Decided (Jake, 9 Nov 2026):
 4. Sections 4 and 5 only when a real photo or a user asks for it.
 5. Section 6 runs beside these: Jake reviews one finding at a time.
 6. Section 7: Jake has not set a time yet.
+7. Section 8: Jake has not set a time yet.

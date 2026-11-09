@@ -35,7 +35,7 @@ struct ExportView: View {
                                     if let seconds = model.estimates[resolution] {
                                         Text("~" + Self.format(seconds)).monospacedDigit().foregroundStyle(.secondary)
                                     } else if model.estimating { ProgressView() }
-                                }.tag(resolution).disabled(!purchases.isPro && resolution == .source && max(metadata.displaySize.width, metadata.displaySize.height) > 1920)
+                                }.tag(resolution).disabled(!ExportOptions.allows(resolution, source: metadata.displaySize, pro: purchases.isPro))
                             }
                         }.pickerStyle(.inline).labelsHidden()
                         Text(model.options.summary(for: metadata)).font(.footnote).foregroundStyle(.secondary)
@@ -87,8 +87,9 @@ struct ExportView: View {
                     }.buttonStyle(.borderedProminent).accessibilityIdentifier("export-confirm").padding(.horizontal).padding(.vertical, 8).background(.bar)
                 }
         }.presentationDetents([.large])
-            .task { if model.media.kind == .video { model.estimateExportTimes() } }
-            .onChange(of: model.options.range) { if model.media.kind == .video { model.estimateExportTimes() } }
+            .task { if model.media.kind == .video { model.estimateExportTimes(pro: purchases.isPro) } }
+            .onChange(of: model.options.range) { if model.media.kind == .video { model.estimateExportTimes(pro: purchases.isPro) } }
+            .onChange(of: purchases.isPro) { if model.media.kind == .video { model.estimateExportTimes(pro: purchases.isPro) } }
             .onDisappear { model.cancelEstimates() }
             .alert("Free up memory", isPresented: Binding(get: { model.memoryShortage != nil }, set: { if !$0 { model.memoryShortage = nil } })) {
                 Button("Check again") { Task { await model.recheckMemory(purchases: purchases, trial: trial) } }

@@ -279,7 +279,9 @@ final class EditorModel {
         showExportOptions = true
     }
     /// Measures each resolution on this device with the current preset and color range.
-    func estimateExportTimes() {
+    /// The probe is a real export. A 2K 120 fps probe took 370-570 MB on an iPhone 17. Started with 344 MB free, it
+    /// ended the app process (9 Nov 2026). So a resolution is measured only when the export itself could start (`shouldEstimate`).
+    func estimateExportTimes(pro: Bool) {
         estimateTask?.cancel()
         estimates = [:]
         guard let metadata, !exporting else { return }
@@ -289,6 +291,8 @@ final class EditorModel {
             defer { if !Task.isCancelled { estimating = false } }
             var measured: [String: Double] = [:]
             for resolution in ExportOptions.Resolution.allCases {
+                // Read the free memory again before each probe: the one before it has just let its memory go.
+                guard Self.shouldEstimate(resolution, source: metadata.displaySize, base: base, pro: pro) else { continue }
                 var options = base
                 options.resolution = resolution
                 let size = options.size(for: metadata.displaySize)
@@ -305,6 +309,14 @@ final class EditorModel {
                 } catch { return }
             }
         }
+    }
+    /// No probe for a resolution the user cannot pick, or when the export of that size would stop for lack of memory.
+    nonisolated static func shouldEstimate(_ resolution: ExportOptions.Resolution, source: CGSize, base: ExportOptions, pro: Bool,
+                                           availableMB: Int = Int(VideoExporter.availableMemoryBytes() / 1_048_576)) -> Bool {
+        guard ExportOptions.allows(resolution, source: source, pro: pro) else { return false }
+        var options = base
+        options.resolution = resolution
+        return VideoExporter.memoryShortage(outputSize: options.size(for: source), availableMB: availableMB) == nil
     }
     func cancelEstimates() { estimateTask?.cancel(); estimateTask = nil; estimating = false }
     /// Set when a video export needs more free memory than there is now. The export view asks the user to close

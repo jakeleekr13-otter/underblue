@@ -122,7 +122,7 @@ The export sheet now offers Original / 1080p / Quick, and a quality level for ea
 | 7.5 | Remove the 1080p choice | Dropped. Jake kept 1080p (10 Nov 2026). | — |
 | 7.6 | Quality levels: High / Standard / Small | Built 10 Nov 2026. | `ExportOptions.swift` |
 | 7.7 | Bitrate cap: the source's average bitrate × the level | Built 10 Nov 2026, after the VBR check. | `VideoExporter.bitrate` |
-| 7.8 | Long exports take longer than the estimate (heat) | Found 10 Nov 2026. Not fixed. Jake to decide. | Notes for 7.8 |
+| 7.8 | Long exports take longer than the estimate (heat) | Closed. Jake, 10 Nov 2026: keep it as it is; an estimate is only an estimate. | Notes for 7.8 |
 
 Notes for 7.1 (Quick):
 
@@ -158,7 +158,7 @@ Notes for 7.8 (heat):
 - Run straight after a 13-minute export: 373 s against 119 s.
 - Original right after the probe: 780 s against 175 s. The thermal state was not logged in that run.
 - The estimate saves the speed of each finished export, so the next estimate includes the slowdown of the last one.
-- Options, not decided: a heat factor that grows with the export length, or a note that long exports can take longer.
+- Options were a heat factor that grows with the export length, or a note that long exports can take longer. Jake chose neither (10 Nov 2026).
 
 ## 8. Video preview zoom (Jake, 10 Nov 2026)
 
@@ -187,5 +187,5 @@ Notes for 8.1:
 3. Section 3: 3.1 and 3.3 shipped in 1.1.8 and wait for Jake's check on the iPhone. 3.2 waits for real Log clips.
 4. Sections 4 and 5 only when a real photo or a user asks for it.
 5. Section 6 runs beside these: Jake reviews one finding at a time.
-6. Section 7: 7.1, 7.4, 7.6 and 7.7 are in 1.1.13 (19), in App Review since 10 Nov 2026. 7.8 waits for Jake.
+6. Section 7: 7.1, 7.4, 7.6 and 7.7 are in 1.1.13 (19), in App Review since 10 Nov 2026. 7.8 is closed (no change).
 7. Section 8: Jake has not set a time yet.

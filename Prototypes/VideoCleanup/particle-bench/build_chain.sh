@@ -6,6 +6,15 @@ P=${0:A:h}; C=${P:h}; R=${C:h:h}; S=$R/UnderBlue/Processing
 OUT=${HT_PROTO_OUT:-${TMPDIR:-/tmp}/underblue-video-cleanup/particles}/chainbin
 mkdir -p $OUT
 xcrun -sdk macosx metal -o $OUT/default.metallib $S/*.metal
+# The depth model: the same cache as scripts/color-eval/common.sh, linked next to the binary.
+# Without it every depth fit fails, the clip gets no scenes, and colour is skipped.
+EVAL=${HT_EVAL_OUT:-${TMPDIR:-/tmp}/underblue-color-eval}
+MODEL=$EVAL/cache/DepthAnythingV2SmallF16P6.mlmodelc
+if [[ ! -d $MODEL ]]; then
+    mkdir -p $EVAL/cache
+    xcrun coremlcompiler compile $R/UnderBlue/Resources/Models/DepthAnythingV2SmallF16P6.mlpackage $EVAL/cache > $EVAL/cache/model.log 2>&1
+fi
+ln -sfn $MODEL $OUT/DepthAnythingV2SmallF16P6.mlmodelc
 # Renderer lives in measure_run.swift; take it alone so the other modes stay out.
 sed -n '/^final class Renderer/,/^}/p' $P/measure_run.swift > $OUT/renderer.swift
 sed -i '' '1i\

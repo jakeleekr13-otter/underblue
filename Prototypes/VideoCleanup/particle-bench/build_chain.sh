@@ -22,9 +22,11 @@ guard chainArgs.count >= 4, let s0 = Double(chainArgs[2]), let s1 = Double(chain
 try FileManager.default.createDirectory(atPath: root + "/chain", withIntermediateDirectories: true)
 try await runChain(chainArgs[0], chainArgs[1], s0, s1)
 SWIFT
-swiftc -O -swift-version 6 -o $OUT/chain $OUT/main.swift $P/chain.swift $OUT/renderer.swift $C/TemporalDenoiser.swift $C/../../UnderBlue/Processing/ParticleFilter.swift \
-  $P/ParticleFilterV1.swift $P/common.swift $P/metric.swift ${HT_STUBS:?set HT_STUBS to the videosim stubs.swift} \
-  $S/FilterEngine.swift $S/MetalKernels.swift $S/FinishingMath.swift $S/ColorCorrection.swift $S/ColorMath.swift \
-  $S/WaterAnalysis.swift $S/FilterSettings.swift $S/DivePreset.swift $S/RestorationPlan.swift $S/RestorationEngine.swift \
-  $S/WaterModelEstimator.swift $S/DepthEstimator.swift $S/VideoProcessingPolicy.swift $S/VideoRestorationAnalysis.swift \
-  $S/SubjectMask.swift $S/SubjectTiers.swift $S/SubjectCandidates.swift $R/UnderBlue/Models/VideoMetadata.swift
+# Every Processing file except the four app-only ones, the same set as videosim.
+# A fixed list broke when the engines were split into extension files (6c9e2cb).
+files=(); for f in $S/*.swift; do case ${f:t} in PhotoProcessor.swift|VideoPreview.swift|VideoColorPipeline.swift|PhotoHDR.swift) ;; *) files+=$f ;; esac; done
+# stubs.swift replaces DiagnosticRecorder and the app error type. It lives outside git, next to the repo.
+STUBS=${HT_STUBS:-$R/../hydrotone-eval-tools/videosim/stubs.swift}
+[[ -f $STUBS ]] || { print -u2 "stubs not found: $STUBS (set HT_STUBS)"; exit 1 }
+swiftc -O -swift-version 6 -o $OUT/chain $OUT/main.swift $P/chain.swift $OUT/renderer.swift $C/TemporalDenoiser.swift \
+  $P/ParticleFilterV1.swift $P/common.swift $P/metric.swift $STUBS $files $R/UnderBlue/Models/VideoMetadata.swift

@@ -1,13 +1,31 @@
 # App Store release checklist
 
-Last reviewed: 2026-11-09
+Last reviewed: 2026-11-10
 
-## Current release: iPhone 1.1.12 (build 18), 9 Nov 2026
+## Current release: iPhone 1.1.13 (build 19), 10 Nov 2026
+
+iPhone only. The Mac targets stay at 1.0 (1).
+
+- The App Store still showed 1.1.11 on 10 Nov 2026 (App Store lookup). 1.1.12 (18) was uploaded on 9 Nov 2026; whether it went to App Review was not checked here.
+- 1.1.13 (19) was uploaded to App Store Connect on 10 Nov 2026 with `xcodebuild -exportArchive` (method `app-store-connect`, destination `upload`, symbols included). The upload succeeded and was processing. It is not submitted for App Review yet.
+- Archive: Xcode 27.2 (27B52), iOS SDK 27.2, `~/Library/Developer/Xcode/Archives/2026-11-10/UnderBlue 1.1.13 (19).xcarchive`. Checked: app and share extension are both 1.1.13 (19); iPhone only (device family 1); both have the App Group `group.com.underblue.app`; dSYMs for both; the new strings are in all six `Localizable.strings`.
+- Release note: `AppStoreMetadata.md`, "What's New (1.1.13)", after Jake approves it.
+- Tests (10 Nov 2026): 332 iOS unit tests on the iPhone 18 Pro simulator (iOS 27.2): 1 known failure (JPEG colour resolution), 13 skipped probes. `PurchaseTests` not run (decision). `ExportSheetTests` UI test passes on the iPhone 17 simulator (iOS 27.2). The Mac app builds. Mac tests not run.
+- Device checks (iPhone 17, Debug build): see `Verification.md`, "Export: Quick, quality levels, estimate".
+
+New since 1.1.12 (`Roadmap.md` section 7):
+- Video export: Original / 1080p / Quick (at most 720p, 30 fps). A quality level for each: High / Standard / Small. Defaults: Original High, 1080p Standard, Quick Small. Free: 1080p Standard only.
+- The bitrate never goes above the source's average bitrate × the level.
+- The time estimate uses this device's saved speed, so it shows at once. One 1080p probe runs only when no speed is saved yet.
+- The export options refuse a choice the user may not make. Before, a free user could pick Pro-only choices, and anyone could pick HDR for an SDR video.
+- The batch screens now export videos at High.
+
+## iPhone 1.1.12 (build 18), 9 Nov 2026 (history)
 
 iPhone only. The Mac targets stay at 1.0 (1).
 
 - 1.1.11 (17) is on the App Store since 5 Nov 2026 at 17:35 UTC (App Store lookup, 9 Nov 2026).
-- 1.1.12 (18) was uploaded to App Store Connect on 9 Nov 2026 with `xcodebuild -exportArchive` (method `app-store-connect`, destination `upload`, symbols included). The upload succeeded and was processing. It is not submitted for App Review yet.
+- 1.1.12 (18) was uploaded to App Store Connect on 9 Nov 2026 with `xcodebuild -exportArchive` (method `app-store-connect`, destination `upload`, symbols included). The upload succeeded and was processing.
 - Archive: Xcode 27.2 (27B52), iOS SDK 27.2, `~/Library/Developer/Xcode/Archives/2026-11-09/UnderBlue 1.1.12 (18).xcarchive`. Checked: app and share extension are both 1.1.12 (18); iPhone only (device family 1); both have the App Group `group.com.underblue.app`; dSYMs for both.
 - Release note: `AppStoreMetadata.md`, "What's New (1.1.12)". It names the fix (Jake, 9 Nov 2026).
 - Tests (9 Nov 2026): 318 iOS unit tests on the iPhone 18 Pro simulator (iOS 27.2): 1 known failure (JPEG colour resolution), 13 skipped probes. `PurchaseTests` not run (decision). `ExportSheetTests` UI test passes on the iPhone 17 simulator (iOS 27.2). Mac tests not run (no Mac change).

@@ -107,47 +107,58 @@ A static code review of the user flows on iPhone and Mac. Rows 6.1 to 6.15 were 
 | 6.15 | Share extension | Cancel during the last copy can still finish the share; the effect needs a run | `ShareModel.swift:28` | Fixed (Jake, 4 Nov). See [Verification](Verification.md) |
 | 6.16 | iPhone export | A failed save in "Ready to save" closed the sheet and deleted the file. Found on the iPhone 17 while checking 6.14 | `EditorView.swift:52` | Fixed (4 Nov). Checked on the iPhone 17 |
 
-## 7. Video export speed (Jake, 9 Nov 2026)
+## 7. Video export speed (Jake, 9-10 Nov 2026)
 
-Today the export filters and renders every source frame (`VideoExporter.swift`, frame loop). So a 120 fps clip renders 4x the frames of a 30 fps clip. The time estimate exports the first 1 s of the source, once per output size (`VideoExporter.swift:344`).
+Built on 10 Nov 2026: 7.1, 7.4, 7.6 and 7.7. They are in iPhone 1.1.13 (19), uploaded on 10 Nov 2026 and not released yet. Checks are in [Verification](Verification.md), "Export: Quick, quality levels, estimate". Times are in [PerformanceMeasurement](PerformanceMeasurement.md), "Estimate against real exports".
+
+The export sheet now offers Original / 1080p / Quick, and a quality level for each (Jake, 10 Nov 2026).
 
 | # | Work | State | Source |
 |---|---|---|---|
-| 7.1 | Quick export: 720p and 30 fps, with its own time estimate | Jake, 9 Nov 2026: add to the roadmap. Not built. | This section |
-| 7.2 | A 30 fps choice for the 1080p export | Jake, 9 Nov 2026: add to the roadmap. Not built. | This section |
-| 7.3 | Estimate probe: a fixed frame count (for example 30) in place of 1 s | Proposed on 9 Nov 2026, not decided. A 120 fps probe then renders 1/4 of its frames. | `VideoExporter.swift:344` |
-| 7.4 | Estimate with no probe: frame count × this device's time per frame | Jake, 9 Nov 2026: add to the roadmap. Not built. Do it with 7.5. | Notes for 7.4 |
-| 7.5 | Remove the downsizing choice (the 1080p option) from the export options | Jake, 9 Nov 2026: planned. Not built. | `ExportOptions.swift` |
+| 7.1 | Quick: at most 720p and 30 fps | Built 10 Nov 2026. Pro only. HDR allowed. | `ExportOptions.swift`, `VideoExporter.swift` |
+| 7.2 | A 30 fps choice for the 1080p export | Dropped. Jake chose Original / 1080p / Quick (10 Nov 2026). | — |
+| 7.3 | Estimate probe: a fixed frame count in place of 1 s | Replaced by 7.4. | — |
+| 7.4 | Estimate with no probe: frame count × this device's time per frame | Built 10 Nov 2026. | `ExportSpeed.swift`, `EditorModel.swift` |
+| 7.5 | Remove the 1080p choice | Dropped. Jake kept 1080p (10 Nov 2026). | — |
+| 7.6 | Quality levels: High / Standard / Small | Built 10 Nov 2026. | `ExportOptions.swift` |
+| 7.7 | Bitrate cap: the source's average bitrate × the level | Built 10 Nov 2026, after the VBR check. | `VideoExporter.bitrate` |
+| 7.8 | Long exports take longer than the estimate (heat) | Found 10 Nov 2026. Not fixed. Jake to decide. | Notes for 7.8 |
 
-Notes for 7.1 and 7.2:
+Notes for 7.1 (Quick):
 
-- Speed gain: not measured. If the loop skips frames, the reader still decodes them.
-- Pick frames by time, not every n-th frame. The export keeps variable source timing (`VideoExporter.swift:83`).
-- Also change the bitrate and the encoder frame rate (`VideoExporter.swift:63`, `:104`).
-- Also change the duration check in `OutputValidator.swift:25`. It uses the source frame rate.
-- The estimate caches each result by output size only (`EditorModel.swift:299`). 1080p at 30 fps has the same size as 1080p. So the key must also hold the frame rate.
-- Each new size adds one probe, so the estimate takes longer. 7.3 makes each probe shorter.
-- The particle filter looks 3 frames ahead. Wider frame gaps can change its result. It is off by default (row 3.4).
-- Proposed: a source at 30 fps or less keeps its rate. A source at 720p or less keeps its size.
+- Frames are kept on a time grid (`FrameRateLimiter`), so variable source timing stays. 60 fps keeps every 2nd frame, 120 fps every 4th, 50 fps every 2nd (25 fps). A source at 30 fps or less keeps every frame.
+- The reader still decodes the dropped frames. Only the filter, render and encode are saved.
+- The bitrate and the encoder frame rate use the output rate. `OutputValidator` needed no change: the session still ends at the source end.
+- The particle filter sees only the kept frames. It is off by default (row 3.4).
+- A tall source fits the 1280 × 720 frame by its long side: 1182 × 2560 becomes 590 × 1280. The row says "720p · 30 fps".
+- Measured on the iPhone 17, 25 s 1182 × 2560 120 fps clip: Quick took 16.4 s, run right after two long exports. 1080p took 134 s, started cool.
 
-Notes for 7.4 and 7.5:
+Notes for 7.4 (estimate):
 
-- The frame count, size and length are known at import (`VideoMetadata`). The device speed is not.
-- Analysis does not time the export. It runs depth on keyframes only. `observedProcessingFPS` is always nil.
-- Save the time per frame on the device, with its output size. Take it from each probe and each finished export.
-- Saved value present: show the estimate at once, with no probe and no memory risk.
-- No saved value: one 1080p probe when memory allows. Otherwise show no time.
-- Other sizes: scale the time per frame by the pixel count.
-- Measured basis (iPhone 17, 9 Nov 2026, from 1 s probes, not full exports): the time per frame was about the same at 60 and 120 fps. HEVC 1182 × 2560: 56-57 ms. HEVC 886 × 1920: 37-41 ms. H.264: 53-55 ms and 35 ms.
-- Pixel scaling overestimates. From 886 × 1920 to 1182 × 2560 the pixels grow 1.78x, but the time grew 1.39-1.55x.
-- Since 1.1.12 the probe runs only when its export passes the memory check (`EditorModel.shouldEstimate`). 7.4 replaces that probe, and 7.3 too.
-- 7.5 open point: 7.1 and 7.2 add smaller outputs (720p, 30 fps). Jake to say how they fit with 7.5.
-- 7.5 and the free trial: a free export stays at most 1080p (decided below). With no choice, the app sets it.
+- The frame count, size and length come from import (`VideoMetadata`). The device speed is saved on the device (`ExportSpeedStore`).
+- One saved value per kind: restoration on or off, SDR or HDR. A new iOS major version starts over.
+- A finished export saves its time per frame. Not after a pause, and not for Quick from a faster source (it decodes frames it drops).
+- No saved value: one 1080p probe when its export would pass the memory check. Otherwise no time shows.
+- Other sizes: 40% of the time per frame is fixed and 60% grows with the pixel count. From 886 × 1920 to 1182 × 2560 the pixels grew 1.78x and the time 1.39-1.55x (9 Nov probes), so 29-50% did not grow.
+- Quick's dropped frames are not in the model. Measured: Quick estimate 19.9 s, real 16.4 s.
 
-Decided (Jake, 9 Nov 2026):
+Notes for 7.6 and 7.7 (quality):
 
-- Free users: no change. A free video export stays 1080p SDR, time-limited, with a mark. So Quick and the 30 fps choice are Pro only.
-- Quick and 1080p at 30 fps both allow HDR.
+- Standard is the bitrate rule from before: 0.12 bits per pixel per frame, 6 to 100 Mbps. High is 1.5x, Small 0.5x. The 100 Mbps cap stays.
+- Each resolution starts at its own level: Original High, 1080p Standard, Quick Small. Pro can change all three. A new resolution goes back to its default.
+- Free: 1080p at Standard only. The sheet locks the other rows and the quality control.
+- The bitrate never goes above the source's average bitrate × the level (`estimatedDataRate`). A 0.1 Mbps source no longer becomes a 6 Mbps file.
+- VBR check (iPhone 17, 10 Nov 2026): the encoder still gives more bits to busy scenes under the cap. A clip with a calm half and a noisy half got 0.29 and 2.56 Mbps at Standard. SSIM against an uncapped export: 0.961-0.998 at Standard. The lowest was 0.942 (Small, first half of the 292 × 632 clip).
+- The batch screens use Original, so they now export at High. Not measured.
+- Quick at Small (3 Mbps, 720p, 30 fps), iPhone 17, three real clips with High (9 Mbps) as the reference: SSIM 0.957-0.969, PSNR 35.7-39.0 dB. Standard (6 Mbps): SSIM 0.971-0.982. At 2x zoom Small softens coral branches, rock texture and bubbles a little. No blocks or banding were seen in the frames checked. High is not lossless, so these numbers understate the full loss.
+
+Notes for 7.8 (heat):
+
+- iPhone 17, 1182 × 2560 120 fps clip, 1080p. Started cool: 134 s against an estimate of 119 s. Thermal state rose from 0 to 2, and the last 5% steps took about 25% longer than the first.
+- Run straight after a 13-minute export: 373 s against 119 s.
+- Original right after the probe: 780 s against 175 s. The thermal state was not logged in that run.
+- The estimate saves the speed of each finished export, so the next estimate includes the slowdown of the last one.
+- Options, not decided: a heat factor that grows with the export length, or a note that long exports can take longer.
 
 ## 8. Video preview zoom (Jake, 10 Nov 2026)
 
@@ -176,5 +187,5 @@ Notes for 8.1:
 3. Section 3: 3.1 and 3.3 shipped in 1.1.8 and wait for Jake's check on the iPhone. 3.2 waits for real Log clips.
 4. Sections 4 and 5 only when a real photo or a user asks for it.
 5. Section 6 runs beside these: Jake reviews one finding at a time.
-6. Section 7: Jake has not set a time yet.
+6. Section 7: 7.1, 7.4, 7.6 and 7.7 are in 1.1.13 (19), uploaded on 10 Nov 2026. 7.8 waits for Jake.
 7. Section 8: Jake has not set a time yet.

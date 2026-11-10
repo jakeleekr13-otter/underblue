@@ -20,6 +20,9 @@ struct VideoMetadata: Sendable {
     /// End of the video track in seconds. The asset duration covers every track, so a longer audio
     /// track can run past the last video frame. Frame reads must stay before this time.
     var videoEnd: Double? = nil
+    /// The average bitrate of the video track in bits per second (`estimatedDataRate`: track bytes over its length,
+    /// so a variable-bitrate source gives its average). Nil when unknown. The export bitrate never goes above it.
+    var videoBitRate: Double? = nil
     var isHDR: Bool { dynamicRange != .sdr }
     var appleLog: AppleLog? { AppleLog(dynamicRange) }
     /// HDR export needs a known source curve and 10 bits: HLG, PQ or Apple Log.
@@ -71,11 +74,13 @@ struct MediaInspector {
         else if try await track.load(.mediaCharacteristics).contains(.containsHDRVideo) { dynamicRange = .unknownHDR }
         else { dynamicRange = .sdr }
         let videoEnd = range.end.seconds
+        let dataRate = Double((try? await track.load(.estimatedDataRate)) ?? 0)
         let rect = CGRect(origin: .zero, size: size).applying(transform).standardized
         return VideoMetadata(codec: codec, codedSize: size, displaySize: rect.size, transform: transform,
             duration: duration, frameRate: rate, bitDepth: depth, primaries: primaries, transfer: transfer, matrix: matrix,
             dynamicRange: dynamicRange, hasDolbyVisionSignaling: atoms["dvcC"] != nil || atoms["dvvC"] != nil || codec == "dvh1" || codec == "dvhe",
             audioTrackCount: try await asset.loadTracks(withMediaType: .audio).count,
-            videoEnd: videoEnd.isFinite && videoEnd > 0 ? videoEnd : nil)
+            videoEnd: videoEnd.isFinite && videoEnd > 0 ? videoEnd : nil,
+            videoBitRate: dataRate.isFinite && dataRate > 0 ? dataRate : nil)
     }
 }

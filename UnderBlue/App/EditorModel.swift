@@ -73,6 +73,7 @@ final class EditorModel {
     var estimating = false
     private var estimateTask: Task<Void, Never>?
     private let estimator = VideoExporter()
+    private let speedStore = ExportSpeedStore()
     var optionsDismissing = false
     var showPro = false
     /// Shown on the Pro screen, for example when the next free export is hours away.
@@ -278,45 +279,59 @@ final class EditorModel {
         options.applyTrial(!purchases.isPro)
         showExportOptions = true
     }
-    /// Measures each resolution on this device with the current preset and color range.
-    /// The probe is a real export. A 2K 120 fps probe took 370-570 MB on an iPhone 17. Started with 344 MB free, it
-    /// ended the app process (9 Nov 2026). So a resolution is measured only when the export itself could start (`shouldEstimate`).
+    /// Estimates each resolution the user can pick: the frame count times this device's saved time per frame
+    /// (`ExportSpeed`, roadmap 7.4). Shown at once, with no export. With no saved speed yet, one 1080p probe runs first.
+    /// The probe is a real export. A 2K 120 fps probe took 370-570 MB on an iPhone 17, and started with 344 MB free
+    /// it ended the app process (9 Nov 2026). So it runs only when its export could start (`probeFits`).
     func estimateExportTimes(pro: Bool) {
         estimateTask?.cancel()
         estimates = [:]
+        estimating = false
         guard let metadata, !exporting else { return }
-        let url = media.url, settings = settings, analysis = videoAnalysis, base = options
+        let base = options
+        let kind = Self.speedKind(settings: settings, options: base)
+        if let sample = speedStore.load(kind) {
+            fillEstimates(sample, base: base, metadata: metadata, pro: pro)
+            return
+        }
+        var probeOptions = base
+        probeOptions.resolution = .hd
+        guard Self.probeFits(probeOptions, source: metadata.displaySize) else { return }
+        let url = media.url, settings = settings, analysis = videoAnalysis
         estimating = true
         estimateTask = Task {
             defer { if !Task.isCancelled { estimating = false } }
-            var measured: [String: Double] = [:]
-            for resolution in ExportOptions.Resolution.allCases {
-                // Read the free memory again before each probe: the one before it has just let its memory go.
-                guard Self.shouldEstimate(resolution, source: metadata.displaySize, base: base, pro: pro) else { continue }
-                var options = base
-                options.resolution = resolution
-                let size = options.size(for: metadata.displaySize)
-                let key = "\(size.width)x\(size.height)"
-                do {
-                    let seconds: Double
-                    if let known = measured[key] { seconds = known } else {
-                        seconds = try await estimator.estimateSeconds(url: url, metadata: metadata, settings: settings,
-                                                                      options: options, restorationAnalysis: analysis)
-                    }
-                    try Task.checkCancellation()
-                    measured[key] = seconds
-                    estimates[resolution] = seconds
-                } catch { return }
-            }
+            do {
+                let sample = try await estimator.probe(url: url, metadata: metadata, settings: settings,
+                                                       options: probeOptions, restorationAnalysis: analysis)
+                try Task.checkCancellation()
+                speedStore.save(sample, for: kind)
+                fillEstimates(sample, base: base, metadata: metadata, pro: pro)
+            } catch { return }
         }
     }
-    /// No probe for a resolution the user cannot pick, or when the export of that size would stop for lack of memory.
-    nonisolated static func shouldEstimate(_ resolution: ExportOptions.Resolution, source: CGSize, base: ExportOptions, pro: Bool,
-                                           availableMB: Int = Int(VideoExporter.availableMemoryBytes() / 1_048_576)) -> Bool {
-        guard ExportOptions.allows(resolution, source: source, pro: pro) else { return false }
-        var options = base
-        options.resolution = resolution
-        return VideoExporter.memoryShortage(outputSize: options.size(for: source), availableMB: availableMB) == nil
+    private func fillEstimates(_ sample: ExportSpeed.Sample, base: ExportOptions, metadata: VideoMetadata, pro: Bool) {
+        for resolution in ExportOptions.Resolution.allCases where ExportOptions.allows(resolution, pro: pro) {
+            var options = base
+            options.resolution = resolution
+            estimates[resolution] = ExportSpeed.estimate(sample, options: options, metadata: metadata)
+        }
+    }
+    /// The probe runs only when an export of its size would pass the memory check of Export.
+    nonisolated static func probeFits(_ options: ExportOptions, source: CGSize,
+                                      availableMB: Int = Int(VideoExporter.availableMemoryBytes() / 1_048_576)) -> Bool {
+        VideoExporter.memoryShortage(outputSize: options.size(for: source), availableMB: availableMB) == nil
+    }
+    nonisolated static func speedKind(settings: FilterSettings, options: ExportOptions) -> ExportSpeed.Kind {
+        ExportSpeed.Kind(restoration: settings.preset != .original, hdr: options.range == .hdr)
+    }
+    /// A finished export updates the saved speed. Not after a pause (the wait counts as frame time), and not for Quick
+    /// from a faster source (it decodes frames it drops, so its time per frame is not comparable).
+    private func recordSpeed(_ result: VideoExportResult, options: ExportOptions, metadata: VideoMetadata,
+                             settings: FilterSettings, paused: Bool) {
+        guard !paused, options.frameStep(sourceRate: metadata.frameRate) == 1,
+              let sample = ExportSpeed.Sample(result, outputSize: options.size(for: metadata.displaySize)) else { return }
+        speedStore.save(sample, for: Self.speedKind(settings: settings, options: options))
     }
     func cancelEstimates() { estimateTask?.cancel(); estimateTask = nil; estimating = false }
     /// Set when a video export needs more free memory than there is now. The export view asks the user to close
@@ -375,10 +390,12 @@ final class EditorModel {
                 chosenOptions.applyTrial(!purchases.isPro)
                 let output: URL
                 if let metadata {
-                    output = try await video.export(url: media.url, metadata: metadata, settings: chosenSettings,
-                                                    options: chosenOptions, restorationAnalysis: videoAnalysis, pause: pause) { value in
+                    let result = try await video.export(url: media.url, metadata: metadata, settings: chosenSettings,
+                                                        options: chosenOptions, restorationAnalysis: videoAnalysis, pause: pause) { value in
                         await self.updateProgress(value)
-                    }.url
+                    }
+                    output = result.url
+                    recordSpeed(result, options: chosenOptions, metadata: metadata, settings: chosenSettings, paused: pause.wasPaused)
                 } else {
                     try StorageCheck.require(bytes: 100_000_000)
                     output = try await photos.export(media.url, settings: chosenSettings, keepHDR: chosenOptions.range == .hdr,

@@ -94,6 +94,18 @@ Result of the half-size blur test (rows 21–23): computing the three video-only
 
 Status of rows 1–17: they were taken before the leak fix. Rows 15–17 (concurrent and adaptive runs) used harness code without a per-frame autorelease pool, so they may include the same leak. The video algorithm also changed after 7040d4f (one extra full-size colour pass and two extra blurs, per the other session: about 5–15% slower on the iPhone). The conclusions on pixel-proportional cost (#11) and on the render call (#6, #19) hold at both commits. The ablation shares (#12) are from 7040d4f only.
 
+## Estimate against real exports (10 Nov 2026)
+
+iPhone 17, Debug build, a 25 s 1182 × 2560 120 fps HEVC clip (3040 frames), default look. The estimate came from one 1 s probe at 1080p. The three exports ran one after another in the order shown.
+
+| Output | Estimate | Real | Real ÷ estimate | Frames |
+|---|---|---|---|---|
+| Original 1182 × 2560, 120 fps | 175 s | 780 s | 4.5 | 3040 |
+| 1080p 886 × 1920, 120 fps | 119 s | 373 s | 3.1 | 3040 |
+| Quick 590 × 1280, 30 fps | 20 s | 16.4 s | 0.82 | 760 |
+
+Thermal trace, a separate run started cool: the same clip at 1080p took 134 s. The thermal state went from 0 (nominal) at 0-20% to 1 at 25% and 2 (serious) at 65%. Each 5% took about 5.3 s at the start and 6.5-7 s at the end. The thermal state was not logged in the three runs above.
+
 ## Not measured
 
 - iPhone: only the 4K clip (SDR, HLG-tagged SDR picture, 8K source brought down to 4K) at 5 s or 1 s. 1080p and 720p on the iPhone, 4K for the full clip length, 60 s or longer runs, and the old iPhones with less memory.

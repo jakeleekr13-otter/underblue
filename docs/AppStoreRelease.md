@@ -7,9 +7,10 @@ Last reviewed: 2026-11-10
 iPhone only. The Mac targets stay at 1.0 (1).
 
 - The App Store still showed 1.1.11 on 10 Nov 2026 (App Store lookup). 1.1.12 (18) was uploaded on 9 Nov 2026; whether it went to App Review was not checked here.
-- 1.1.13 (19) was uploaded to App Store Connect on 10 Nov 2026 with `xcodebuild -exportArchive` (method `app-store-connect`, destination `upload`, symbols included). The upload succeeded and was processing. It is not submitted for App Review yet.
+- 1.1.13 (19) was uploaded to App Store Connect on 10 Nov 2026 with `xcodebuild -exportArchive` (method `app-store-connect`, destination `upload`, symbols included). The upload succeeded and was processing.
+- 1.1.13 (19) was submitted for App Review on 10 Nov 2026 (Jake).
 - Archive: Xcode 27.2 (27B52), iOS SDK 27.2, `~/Library/Developer/Xcode/Archives/2026-11-10/UnderBlue 1.1.13 (19).xcarchive`. Checked: app and share extension are both 1.1.13 (19); iPhone only (device family 1); both have the App Group `group.com.underblue.app`; dSYMs for both; the new strings are in all six `Localizable.strings`.
-- Release note: `AppStoreMetadata.md`, "What's New (1.1.13)", after Jake approves it.
+- Release note: `AppStoreMetadata.md`, "What's New (1.1.13)": the general note, as in 1.1.11 (Jake, 10 Nov 2026).
 - Tests (10 Nov 2026): 332 iOS unit tests on the iPhone 18 Pro simulator (iOS 27.2): 1 known failure (JPEG colour resolution), 13 skipped probes. `PurchaseTests` not run (decision). `ExportSheetTests` UI test passes on the iPhone 17 simulator (iOS 27.2). The Mac app builds. Mac tests not run.
 - Device checks (iPhone 17, Debug build): see `Verification.md`, "Export: Quick, quality levels, estimate".
 

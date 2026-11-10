@@ -2,7 +2,7 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
-## Export: Quick, quality levels, estimate (10 Nov 2026, iPhone 1.1.13 (19), uploaded, not released)
+## Export: Quick, quality levels, estimate (10 Nov 2026, iPhone 1.1.13 (19), in App Review)
 
 What changed (Jake, 10 Nov 2026; [Roadmap](Roadmap.md) 7.1, 7.4, 7.6, 7.7):
 - Resolution: Original / 1080p / Quick. Quick is at most 720p and 30 fps.

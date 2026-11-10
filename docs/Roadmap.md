@@ -109,7 +109,7 @@ A static code review of the user flows on iPhone and Mac. Rows 6.1 to 6.15 were 
 
 ## 7. Video export speed (Jake, 9-10 Nov 2026)
 
-Built on 10 Nov 2026: 7.1, 7.4, 7.6 and 7.7. They are in iPhone 1.1.13 (19), uploaded on 10 Nov 2026 and not released yet. Checks are in [Verification](Verification.md), "Export: Quick, quality levels, estimate". Times are in [PerformanceMeasurement](PerformanceMeasurement.md), "Estimate against real exports".
+Built on 10 Nov 2026: 7.1, 7.4, 7.6 and 7.7. They are in iPhone 1.1.13 (19), submitted for App Review on 10 Nov 2026. Checks are in [Verification](Verification.md), "Export: Quick, quality levels, estimate". Times are in [PerformanceMeasurement](PerformanceMeasurement.md), "Estimate against real exports".
 
 The export sheet now offers Original / 1080p / Quick, and a quality level for each (Jake, 10 Nov 2026).
 
@@ -187,5 +187,5 @@ Notes for 8.1:
 3. Section 3: 3.1 and 3.3 shipped in 1.1.8 and wait for Jake's check on the iPhone. 3.2 waits for real Log clips.
 4. Sections 4 and 5 only when a real photo or a user asks for it.
 5. Section 6 runs beside these: Jake reviews one finding at a time.
-6. Section 7: 7.1, 7.4, 7.6 and 7.7 are in 1.1.13 (19), uploaded on 10 Nov 2026. 7.8 waits for Jake.
+6. Section 7: 7.1, 7.4, 7.6 and 7.7 are in 1.1.13 (19), in App Review since 10 Nov 2026. 7.8 waits for Jake.
 7. Section 8: Jake has not set a time yet.

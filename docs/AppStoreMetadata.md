@@ -180,6 +180,22 @@ UnderBlue está pensada para los recuerdos del buceo recreativo. No es una herra
 
 **Spanish (Spain):** buceo,submarinismo,snorkel,fotosub,submarino,fotos,vídeo,arrecife,coral,corregir,filtro,restaurar (98 bytes)
 
+## What's New (1.1.13)
+
+Jake, 10 Nov 2026: submitted with the general note, as in 1.1.11. A detailed draft about Quick and the quality levels was not used. The text Jake entered in App Store Connect was not checked here.
+
+**English:** Improved usability and stability.
+
+**Korean:** 사용성과 안정성을 높였습니다.
+
+**Japanese:** 使いやすさと安定性を向上しました。
+
+**Simplified Chinese:** 提升了易用性和稳定性。
+
+**Traditional Chinese:** 提升了易用性與穩定性。
+
+**Spanish (Spain):** Mejoras de usabilidad y estabilidad.
+
 ## What's New (1.1.12)
 
 Jake, 9 Nov 2026: use the text that names the fix. The ja, zh and es lines were checked by a reviewer agent. The change is listed in `AppStoreRelease.md`.

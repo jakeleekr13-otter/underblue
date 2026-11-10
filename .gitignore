@@ -7,6 +7,7 @@ DerivedData/
 xcuserdata/
 .DS_Store
 TestResults/
-DeveloperMedia/
+# A symlink to the external drive (Jake_ext) since 10 Nov 2026, so no trailing slash.
+DeveloperMedia
 Apple-log/
 AppStoreAssets/Builds/

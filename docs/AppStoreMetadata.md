@@ -359,7 +359,7 @@ The optional promoted-IAP image is not used. Leave **App Store Image** empty and
 
 **Website:** https://jakeleekr13-otter.github.io/underblue-support/ (six languages; built from this file, see AppStoreRelease.md)
 
-**Marketing URL** (not set yet; add it with the next version). It is localized and cannot be changed after release (Apple's property table, checked 4 Nov 2026):
+**Marketing URL** (set; live in 1.1.12 in all six countries, iTunes lookup `sellerUrl` checked 10 Nov 2026). It is localized and cannot be changed after release (Apple's property table, checked 4 Nov 2026):
 
 | App Store language | Marketing URL |
 |---|---|

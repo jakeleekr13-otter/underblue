@@ -626,7 +626,7 @@ Kind: measurement. No new removal step is planned yet. Jake asked for this check
   - Speed: 126-204 fps at 1080p, 63-67 fps at 4K. iPhone: unmeasured.
 - The speck metric is `Prototypes/VideoCleanup/particle-bench/metric.swift`. A speck is an isolated bright group of 1-12 px. Its peak is 4-30 levels above the local mean, and above 5 × the local noise. "Drifting" means it is gone in a neighbour frame after camera motion is removed.
 - `ColorAlgorithm.md` puts particles before colour, because colour gains and clarity lift specks. That reason is stated, not measured.
-- Clip c2 (`2019-05-05 18.37.02.MOV`) is missing, so segment S4 cannot run.
+- Clip c2 (`2019-05-05 18.37.02.MOV`) was found on 10 Nov 2026. It is now in `DeveloperMedia/tune/video/Tune_20_Oct/`, and both benches point there. Segment S4 has not run yet.
 
 ### D1 — does our correction make specks more visible?
 

@@ -102,30 +102,22 @@ final class ExportSizeTests: XCTestCase {
         XCTAssertNil(VideoExporter.memoryShortage(outputSize: CGSize(width: 1920, height: 1080), availableMB: 980))
     }
 
-    /// The time estimate is a real 1 s export. A 2K 120 fps probe started with 344 MB free ended the app process on an
-    /// iPhone 17 (9 Nov 2026). The estimate now runs only where the export itself could start: 793 MB for 1182 × 2560, 506 MB at 1080p.
-    func testEstimateSkipsWhatTheExportWouldRefuse() {
+    /// The estimate probe is a real 1 s export. A 2K 120 fps probe started with 344 MB free ended the app process on an
+    /// iPhone 17 (9 Nov 2026). The 1080p probe runs only where its export could start: 506 MB for a 1182 × 2560 source.
+    func testEstimateProbeRunsOnlyWhereTheExportCouldStart() {
+        var probe = ExportOptions()
+        probe.resolution = .hd
         let twoK = CGSize(width: 1182, height: 2560)
-        func estimates(_ resolution: ExportOptions.Resolution, _ availableMB: Int) -> Bool {
-            EditorModel.shouldEstimate(resolution, source: twoK, base: ExportOptions(), pro: true, availableMB: availableMB)
-        }
-        XCTAssertFalse(estimates(.source, 344))
-        XCTAssertFalse(estimates(.hd, 344))
-        XCTAssertFalse(estimates(.source, 600))
-        XCTAssertTrue(estimates(.hd, 600))
-        XCTAssertTrue(estimates(.source, 900))
-        XCTAssertTrue(estimates(.hd, 900))
+        XCTAssertFalse(EditorModel.probeFits(probe, source: twoK, availableMB: 344))
+        XCTAssertTrue(EditorModel.probeFits(probe, source: twoK, availableMB: 600))
     }
 
-    /// A free user cannot pick an original above 1080p, so it gets no probe either.
-    func testFreeEstimateSkipsAnOriginalAbove1080p() {
-        var free = ExportOptions()
-        free.applyTrial(true)
-        XCTAssertFalse(EditorModel.shouldEstimate(.source, source: CGSize(width: 1182, height: 2560), base: free, pro: false, availableMB: 3000))
-        XCTAssertTrue(EditorModel.shouldEstimate(.hd, source: CGSize(width: 1182, height: 2560), base: free, pro: false, availableMB: 3000))
-        XCTAssertTrue(EditorModel.shouldEstimate(.source, source: CGSize(width: 1920, height: 1080), base: free, pro: false, availableMB: 3000))
-        XCTAssertFalse(ExportOptions.allows(.source, source: CGSize(width: 1182, height: 2560), pro: false))
-        XCTAssertTrue(ExportOptions.allows(.source, source: CGSize(width: 1182, height: 2560), pro: true))
+    /// Free video exports are 1080p at Standard quality only (Jake, 10 Nov 2026).
+    func testFreeExportsAre1080pAtStandardQualityOnly() {
+        XCTAssertEqual(ExportOptions.Resolution.allCases.filter { ExportOptions.allows($0, pro: false) }, [.hd])
+        XCTAssertEqual(ExportOptions.Quality.allCases.filter { ExportOptions.allows($0, pro: false) }, [.standard])
+        XCTAssertEqual(ExportOptions.Resolution.allCases.filter { ExportOptions.allows($0, pro: true) }, ExportOptions.Resolution.allCases)
+        XCTAssertEqual(ExportOptions.Quality.allCases.filter { ExportOptions.allows($0, pro: true) }, ExportOptions.Quality.allCases)
     }
 
     /// The simulator has no app memory limit; it reads the Mac's free memory, not 0.

@@ -19,11 +19,21 @@ struct ExportView: View {
                 }
                 if let metadata = model.metadata {
                     Section("Resolution") {
-                        Picker("Resolution", selection: $model.options.resolution) {
+                        // `.disabled` on a picker row did not stop the tap: a free user could pick Quick (UI test,
+                        // 10 Nov 2026). The binding refuses a choice the user may not make; the row shows a lock.
+                        Picker("Resolution", selection: Binding(get: { model.options.resolution }, set: {
+                            if ExportOptions.allows($0, pro: purchases.isPro) { model.options.resolution = $0 }
+                        })) {
                             ForEach(ExportOptions.Resolution.allCases) { resolution in
+                                let allowed = ExportOptions.allows(resolution, pro: purchases.isPro)
                                 HStack {
                                     if resolution == .source, ExportOptions.exceedsSupportedSize(metadata.displaySize) {
                                         Text(verbatim: "4K")
+                                    } else if resolution == .quick {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(resolution.localizedName)
+                                            Text(verbatim: Self.quickDetail(metadata)).font(.caption).foregroundStyle(.secondary)
+                                        }
                                     } else {
                                         Text(resolution.localizedName)
                                     }
@@ -32,24 +42,37 @@ struct ExportView: View {
                                             .background(.tint.opacity(0.2), in: Capsule()).foregroundStyle(.tint)
                                     }
                                     Spacer()
-                                    if let seconds = model.estimates[resolution] {
+                                    if !allowed {
+                                        Image(systemName: "lock.fill").font(.footnote).foregroundStyle(.secondary)
+                                    } else if let seconds = model.estimates[resolution] {
                                         Text("~" + Self.format(seconds)).monospacedDigit().foregroundStyle(.secondary)
                                     } else if model.estimating { ProgressView() }
-                                }.tag(resolution).disabled(!ExportOptions.allows(resolution, source: metadata.displaySize, pro: purchases.isPro))
+                                }.foregroundStyle(allowed ? .primary : .secondary).tag(resolution)
                             }
                         }.pickerStyle(.inline).labelsHidden()
                         Text(model.options.summary(for: metadata)).font(.footnote).foregroundStyle(.secondary)
                         if ExportOptions.exceedsSupportedSize(metadata.displaySize) {
                             Text("8K video isn’t supported yet. It exports in 4K, the best option.").font(.footnote).foregroundStyle(.secondary)
                         }
-                        Text("Estimated time is measured with a short test export on this device.").font(.footnote).foregroundStyle(.secondary)
+                        Text("Estimated time comes from earlier exports on this device.").font(.footnote).foregroundStyle(.secondary)
                         Text("Other apps running at the same time can slow the export.").font(.footnote).foregroundStyle(.secondary)
                     }
+                    Section("Quality") {
+                        // Each resolution starts at its own default level. Free users keep Standard.
+                        Picker("Quality", selection: Binding(get: { model.options.quality }, set: {
+                            if ExportOptions.allows($0, pro: purchases.isPro) { model.options.quality = $0 }
+                        })) {
+                            ForEach(ExportOptions.Quality.allCases) { quality in Text(quality.localizedName).tag(quality) }
+                        }.pickerStyle(.segmented).disabled(!purchases.isPro).accessibilityIdentifier("export-quality")
+                        Text("Higher quality keeps more detail and makes a larger file.").font(.footnote).foregroundStyle(.secondary)
+                    }
                     Section("Color") {
-                        Picker("Color", selection: $model.options.range) {
+                        Picker("Color", selection: Binding(get: { model.options.range }, set: {
+                            if $0 == .sdr || (model.capability.hdrAvailable && purchases.isPro) { model.options.range = $0 }
+                        })) {
                             Text("SDR").tag(ExportOptions.Range.sdr)
                             Text("HDR").tag(ExportOptions.Range.hdr).disabled(!model.capability.hdrAvailable || !purchases.isPro)
-                        }.pickerStyle(.segmented)
+                        }.pickerStyle(.segmented).accessibilityIdentifier("video-range")
                         Text(model.capability.explanation).font(.footnote).foregroundStyle(.secondary)
                     }
                 } else {
@@ -70,7 +93,9 @@ struct ExportView: View {
                     }
                     if model.capability.hdrAvailable {
                         Section("Color") {
-                            Picker("Color", selection: $model.options.range) {
+                            Picker("Color", selection: Binding(get: { model.options.range }, set: {
+                                if $0 == .sdr || purchases.isPro { model.options.range = $0 }
+                            })) {
                                 Text("SDR").tag(ExportOptions.Range.sdr)
                                 Text("HDR").tag(ExportOptions.Range.hdr).disabled(!purchases.isPro)
                             }.pickerStyle(.segmented)
@@ -112,6 +137,16 @@ struct ExportView: View {
         let left = trial.welcomePhotosLeft
         return left > 0 ? String(localized: "Free photos left: \(left) of \(TrialPolicy.welcomePhotos). Then 1 free photo every 24 hours.")
             : String(localized: "1 free photo every 24 hours.")
+    }
+    /// What Quick makes from this source: "720p · 30 fps", or the source size when it is already 720p or less.
+    /// A tall source fits the 1280 × 720 frame by its long side, so 1182 × 2560 becomes 590 × 1280 (still "720p").
+    static func quickDetail(_ metadata: VideoMetadata) -> String {
+        var quick = ExportOptions()
+        quick.resolution = .quick
+        let size = quick.size(for: metadata.displaySize), source = metadata.displaySize
+        let reduced = max(size.width, size.height) < max(source.width, source.height) - 2
+        let label = reduced ? "720p" : "\(Int(size.width)) × \(Int(size.height))"
+        return label + " · " + ExportOptions.frameRateText(quick.outputFrameRate(sourceRate: metadata.frameRate))
     }
     static func format(_ seconds: Double) -> String {
         let rounded = seconds < 60 ? max(5, (seconds / 5).rounded(.up) * 5) : (seconds / 60).rounded(.up) * 60

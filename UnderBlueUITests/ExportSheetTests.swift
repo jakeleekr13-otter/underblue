@@ -37,6 +37,32 @@ final class ExportSheetTests: XCTestCase {
         XCTAssertTrue(estimate.waitForExistence(timeout: 120), "No export-time estimate appeared")
         sleep(5)
         attach(app.screenshot(), named: "export-sheet-estimates")
+
+        // A free export is 1080p at Standard quality only (Jake, 10 Nov 2026).
+        let quality = app.segmentedControls["export-quality"]
+        XCTAssertTrue(quality.waitForExistence(timeout: 5), "No quality control: \(app.debugDescription)")
+        // The pinned Export button covers the bottom of the sheet. A tap there starts an export, so scroll the
+        // control above it first (a tap on "High" behind the button started an export, 10 Nov 2026).
+        for _ in 0..<3 where quality.frame.maxY > confirm.frame.minY - 8 { app.swipeUp() }
+        XCTAssertLessThan(quality.frame.maxY, confirm.frame.minY, "The quality control is still behind the Export button")
+        XCTAssertTrue(quality.buttons["Standard"].isSelected, "A free export uses Standard")
+        attach(app.screenshot(), named: "export-sheet-quality")
+        // A tap on a Pro-only choice must not change the selection.
+        quality.buttons["High"].tap()
+        XCTAssertTrue(quality.buttons["Standard"].isSelected, "High must not be selectable for a free user")
+        app.swipeDown()
+        let quick = app.staticTexts["Quick"]
+        if quick.waitForExistence(timeout: 3) { quick.tap() }
+        let summary = app.staticTexts["1920 × 1080 · SDR · HEVC"]
+        XCTAssertTrue(summary.waitForExistence(timeout: 3), "Quick must not be selectable for a free user: \(app.debugDescription)")
+        attach(app.screenshot(), named: "export-sheet-free-taps")
+        // This SDR fixture cannot export HDR, so a tap on HDR must leave SDR selected.
+        let range = app.segmentedControls["video-range"]
+        // The form builds rows only on screen, so scroll until the control exists and clears the Export button.
+        for _ in 0..<4 where !range.exists || range.frame.maxY > confirm.frame.minY - 8 { app.swipeUp() }
+        XCTAssertLessThan(range.frame.maxY, confirm.frame.minY, "The color control is still behind the Export button")
+        range.buttons["HDR"].tap()
+        XCTAssertTrue(range.buttons["SDR"].isSelected, "HDR must not be selectable for an SDR video")
     }
 
     private func attach(_ screenshot: XCUIScreenshot, named name: String) {

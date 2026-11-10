@@ -60,7 +60,12 @@ actor VideoExporter {
         let size = options.size(for: metadata.displaySize)
         // One Core Image context per export, sized for this output (see memoryLimitMB).
         let engine = FilterEngine(memoryLimitMB: Self.memoryLimitMB(for: size))
-        let bitrate = Int(min(100_000_000, max(6_000_000, size.width * size.height * Double(max(24, metadata.frameRate)) * 0.12)))
+        // Quick drops source frames by time; every other choice keeps them all.
+        let frameStep = options.frameStep(sourceRate: metadata.frameRate)
+        let outputRate = options.outputFrameRate(sourceRate: metadata.frameRate)
+        var limiter = FrameRateLimiter(sourceRate: metadata.frameRate, step: frameStep)
+        let bitrate = Self.bitrate(for: size, frameRate: outputRate, quality: options.quality,
+                                   sourceBitRate: metadata.videoBitRate)
         try StorageCheck.require(bytes: Int64(Double(bitrate) / 8 * duration * 1.3))
         let target = try TemporaryFiles.makeExportURL(extension: "mov")
         var succeeded = false
@@ -101,7 +106,7 @@ actor VideoExporter {
         let source = reader.outputProvider(for: output)
         let videoSettings: [String: Any] = [AVVideoCodecKey: AVVideoCodecType.hevc, AVVideoWidthKey: Int(size.width),
             AVVideoHeightKey: Int(size.height), AVVideoColorPropertiesKey: colors,
-            AVVideoCompressionPropertiesKey: VideoColorPipeline.compression(hdr: hdr, bitrate: bitrate, frameRate: metadata.frameRate)]
+            AVVideoCompressionPropertiesKey: VideoColorPipeline.compression(hdr: hdr, bitrate: bitrate, frameRate: outputRate)]
         guard writer.canApply(outputSettings: videoSettings, forMediaType: .video) else { throw UnderBlueError.unsupported }
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
         input.expectsMediaDataInRealTime = false
@@ -177,6 +182,8 @@ actor VideoExporter {
                 guard let sample = try await source.next() else { sourceDone = true; pending += particles?.finish() ?? []; break }
                 let time = sample.presentationTimeStamp
                 guard time < end else { sourceDone = true; pending += particles?.finish() ?? []; break }
+                // The reader still decodes a dropped frame; only the filter, render and encode are saved.
+                guard limiter.keeps(time.seconds) else { continue }
                 try autoreleasepool {
                     guard var decoded = sample.withUnsafeSampleBuffer({ CMSampleBufferGetImageBuffer($0).map { CIImage(cvPixelBuffer: $0) } })
                     else { throw UnderBlueError.unreadable }
@@ -336,16 +343,28 @@ actor VideoExporter {
         return availableMB < needed ? MemoryShortage(availableMB: availableMB, neededMB: needed) : nil
     }
 
-    /// Exports a short probe with the real pipeline and scales its frame-loop time to the full length.
-    func estimateSeconds(url: URL, metadata: VideoMetadata, settings: FilterSettings, options: ExportOptions,
-                         restorationAnalysis: VideoRestorationAnalysis?) async throws -> Double {
-        let length = min(metadata.duration, options.durationLimit ?? metadata.duration)
+    /// The video bitrate. Standard is the rule from before 10 Nov 2026: 0.12 bits per pixel per frame, 6 to 100 Mbps.
+    /// The quality level scales it, and the 100 Mbps cap stays. It also stays at or below the source's average bitrate
+    /// times the level (Jake, 10 Nov 2026): a re-encode cannot add detail the source does not have, so a 0.1 Mbps
+    /// source no longer becomes a 6 Mbps file. HEVC needs fewer bits than H.264 for the same picture.
+    static func bitrate(for size: CGSize, frameRate: Float, quality: ExportOptions.Quality, sourceBitRate: Double? = nil) -> Int {
+        let standard = min(100_000_000, max(6_000_000, size.width * size.height * Double(max(24, frameRate)) * 0.12))
+        var level = standard * quality.bitrateFactor
+        if let sourceBitRate, sourceBitRate > 0 { level = min(level, sourceBitRate * quality.bitrateFactor) }
+        return Int(min(100_000_000, level))
+    }
+
+    /// Exports the first second with the real pipeline, for the time estimate when this device has no saved speed.
+    func probe(url: URL, metadata: VideoMetadata, settings: FilterSettings, options: ExportOptions,
+               restorationAnalysis: VideoRestorationAnalysis?) async throws -> ExportSpeed.Sample {
         var probe = options
-        probe.durationLimit = min(1, length)
+        probe.durationLimit = min(1, min(metadata.duration, options.durationLimit ?? metadata.duration))
         let result = try await export(url: url, metadata: metadata, settings: settings, options: probe,
                                       restorationAnalysis: restorationAnalysis) { _ in }
         TemporaryFiles.remove(result.url)
-        let setup = max(0, result.elapsedSeconds - result.frameLoopSeconds)
-        return setup + result.frameLoopSeconds * length / min(1, length)
+        guard let sample = ExportSpeed.Sample(result, outputSize: probe.size(for: metadata.displaySize)) else {
+            throw UnderBlueError.exportFailed
+        }
+        return sample
     }
 }

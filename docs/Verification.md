@@ -2,6 +2,33 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## Export: Quick, quality levels, estimate (10 Nov 2026, iPhone 1.1.13 (19), uploaded, not released)
+
+What changed (Jake, 10 Nov 2026; [Roadmap](Roadmap.md) 7.1, 7.4, 7.6, 7.7):
+- Resolution: Original / 1080p / Quick. Quick is at most 720p and 30 fps.
+- Quality: High / Standard / Small for each resolution. Defaults: Original High, 1080p Standard, Quick Small. Free: 1080p Standard only.
+- The bitrate never goes above the source's average bitrate × the level.
+- The estimate is the frame count × this device's saved time per frame. With no saved value, one 1080p probe runs first.
+- Sheet lock: a free user could pick Quick, High or Small, and anyone could pick HDR for an SDR video. The rows had `.disabled`, which did not stop the tap. The pickers now refuse those values, and locked rows show a lock.
+- New strings in six languages: "Quick" (the Korean label says "Quick mode", Jake), "Quality", "High", "Standard", "Small" and two footnotes. A reviewer agent checked ja, zh-Hans, zh-Hant and es.
+
+Checked:
+- Unit tests: `ExportQualityTests` (sizes, frame steps, the frame grid, bitrate levels and cap, defaults, trial, estimate, saved speed, three real exports), `ExportSizeTests`, `VideoTests`, `BatchTests` on the iPhone 18 Pro simulator (iOS 27.2). The Mac app builds.
+- `ExportSheetTests` (UI, iPhone 17 simulator, free user): estimates show, Standard is selected, and taps on High, Quick and HDR change nothing. With the old HDR picker the HDR tap selected HDR (the test failed).
+- iPhone 17: Quick from 120 fps gave 30 fps, 760 frames, 590 × 1280. A 60 fps 10-bit HLG clip with Quick gave 30 fps, 60 frames, HLG, 10-bit.
+- iPhone 17: the first estimate ran one probe (4.85 s). The second came from the saved speed at once.
+- iPhone 17: the bitrate cap on two VBR clips. SSIM against an uncapped export was 0.961-0.998 at Standard. See Roadmap 7.7 notes.
+- iPhone 17: Quick at Small, Standard and High on three real underwater clips (4K 60 fps × 2, 1080p 60 fps). Small came out at 3.05-3.08 Mbps. See Roadmap 7.6 notes.
+- One run of `testSmallMakesASmallerFileThanHigh` hung for 3 minutes and was ended (SIGTERM) while a device build ran. Three reruns passed in about 17 s. The cause was not found.
+
+Open:
+- Long exports take 1.1-4.5x the estimate as the phone heats up (Roadmap 7.8).
+- The saved speed after a real export from the editor was not checked on a device. The test called the exporter directly.
+- Pro on a device: the quality control, Quick and HDR on an HDR video. Purchases are checked by hand only.
+- Before this fix, a Pro user could pick HDR for an SDR video. The export then throws `unsupported` (`VideoExporter.swift`, the HDR guard). This is read from the code; it was not run.
+- The batch screens now export at High. File size and time were not measured.
+- The user's report (9 Nov 2026) was a screen recording. It shows a 1520 × 2704 SDR HEVC original, with the estimate still running. The original file was not received.
+
 ## iPhone batch: the summary says what failed and why it stopped (4 Nov 2026, merged to `main`)
 
 What changed (Jake, 4 Nov 2026):

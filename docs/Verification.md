@@ -439,6 +439,7 @@ Still open:
 - **m1 cooler.** The yellow coral is duller than before (mean OKLab distance x100 1.37).
 - **Simulator JPEG chroma.** `PhotoFormatTests` reads 2x2 chroma on the iPhone 18 Pro simulator and
   passes on the iPhone 17.
+  Update 11 Nov 2026: see "JPEG colour resolution: simulator only" below.
 
 ## Video preview stutter and the 3s Preview button (22 Oct 2026)
 
@@ -867,3 +868,20 @@ Checked on the iPhone 17 with `VideoParityTests`, against the build before the c
 ## Ideas, not planned
 
 - **Mac.** Planned (Jake, 1 Oct 2026): a Mac version sold at a higher price, built around an enhanced batch job for many photos and videos at once. Core Image renders some filters differently on the Mac and iOS (see the video vignette entry above), so the Mac app needs its own gate and m5 run. Decide then whether the reference smoothing returns on the Mac only. The project is iPhone only today (`TARGETED_DEVICE_FAMILY = 1`). Mac support and Mac Catalyst are both off. The Processing code already runs on a Mac: the harness compiles it into a Mac tool. The smallest step is to run the iPhone app on Apple silicon Macs. It still needs a check of the photo picker, saving, StoreKit and video export on a Mac.
+
+## JPEG colour resolution: simulator only (11 Nov 2026)
+
+`PhotoFormatTests.testJPEGExportKeepsFullColorResolutionAndTheCaptureDate` failed on every simulator run since 31 Oct 2026 (2x2 sampling).
+
+Cause, measured with a small probe that writes a 96 x 64 image:
+
+| Writer | macOS 27.2 | iOS 27.2 simulator |
+|---|---|---|
+| `CIContext.writeJPEGRepresentation`, quality 1 | 1x1 | 2x2 |
+| `CGImageDestination`, quality 1 | 1x1 | 1x1 |
+| Both, quality 0.99 | 2x2 | 2x2 |
+
+- On the simulator, `CIContext` wrote 2x2 with every option tried: Double, Float or NSNumber quality, no options, the software renderer, and `jpegRepresentation` (Data).
+- The app writes with `CIContext` (`PhotoProcessor.swift`).
+- On the iPhone 17 (iOS 27.2.1, 11 Nov 2026) all 5 `PhotoFormatTests` pass, the JPEG test included. So exported JPEGs keep full colour resolution on the device.
+- Decision (Jake, 11 Nov 2026): no code change. The test skips on the simulator and runs on devices.

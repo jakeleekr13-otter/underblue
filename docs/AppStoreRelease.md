@@ -222,6 +222,22 @@ The complete English and Korean descriptions, promotional text, keywords and rev
   - 5 Nov 2026: indexing is now requested for all 21 guide URLs (the last 9 today, all "색인 생성 요청됨").
   - 5 Nov 2026, landing property: the sitemap still reads "가져올 수 없음" with 0 pages. The Pages report still says it is processing data. The landing root is still unknown to Google.
   - 5 Nov 2026, root property: the root hub `https://jakeleekr13-otter.github.io/` is indexed. Google crawled it on 4 Nov at 10:31 CST (Googlebot smartphone). Indexing was requested again. Crawl stats (updated 3 Nov): 5 requests, no host problems. The only 404 is `/favicon.ico`, because the root site has none.
+  - 11 Nov 2026, landing property:
+    - The sitemap was submitted again on 10 Nov. It still reads "Couldn't fetch" with 0 pages.
+    - The Pages report still says it is processing data.
+    - Performance, 27 Oct to 8 Nov: 0 clicks, 0 impressions.
+    - URL inspection of the landing root: "URL is not on Google". No referring sitemap, no crawl.
+  - 11 Nov 2026, root property:
+    - 1 page indexed, no issues.
+    - The landing sitemap is also submitted here (10 Nov). It reads "Couldn't fetch" with 0 pages.
+    - Crawl stats: 27 requests, 67% 200 and 33% 404, no host problems.
+    - The 404s: `/app-ads.txt` 3 times (7, 8 and 10 Nov), `/favicon.ico` once (4 Nov). `/favicon.ico` now returns 200.
+  - 11 Nov 2026, live check with curl: the sitemap returns 200 as `application/xml`. All 32 URLs in it return 200. The root `robots.txt` has the `Sitemap:` line. Bing reads the same sitemap with no error (below). So the cause of "Couldn't fetch" is unknown.
+- Bing Webmaster Tools:
+  - Both `https://jakeleekr13-otter.github.io/underblue-support/` and `https://jakeleekr13-otter.github.io/` are added as sites.
+  - Neither site has `BingSiteAuth.xml` or a `msvalidate.01` meta tag. How they were verified is not recorded.
+  - 11 Nov 2026, landing site: the sitemap was crawled on 9 Nov with status "Success". The row shows 8 URLs found. The summary shows 2 known sitemaps and 40 URLs. The reason for the difference is unknown. Site Explorer shows no indexed URLs.
+  - 11 Nov 2026, root site: the same sitemap was crawled on 9 Nov with status "Success", 32 URLs found. Site Explorer shows no indexed URLs.
 
 Both pages are publicly available over HTTPS. Their email addresses are clickable `mailto:` links. The repository's `main` branch blocks force pushes and deletion and needs a linear history (no merge commits); only the owner has direct repository access.
 

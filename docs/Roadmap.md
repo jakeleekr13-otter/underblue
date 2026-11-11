@@ -166,19 +166,21 @@ Today only the photo preview zooms: pinch, double tap, and pan while zoomed, up 
 
 | # | Work | State | Source |
 |---|---|---|---|
-| 8.1 | Zoom on the video preview, while paused and while playing | Jake, 10 Nov 2026: add to the roadmap. Not built. | This section |
+| 8.1 | Zoom on the video preview, while paused and while playing | Built 11 Nov 2026 on branch `video-preview-zoom`, iPhone and Mac. Both build; unit tests pass. Not seen on a device. | `ZoomableVideoPreview.swift` |
+| 8.2 | Mac: no playback and no zoom during the scene analysis, as on the iPhone | Built 11 Nov 2026, same branch. Before, the Mac played the original during the analysis. Not seen on screen. | `PreviewPane.swift` |
 
 Decided (Jake, 10 Nov 2026):
 
 - The same gestures as the photo preview: pinch, double tap, and pan while zoomed.
-- No zoom during analysis. Today the player takes no touches then (`EditorView.swift:91`).
+- No zoom during analysis. The player takes no touches then.
+- Mac gets the same zoom, and the same lock during analysis (Jake, 11 Nov 2026).
 
 Notes for 8.1:
 
 - `PreviewZoom` already holds the photo limits: up to 4x, double tap to 2.5x.
 - The preview can render below full size to stay inside the pixel-rate budget (`VideoPreview.swift:75`). So a zoomed frame can look softer than the export.
-- The player has its own controls. How these gestures share touches with them: not checked.
-- Mac: Jake did not say. The Mac preview uses the same `VideoPlayer`.
+- How it works: the player view keeps its controls. While zoomed, a second `AVPlayerLayer` of the same player draws the zoomed frame in the player's video overlay, under the controls.
+- The player has its own controls. How these gestures share touches with them: not checked. iPhone's player may also react to a double tap.
 
 ## Recommended order
 
@@ -188,4 +190,4 @@ Notes for 8.1:
 4. Sections 4 and 5 only when a real photo or a user asks for it.
 5. Section 6 runs beside these: Jake reviews one finding at a time.
 6. Section 7: 7.1, 7.4, 7.6 and 7.7 are in 1.1.13 (19), in App Review since 10 Nov 2026. 7.8 is closed (no change).
-7. Section 8: Jake has not set a time yet.
+7. Section 8: built on branch `video-preview-zoom`. Next: Jake checks it on the iPhone and the Mac.

@@ -62,8 +62,8 @@ struct PreviewPane: View {
                     ProgressView()
                 }
             } else if let player = model.player {
-                VideoPlayer(player: player)
-                    // The original plays until the scene analysis is done (MacModel.buildVideoPreview).
+                // No playback and no zoom until the scene analysis is done, as on the iPhone (Jake, 11 Nov 2026).
+                ZoomableVideoPreview(player: player, zoom: $zoom, locked: model.analysingSelectedVideo)
                     .overlay(alignment: .topTrailing) {
                         if model.analysingSelectedVideo {
                             HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Analyzing…").font(.footnote.weight(.medium)) }

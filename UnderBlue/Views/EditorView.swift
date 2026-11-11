@@ -87,8 +87,8 @@ struct EditorView: View {
         ZStack {
             Color.black
             if model.media.kind == .video {
-                // No playback while the scene is analysed: the filter-only preview stutters on large clips.
-                VideoPlayer(player: model.player).disabled(model.analyzing).allowsHitTesting(!model.analyzing)
+                // No playback and no zoom while the scene is analysed: the filter-only preview stutters on large clips.
+                if let player = model.player { ZoomableVideoPreview(player: player, zoom: $zoom, locked: model.analyzing) }
             }
             else if let preview = model.comparing ? model.originalPreview : model.preview {
                 // Compare swaps the image but keeps the zoom, so the same detail can be checked both ways.

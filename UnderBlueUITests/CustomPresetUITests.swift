@@ -53,6 +53,77 @@ final class CustomPresetUITests: XCTestCase {
         XCTAssertEqual(app.sliders["Temperature"].value as? String, "0")
     }
 
+    /// With Custom up, gestures on the preview leave the sliders alone, and the sliders leave the zoom alone.
+    /// Portrait (preview above the controls) and landscape (controls beside it). Jake, 11 Nov 2026.
+    @MainActor
+    func testPhotoPreviewGesturesAndCustomSlidersStayApart() throws {
+        let app = launch()
+        try open(app, button: "Select Photo")
+        selectCustom(app)
+        try checkGesturesStayApart(app, preview: "Photo preview")
+    }
+
+    @MainActor
+    func testVideoPreviewGesturesAndCustomSlidersStayApart() throws {
+        let app = launch()
+        try open(app, button: "Select Video")
+        selectCustom(app)
+        try checkGesturesStayApart(app, preview: "Video preview")
+    }
+
+    @MainActor private func checkGesturesStayApart(_ app: XCUIApplication, preview name: String) throws {
+        defer { XCUIDevice.shared.orientation = .portrait }
+        for orientation in [UIDeviceOrientation.portrait, .landscapeLeft] {
+            XCUIDevice.shared.orientation = orientation
+            let label = orientation == .portrait ? "portrait" : "landscape"
+            // Wait until the app has turned. A screenshot right after the switch still showed the portrait layout.
+            let window = app.windows.firstMatch
+            let turned = NSPredicate { _, _ in (window.frame.width > window.frame.height) == (orientation != .portrait) }
+            XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: turned, object: nil)], timeout: 10),
+                           .completed, "\(label): the app did not turn, window \(window.frame)")
+            let preview = app.descendants(matching: .any)[name].firstMatch
+            XCTAssertTrue(preview.waitForExistence(timeout: 10), "\(label): no \(name)")
+            if app.buttons["Reset"].isEnabled { reset(app) }
+            show(app.sliders["Brightness"], in: app)
+            app.sliders["Brightness"].adjust(toNormalizedSliderPosition: 0.8)
+            let set = sliderValues(app)
+            XCTAssertTrue(set[0].hasPrefix("+"), "\(label): Brightness \(set[0])")
+            XCTAssertEqual(zoom(preview), "100%", "\(label): the preview starts at 1x")
+
+            preview.pinch(withScale: 2.5, velocity: 2)
+            XCTAssertNotEqual(zoom(preview), "100%", "\(label): pinch did not zoom")
+            XCTAssertEqual(sliderValues(app), set, "\(label): pinch moved a slider")
+
+            let centre = preview.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            centre.press(forDuration: 0.05, thenDragTo: centre.withOffset(CGVector(dx: -80, dy: -40)))
+            XCTAssertEqual(sliderValues(app), set, "\(label): pan moved a slider")
+            let zoomed = zoom(preview)
+            XCTAssertNotEqual(zoomed, "100%", "\(label): pan reset the zoom")
+            attach(app, "\(name) zoomed, \(label)")
+
+            show(app.sliders["Contrast"], in: app)
+            app.sliders["Contrast"].adjust(toNormalizedSliderPosition: 0.7)
+            XCTAssertTrue((app.sliders["Contrast"].value as? String ?? "").hasPrefix("+"), "\(label): Contrast did not move while zoomed")
+            XCTAssertEqual(zoom(preview), zoomed, "\(label): a slider changed the zoom")
+            let moved = sliderValues(app)
+
+            preview.doubleTap()
+            XCTAssertEqual(zoom(preview), "100%", "\(label): double tap did not go back to 1x")
+            XCTAssertEqual(sliderValues(app), moved, "\(label): double tap moved a slider")
+            preview.doubleTap()
+            XCTAssertEqual(zoom(preview), "250%", "\(label): double tap did not zoom to 2.5x")
+            XCTAssertEqual(sliderValues(app), moved, "\(label): double tap moved a slider")
+            preview.doubleTap()
+            reset(app)
+        }
+    }
+
+    @MainActor private func sliderValues(_ app: XCUIApplication) -> [String] {
+        names.map { app.sliders[$0].value as? String ?? "missing" }
+    }
+
+    @MainActor private func zoom(_ preview: XCUIElement) -> String { preview.value as? String ?? "no value" }
+
     @MainActor private func launch() -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["--ui-test-keychain=custom-preset", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]

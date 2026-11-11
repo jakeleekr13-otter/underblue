@@ -36,6 +36,10 @@ struct ZoomableVideoPreview: View {
         .onChange(of: locked, initial: true) { _, locked in
             if locked { zoom = PreviewZoom(); base = zoom }
         }
+        // The player's controls stay their own elements. The container reports the zoom, as the photo preview does.
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("Video preview")
+        .accessibilityValue(Text("\(Int((zoom.scale * 100).rounded()))%"))
         .accessibilityZoomAction { action in
             guard !locked, videoSize != .zero else { return }
             let step: CGFloat = action.direction == .zoomIn ? 1.5 : 1 / 1.5

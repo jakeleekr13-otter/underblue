@@ -55,7 +55,11 @@ final class PhotoFormatTests: XCTestCase {
     }
 
     /// Below quality 1, ImageIO wrote 2x2 luma sampling (colour at half resolution).
+    /// Device only: on the iOS 27.2 simulator, CIContext writes JPEG at 2x2 at every quality (Roadmap 1.6, 11 Nov 2026).
     func testJPEGExportKeepsFullColorResolutionAndTheCaptureDate() async throws {
+        #if targetEnvironment(simulator)
+        throw XCTSkip("The simulator's CIContext JPEG writer always uses 2x2 sampling. Run on a device.")
+        #endif
         let source = try makeSource()
         defer { TemporaryFiles.remove(source) }
         let output = try await PhotoProcessor().export(source, settings: FilterSettings(preset: .natural))

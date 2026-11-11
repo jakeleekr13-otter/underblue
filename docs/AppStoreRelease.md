@@ -7,7 +7,8 @@ Last reviewed: 2026-11-11
 iPhone only. The Mac targets stay at 1.0 (1).
 
 - 1.1.13 (19) was in App Review when 1.1.14 (20) was built (11 Nov 2026).
-- 1.1.14 (20) was uploaded to App Store Connect on 11 Nov 2026 with `xcodebuild -exportArchive` (method `app-store-connect`, destination `upload`, symbols included). The upload succeeded and was processing. Not submitted for review.
+- 1.1.14 (20) was uploaded to App Store Connect on 11 Nov 2026 with `xcodebuild -exportArchive` (method `app-store-connect`, destination `upload`, symbols included). The upload succeeded and was processing.
+- 1.1.14 (20) was submitted for App Review on 11 Nov 2026 (Jake).
 - Archive: `~/Library/Developer/Xcode/Archives/2026-11-11/UnderBlue 1.1.14 (20).xcarchive`. Checked: app and share extension are both 1.1.14 (20); iPhone only (device family 1); both have the App Group `group.com.underblue.app`; dSYMs for both.
 - New since 1.1.13 (`Roadmap.md` section 8): the video preview zooms like the photo preview (pinch, double tap, pan while zoomed, up to 4x), also while it plays. No zoom and no playback while the scene is analysed.
 - Release note: not chosen yet. Jake enters it in App Store Connect.

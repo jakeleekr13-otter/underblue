@@ -56,4 +56,13 @@ final class PreviewZoomTests: XCTestCase {
         let wide = PreviewZoom(scale: 1.2, offset: CGSize(width: 0, height: 80)).clamped(content: CGSize(width: 400, height: 200), container: container)
         XCTAssertEqual(wide.offset.height, 0)
     }
+
+    func testVideoDisplaySizeFollowsTheTrackRotation() {
+        let natural = CGSize(width: 1920, height: 1080)
+        XCTAssertEqual(ZoomableVideoPreview.displaySize(natural: natural, transform: .identity), natural)
+        // A portrait iPhone clip: landscape pixels turned by 90 degrees.
+        let portrait = ZoomableVideoPreview.displaySize(natural: natural, transform: CGAffineTransform(rotationAngle: .pi / 2))
+        XCTAssertEqual(portrait.width, 1080, accuracy: 0.001)
+        XCTAssertEqual(portrait.height, 1920, accuracy: 0.001)
+    }
 }

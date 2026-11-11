@@ -115,28 +115,8 @@ struct ZoomablePreview<Overlay: View>: View {
                     base = zoom
                 }
                 .contentShape(Rectangle())
-                .simultaneousGesture(MagnifyGesture()
-                    .onChanged { value in
-                        zoom = PreviewZoom(scale: base.scale * value.magnification, offset: zoom.offset)
-                            .clamped(content: content, container: container)
-                    }
-                    .onEnded { _ in finish() }
-                    .simultaneously(with: DragGesture(minimumDistance: 1)
-                        .onChanged { value in
-                            // Panning only makes sense while zoomed; at 1x the image already fits.
-                            guard zoom.isZoomed else { return }
-                            let moved = CGSize(width: base.offset.width + value.translation.width,
-                                               height: base.offset.height + value.translation.height)
-                            zoom = PreviewZoom(scale: zoom.scale, offset: moved).clamped(content: content, container: container)
-                        }
-                        .onEnded { _ in finish() }))
-                .gesture(TapGesture(count: 2).onEnded {
-                    withAnimation(.snappy) {
-                        zoom = zoom.isZoomed ? PreviewZoom()
-                            : PreviewZoom(scale: PreviewZoom.doubleTapScale).clamped(content: content, container: container)
-                    }
-                    finish()
-                }, isEnabled: !overlayActive)
+                .previewZoomGestures(zoom: $zoom, base: $base, content: content, container: container,
+                                     doubleTap: !overlayActive, onEnd: finish)
                 .simultaneousGesture(holdGesture(content: content, container: container), isEnabled: onHold != nil)
         }
         .sensoryFeedback(.impact(weight: .medium), trigger: holds)
@@ -155,6 +135,52 @@ struct ZoomablePreview<Overlay: View>: View {
     private func finish() {
         base = zoom
         if zoom.isZoomed { onZoomIn() }
+    }
+}
+
+/// Pinch, pan while zoomed, and double tap. The photo and the video preview share them.
+/// `base` is the zoom at the start of a gesture. `onEnd` runs when a gesture ends and must set `base` to `zoom`.
+struct PreviewZoomGestures: ViewModifier {
+    @Binding var zoom: PreviewZoom
+    @Binding var base: PreviewZoom
+    let content: CGSize
+    let container: CGSize
+    var doubleTap = true
+    var enabled = true
+    let onEnd: () -> Void
+
+    func body(content view: Content) -> some View {
+        view
+            .simultaneousGesture(MagnifyGesture()
+                .onChanged { value in
+                    zoom = PreviewZoom(scale: base.scale * value.magnification, offset: zoom.offset)
+                        .clamped(content: content, container: container)
+                }
+                .onEnded { _ in onEnd() }
+                .simultaneously(with: DragGesture(minimumDistance: 1)
+                    .onChanged { value in
+                        // Panning only makes sense while zoomed; at 1x the image already fits.
+                        guard zoom.isZoomed else { return }
+                        let moved = CGSize(width: base.offset.width + value.translation.width,
+                                           height: base.offset.height + value.translation.height)
+                        zoom = PreviewZoom(scale: zoom.scale, offset: moved).clamped(content: content, container: container)
+                    }
+                    .onEnded { _ in onEnd() }), isEnabled: enabled)
+            .gesture(TapGesture(count: 2).onEnded {
+                withAnimation(.snappy) {
+                    zoom = zoom.isZoomed ? PreviewZoom()
+                        : PreviewZoom(scale: PreviewZoom.doubleTapScale).clamped(content: content, container: container)
+                }
+                onEnd()
+            }, isEnabled: enabled && doubleTap)
+    }
+}
+
+extension View {
+    func previewZoomGestures(zoom: Binding<PreviewZoom>, base: Binding<PreviewZoom>, content: CGSize, container: CGSize,
+                             doubleTap: Bool = true, enabled: Bool = true, onEnd: @escaping () -> Void) -> some View {
+        modifier(PreviewZoomGestures(zoom: zoom, base: base, content: content, container: container,
+                                     doubleTap: doubleTap, enabled: enabled, onEnd: onEnd))
     }
 }
 

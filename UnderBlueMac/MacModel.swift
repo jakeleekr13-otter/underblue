@@ -661,8 +661,9 @@ final class MacModel {
     private func buildVideoPreview(_ item: BatchEngine.Item) async throws {
         let url = item.url
         let metadata = try await SafeReadRetry().run(operation: .inspection) { try await MediaInspector().inspect(url) }
-        // Scene analysis takes a while. The preview plays at once and shows the original until the analysis is
-        // ready: the filter without the analysis looked different from the export (Jake, 30 Oct 2026).
+        // Scene analysis takes a while. Until it is ready the preview shows the original frame: the filter without
+        // the analysis looked different from the export (Jake, 30 Oct 2026). It does not play or zoom then,
+        // as on the iPhone (Jake, 11 Nov 2026; PreviewPane).
         let pending = videoAnalysis[item.id] == nil
         if pending { analysingVideo = item.id }
         previewSettings.update(settings, comparing: showingOriginal || pending)

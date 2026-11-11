@@ -1,8 +1,21 @@
 # App Store release checklist
 
-Last reviewed: 2026-11-10
+Last reviewed: 2026-11-11
 
-## Current release: iPhone 1.1.13 (build 19), 10 Nov 2026
+## Current release: iPhone 1.1.14 (build 20), 11 Nov 2026
+
+iPhone only. The Mac targets stay at 1.0 (1).
+
+- 1.1.13 (19) was in App Review when 1.1.14 (20) was built (11 Nov 2026).
+- New since 1.1.13 (`Roadmap.md` section 8): the video preview zooms like the photo preview (pinch, double tap, pan while zoomed, up to 4x), also while it plays. No zoom and no playback while the scene is analysed.
+- Release note: not chosen yet. Jake enters it in App Store Connect.
+- Tests (11 Nov 2026, iPhone 17 simulator, iOS 27.2): 333 iOS unit tests, 13 skipped, 2 failed.
+  - Known: JPEG colour resolution.
+  - `BatchTests` summary: the simulator returned the Korean text, the test expects English. Batch code did not change.
+  - `PurchaseTests` not run: it hung for 30 minutes and was stopped.
+  - The 4 new `CustomPresetUITests` pass. The Mac app builds. Mac tests not run.
+
+## iPhone 1.1.13 (build 19), 10 Nov 2026 (history)
 
 iPhone only. The Mac targets stay at 1.0 (1).
 

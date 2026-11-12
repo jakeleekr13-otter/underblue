@@ -233,6 +233,13 @@ The complete English and Korean descriptions, promotional text, keywords and rev
     - Crawl stats: 27 requests, 67% 200 and 33% 404, no host problems.
     - The 404s: `/app-ads.txt` 3 times (7, 8 and 10 Nov), `/favicon.ico` once (4 Nov). `/favicon.ico` now returns 200.
   - 11 Nov 2026, live check with curl: the sitemap returns 200 as `application/xml`. All 32 URLs in it return 200. The root `robots.txt` has the `Sitemap:` line. Bing reads the same sitemap with no error (below). So the cause of "Couldn't fetch" is unknown.
+  - 12 Nov 2026:
+    - Both properties show the same reports as on 11 Nov.
+    - The sitemap now has 38 URLs and parses as valid XML.
+    - URL inspection live test of the sitemap URL: crawl allowed "Yes", page fetch "Successful".
+    - Manual actions and security issues: none, on both properties.
+    - The sitemap was submitted again on the landing property. Right after the submit, it still read "Couldn't fetch".
+    - Google's Sitemaps report help names robots.txt blocks, manual actions, a wrong URL and temporary server errors as causes. None applies here. It names no limit for github.io or new sites.
 - Bing Webmaster Tools:
   - Both `https://jakeleekr13-otter.github.io/underblue-support/` and `https://jakeleekr13-otter.github.io/` are added as sites.
   - Neither site has `BingSiteAuth.xml` or a `msvalidate.01` meta tag. How they were verified is not recorded.

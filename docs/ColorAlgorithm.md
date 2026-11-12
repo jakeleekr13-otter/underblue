@@ -730,6 +730,37 @@ No separate figure is recorded here for these four. The scorecard shows the comb
 | Water calm weight read on the restored image | Its water share was 0.65 in far water and below 0.2 within 12 px of a subject. That left a band of noise around the IMG_7260 turtle, about 60 px wide. |
 | Water calm also taking back the unsharp masks | It turned their soft dark fringe into a sharp dark line along the IMG_7261 wrasse. |
 | Detail strength 1.6, or radius 2.0/480 | Pair 3 reached 7.19, but the gate rose to 12.57 to 12.65 and pair 4 went past AquaColorFix (9.1 against 7.7). |
+| A lens filter setting (none, light red, red, magenta), 12 Nov 2026 | The automatic correction already adapts to filtered shots. The setting moved the result by too little to notice. See [Lens filter setting](#lens-filter-setting-12-nov-2026-rejected). |
+
+
+### Lens filter setting (12 Nov 2026, rejected)
+
+Idea: the user says which filter was on the lens (none, light red, red, magenta), and the correction accounts for it. A filter leaves nothing in the file, so only the user can say. Planned as a Pro feature.
+
+Samples: `DeveloperMedia/tune/photo/lens-filter/` (see `INDEX.md`). Red: 6 pairs with and without a filter. Magenta: 2 pairs. Light red: none. In every pair the two frames differ. The photos are small web images, not camera files.
+
+Score: the same scene should end the same with or without a filter. Mean OKLab a,b (x100, bottom 12% left out) of the filtered output against the unfiltered output; dE is their distance. Photo path (`combined`), Natural.
+
+Tries and results:
+
+1. Fixed per-channel gains to undo the filter, before the analysis. Filtered mean over unfiltered mean, linear, G = 1: R/G 4.8 to 185, B/G 0.72 to 2.07. The unfiltered red is near 0, so no fixed gain fits.
+2. Scale the red boost (`restore`) and the green-to-blue shift per filter:
+
+| Setting | Red, mean dE (6 pairs) | Magenta, mean dE (2 pairs) |
+|---|---|---|
+| No setting (the app today) | 3.02 | 2.47 |
+| Red: boost and shift x0.5 | 2.89 | unmeasured |
+| Red: boost and shift x0 | 2.72 | unmeasured |
+| Magenta: shift x1, x0.4, x0 | unmeasured | 2.47, 2.47, 2.47 |
+
+Why it fails:
+
+- A filtered shot measures a small `redLoss`, so the app already adds little red. There is little left to take away.
+- The rest of the gap is in the sources. The anemone pair: with every correction stage off, the filtered shot is near a = 0. The unfiltered output keeps green (a = -4.4). To match, we would have to add green to the filtered shot.
+- On the stage ablation (current path), the cast gains warmed the filtered shots most: a +1.9 (anemone), +1.5 (sponge), +1.2 (turtle). The red rebuild came next.
+- The magenta samples are not read as green water, so the green-to-blue shift does not run on them.
+
+Open: the red turtle output keeps a violet tint, and the red sponge output is lavender at the top. It is not checked whether unfiltered shots show the same. If they do, fix it in the automatic correction, not with a setting.
 
 ## Comparison with AquaColorFix
 

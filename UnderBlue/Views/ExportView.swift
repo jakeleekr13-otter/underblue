@@ -32,7 +32,7 @@ struct ExportView: View {
                                     } else if resolution == .quick {
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(resolution.localizedName)
-                                            Text(verbatim: Self.quickDetail(metadata)).font(.caption).foregroundStyle(.secondary)
+                                            Text(verbatim: Self.quickDetail(metadata, rotation: model.rotation)).font(.caption).foregroundStyle(.secondary)
                                         }
                                     } else {
                                         Text(resolution.localizedName)
@@ -140,10 +140,10 @@ struct ExportView: View {
     }
     /// What Quick makes from this source: "720p · 30 fps", or the source size when it is already 720p or less.
     /// A tall source fits the 1280 × 720 frame by its long side, so 1182 × 2560 becomes 590 × 1280 (still "720p").
-    static func quickDetail(_ metadata: VideoMetadata) -> String {
+    static func quickDetail(_ metadata: VideoMetadata, rotation: VideoRotation = .none) -> String {
         var quick = ExportOptions()
         quick.resolution = .quick
-        let size = quick.size(for: metadata.displaySize), source = metadata.displaySize
+        let source = rotation.applied(to: metadata.displaySize), size = quick.size(for: source)
         let reduced = max(size.width, size.height) < max(source.width, source.height) - 2
         let label = reduced ? "720p" : "\(Int(size.width)) × \(Int(size.height))"
         return label + " · " + ExportOptions.frameRateText(quick.outputFrameRate(sourceRate: metadata.frameRate))

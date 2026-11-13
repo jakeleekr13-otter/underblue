@@ -1,8 +1,19 @@
 # App Store release checklist
 
-Last reviewed: 2026-11-11
+Last reviewed: 2026-11-13
 
-## Current release: iPhone 1.1.14 (build 20), 11 Nov 2026
+## Current release: iPhone 1.1.15 (build 21), 13 Nov 2026
+
+iPhone only. The Mac targets stay at 1.0 (1).
+
+- 1.1.15 (21) was uploaded to App Store Connect on 13 Nov 2026 with `xcodebuild -exportArchive` (method `app-store-connect`, destination `upload`, symbols included). The upload succeeded and was processing.
+- Not submitted for App Review here. Jake submits it.
+- Archive: `~/Library/Developer/Xcode/Archives/2026-11-13/UnderBlue 1.1.15 (21).xcarchive`. Checked: app and share extension are both 1.1.15 (21); iPhone only (device family 1); both have the App Group `group.com.underblue.app`; dSYMs for both; "Rotate" is in all five translated `Localizable.strings`.
+- New since 1.1.14 (`Roadmap.md` section 9): a video with a 90° or 270° orientation tag no longer exports upside down. A Rotate button in the video editor turns the preview and the export 90° clockwise per press.
+- Release note: `AppStoreMetadata.md`, "What's New (1.1.15)".
+- Tests (13 Nov 2026, iPhone 17 simulator, iOS 27.2): 336 iOS unit tests, 14 skipped, 0 failed. `PurchaseTests` not run (it hung on 11 Nov 2026). UI test `VideoRotationUITests` passes. Mac `BatchEngineTests` pass (8).
+
+## iPhone 1.1.14 (build 20), 11 Nov 2026 (history)
 
 iPhone only. The Mac targets stay at 1.0 (1).
 

@@ -25,6 +25,13 @@ struct PreviewPane: View {
                             Text("Original").tag(true)
                         }
                         .pickerStyle(.segmented).labelsHidden().frame(width: 220)
+                        if model.selectedItem?.kind == .video {
+                            // Each press turns 90° clockwise. The file's own orientation is the start (Jake, 13 Nov 2026).
+                            Button { model.rotateSelected() } label: { Label("Rotate", systemImage: "rotate.right") }
+                                .disabled(!model.canRotateSelected)
+                                .accessibilityValue(Text("\(model.selectedItem?.rotation.rawValue ?? 0)°"))
+                                .help("Turn the video 90 degrees clockwise. Export uses the same turn.")
+                        }
                         if model.canPickSubjects { subjectControls }
                     }
                     if model.canPickSubjects, model.subjectPickerEnabled { subjectText }
@@ -63,7 +70,8 @@ struct PreviewPane: View {
                 }
             } else if let player = model.player {
                 // No playback and no zoom until the scene analysis is done, as on the iPhone (Jake, 11 Nov 2026).
-                ZoomableVideoPreview(player: player, zoom: $zoom, locked: model.analysingSelectedVideo)
+                ZoomableVideoPreview(player: player, zoom: $zoom, locked: model.analysingSelectedVideo,
+                                     rotation: model.selectedItem?.rotation ?? .none)
                     .overlay(alignment: .topTrailing) {
                         if model.analysingSelectedVideo {
                             HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Analyzing…").font(.footnote.weight(.medium)) }

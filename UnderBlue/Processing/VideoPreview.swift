@@ -63,11 +63,12 @@ struct VideoPreview {
         try await analyzer.analyze(url: url, metadata: metadata)
     }
 
-    func item(_ url: URL, settings: PreviewSettings, analysis: VideoRestorationAnalysis? = nil) async throws -> AVPlayerItem {
+    func item(_ url: URL, settings: PreviewSettings, analysis: VideoRestorationAnalysis? = nil,
+              rotation: VideoRotation = .none) async throws -> AVPlayerItem {
         let asset = AVURLAsset(url: url)
         let item = AVPlayerItem(asset: asset)
         item.appliesPerFrameHDRDisplayMetadata = false
-        item.videoComposition = try await composition(asset: asset, settings: settings, analysis: analysis)
+        item.videoComposition = try await composition(asset: asset, settings: settings, analysis: analysis, rotation: rotation)
         return item
     }
 
@@ -82,7 +83,8 @@ struct VideoPreview {
     /// A fresh composition is intentionally created for every preset revision.
     /// Reassigning a copied private CI composition does not reliably invalidate AVPlayer's rendered-frame cache.
     func composition(asset: AVAsset, settings: PreviewSettings,
-                     analysis: VideoRestorationAnalysis? = nil) async throws -> AVVideoComposition {
+                     analysis: VideoRestorationAnalysis? = nil, rotation: VideoRotation = .none) async throws -> AVVideoComposition {
+        // The user's turn is the last step, as in the export. The frame size swaps for 90° and 270°.
         // An Apple Log frame reaches the filter as the log signal. It is decoded and tone mapped to SDR
         // the same way as in the export, for both the original and the corrected preview.
         let log = try await AppleLog.of(asset)
@@ -90,14 +92,14 @@ struct VideoPreview {
         let filtered = try await AVVideoComposition(applyingFiltersTo: asset) { [engine, restorationEngine, diagnosticGate, diagnostics] request in
             let (current, original) = settings.snapshot()
             var source = log.map { engine.sdr($0.decode(request.sourceImage)) } ?? request.sourceImage
-            guard !original else { return AVCIImageFilteringResult(resultImage: source, ciContext: engine.context) }
+            guard !original else { return AVCIImageFilteringResult(resultImage: rotation.apply(source), ciContext: engine.context) }
             // The Original preset shows the frame as it is, as its export does.
             if current.preset != .original, let analysis {
                 source = analysis.stabilised(source, at: request.compositionTime.seconds)
             }
             let fallback = engine.apply(source, settings: current, lightDetail: false, coresWater: false)
             guard let moment = analysis?.moment(at: request.compositionTime.seconds) else {
-                return AVCIImageFilteringResult(resultImage: fallback, ciContext: engine.context)
+                return AVCIImageFilteringResult(resultImage: rotation.apply(fallback), ciContext: engine.context)
             }
             let output: CIImage
             do {
@@ -107,7 +109,7 @@ struct VideoPreview {
                 diagnosticGate.recordRenderFallback(using: diagnostics)
                 output = fallback
             }
-            return AVCIImageFilteringResult(resultImage: output, ciContext: engine.context)
+            return AVCIImageFilteringResult(resultImage: rotation.apply(output), ciContext: engine.context)
         }
         // The filtering initializer takes no color options, so tag SDR Rec. 709 output on a rebuilt
         // composition. Every other value, including the filter's compositor and instructions, is kept.
@@ -123,7 +125,7 @@ struct VideoPreview {
             perFrameHDRDisplayMetadataPolicy: filtered.perFrameHDRDisplayMetadataPolicy,
             renderScale: Self.renderScale(size: filtered.renderSize, frameDuration: filtered.frameDuration,
                                           budget: pixelRateBudget),
-            renderSize: filtered.renderSize,
+            renderSize: rotation.applied(to: filtered.renderSize),
             sourceSampleDataTrackIDs: filtered.sourceSampleDataTrackIDs,
             sourceTrackIDForFrameTiming: filtered.sourceTrackIDForFrameTiming,
             spatialVideoConfigurations: filtered.spatialVideoConfigurations)

@@ -14,9 +14,10 @@ struct OutputValidator {
         return .invalidOutput
     }
 
-    func validate(_ url: URL, source: VideoMetadata, options: ExportOptions, expectedFrames: Int) async throws -> VideoMetadata {
+    func validate(_ url: URL, source: VideoMetadata, options: ExportOptions, rotation: VideoRotation = .none,
+                  expectedFrames: Int) async throws -> VideoMetadata {
         let result = try await MediaInspector().inspect(url)
-        let size = options.size(for: source.displaySize)
+        let size = options.size(for: rotation.applied(to: source.displaySize))
         let duration = min(source.duration, options.durationLimit ?? source.duration)
         guard result.codec == "hvc1" || result.codec == "hev1" else { throw rejected("codec \(result.codec)") }
         guard abs(result.displaySize.width - size.width) < 2, abs(result.displaySize.height - size.height) < 2 else {

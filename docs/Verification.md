@@ -2,6 +2,13 @@
 
 This page lists the checks that are still open. The product owner decided to finish the implementation first and run every check in one final round (25 Sep 2026). Each change already has its own unit tests.
 
+## Video orientation and Rotate (13 Nov 2026, iPhone 1.1.15 (21))
+
+- Unit tests (iPhone 17 simulator, iOS 27.2): `testExportedPortraitPixelsMatchSourceOrientation` now uses a clip with a real 90° tag. It fails on the old code (mean error 0.55) and passes on the fix.
+- New tests pass: `testRotationTurnsClockwiseOnScreen`, `testExportFollowsTheUsersTurn`, `testPreviewCompositionFollowsTheUsersTurn`, Mac `testRotationIsPerVideoAndReachesTheExport`.
+- UI test `VideoRotationUITests` with `GX017598.MP4` in the app's Documents: Rotate is off during the analysis, then 0° shows upright, 90° turns clockwise, and four presses come back upright (screenshots read 13 Nov 2026).
+- Not checked: a device run, and the Mac Rotate button by hand.
+
 ## Export: Quick, quality levels, estimate (10 Nov 2026, iPhone 1.1.13 (19), in App Review)
 
 What changed (Jake, 10 Nov 2026; [Roadmap](Roadmap.md) 7.1, 7.4, 7.6, 7.7):

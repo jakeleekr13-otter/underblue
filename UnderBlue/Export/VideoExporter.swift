@@ -45,6 +45,7 @@ actor VideoExporter {
 
     func export(url: URL, metadata: VideoMetadata, settings: FilterSettings, options: ExportOptions,
                 restorationAnalysis: VideoRestorationAnalysis? = nil, pause: ExportPause? = nil,
+                rotation: VideoRotation = .none,
                 progress: @escaping @Sendable (Double) async -> Void) async throws -> VideoExportResult {
         let interval = signposter.beginInterval("Video export")
         let startedAt = Date()
@@ -57,7 +58,10 @@ actor VideoExporter {
         let asset = AVURLAsset(url: url)
         guard let track = try await asset.loadTracks(withMediaType: .video).first else { throw UnderBlueError.unreadable }
         let duration = min(metadata.duration, options.durationLimit ?? metadata.duration)
-        let size = options.size(for: metadata.displaySize)
+        // `size` is the written file. Frames are corrected at `frameSize` (before the user's turn), then turned.
+        // Restoration and the particle filter work on the frame as the analysis saw it.
+        let size = options.size(for: rotation.applied(to: metadata.displaySize))
+        let frameSize = rotation.applied(to: size)
         // One Core Image context per export, sized for this output (see memoryLimitMB).
         let engine = FilterEngine(memoryLimitMB: Self.memoryLimitMB(for: size))
         // Quick drops source frames by time; every other choice keeps them all.
@@ -191,9 +195,9 @@ actor VideoExporter {
                         decoded = log.decode(decoded)
                         if !hdr { decoded = engine.sdr(decoded) }
                     }
-                    let source = decoded.transformed(by: toneMappedByComposition ? .identity : metadata.transform)
+                    let source = decoded.transformed(by: toneMappedByComposition ? .identity : metadata.ciTransform)
                     let oriented = source.transformed(by: CGAffineTransform(translationX: -source.extent.minX, y: -source.extent.minY))
-                    let scaled = oriented.transformed(by: CGAffineTransform(scaleX: size.width / oriented.extent.width, y: size.height / oriented.extent.height))
+                    let scaled = oriented.transformed(by: CGAffineTransform(scaleX: frameSize.width / oriented.extent.width, y: frameSize.height / oriented.extent.height))
                     if let particles {
                         if let ready = particles.push(scaled, at: time) { pending.append(ready) }
                     } else { pending.append(ParticleFilter.Frame(image: scaled, time: time)) }
@@ -220,7 +224,9 @@ actor VideoExporter {
                         renderFellBack = true
                     }
                 } else { corrected = fallback }
-                let output = mark?.composited(over: corrected) ?? corrected
+                // The mark goes on after the turn, so it sits in the same corner of every output.
+                let turned = rotation.apply(corrected)
+                let output = mark?.composited(over: turned) ?? turned
                 destination.withUnsafeBuffer {
                     engine.context.render(output, to: $0, bounds: CGRect(origin: .zero, size: size),
                                           colorSpace: VideoColorPipeline.colorSpace(hdr: hdr, pq: metadata.dynamicRange == .pq))
@@ -245,7 +251,7 @@ actor VideoExporter {
         await writer.finishWriting()
         try Task.checkCancellation()
         guard writer.status == .completed else { throw writer.error ?? UnderBlueError.exportFailed }
-        let result = try await OutputValidator().validate(target, source: metadata, options: options, expectedFrames: frames)
+        let result = try await OutputValidator().validate(target, source: metadata, options: options, rotation: rotation, expectedFrames: frames)
         await progress(1)
         #if DEBUG
         let elapsed = max(0.001, Date().timeIntervalSince(startedAt))

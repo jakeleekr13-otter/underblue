@@ -12,6 +12,8 @@ struct ZoomableVideoPreview: View {
     let player: AVPlayer
     @Binding var zoom: PreviewZoom
     var locked = false
+    /// The user's turn. The player's composition already draws it; zoom needs the turned size.
+    var rotation: VideoRotation = .none
     @State private var base = PreviewZoom()
     /// The video's display size, after its rotation. Zero until loaded; no zoom until then.
     @State private var videoSize: CGSize = .zero
@@ -19,7 +21,7 @@ struct ZoomableVideoPreview: View {
     var body: some View {
         GeometryReader { geometry in
             let container = geometry.size
-            let content = PreviewZoom.fitted(videoSize, in: container)
+            let content = PreviewZoom.fitted(rotation.applied(to: videoSize), in: container)
             VideoPlayer(player: player) {
                 if zoom.isZoomed { zoomedFrame(content: content, container: container) }
             }

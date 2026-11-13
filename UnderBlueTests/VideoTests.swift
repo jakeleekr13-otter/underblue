@@ -59,6 +59,66 @@ final class VideoTests: XCTestCase {
         let meanError = zip(source, exported).reduce(Float(0)) { $0 + abs($1.0 - $1.1) } / Float(source.count)
         XCTAssertLessThan(meanError, 0.04, "Portrait pixels are rotated or mirrored incorrectly")
     }
+    /// A clockwise turn on screen: the left pixel of a wide image ends up on top. Core Image is y-up, so top is y = 1.
+    func testRotationTurnsClockwiseOnScreen() throws {
+        let red = CIImage(color: .red).cropped(to: CGRect(x: 0, y: 0, width: 1, height: 1))
+        let blue = CIImage(color: .blue).cropped(to: CGRect(x: 1, y: 0, width: 1, height: 1))
+        let wide = red.composited(over: blue)
+        let context = CIContext()
+        func colour(_ image: CIImage, at point: CGPoint) -> [Float] {
+            var pixel = [Float](repeating: 0, count: 4)
+            context.render(image, toBitmap: &pixel, rowBytes: 16, bounds: CGRect(origin: point, size: CGSize(width: 1, height: 1)),
+                           format: .RGBAf, colorSpace: nil)
+            return pixel
+        }
+        let quarter = VideoRotation.quarter.apply(wide)
+        XCTAssertEqual(quarter.extent, CGRect(x: 0, y: 0, width: 1, height: 2))
+        XCTAssertEqual(colour(quarter, at: CGPoint(x: 0, y: 1)), [1, 0, 0, 1], "90°: left pixel goes to the top")
+        let three = VideoRotation.threeQuarters.apply(wide)
+        XCTAssertEqual(colour(three, at: CGPoint(x: 0, y: 0)), [1, 0, 0, 1], "270°: left pixel goes to the bottom")
+        let half = VideoRotation.half.apply(wide)
+        XCTAssertEqual(half.extent, wide.extent)
+        XCTAssertEqual(colour(half, at: CGPoint(x: 1, y: 0)), [1, 0, 0, 1], "180°: left pixel goes to the right")
+        XCTAssertEqual(VideoRotation.threeQuarters.next, VideoRotation.none)
+    }
+
+    /// The user's turn goes on top of the file's own orientation. The file is portrait (1080 x 1920);
+    /// a 90° turn writes 1920 x 1080 with the source pixels turned clockwise.
+    func testExportFollowsTheUsersTurn() async throws {
+        let url = try fixture("portrait_audio")
+        let metadata = try await MediaInspector().inspect(url)
+        XCTAssertEqual(metadata.displaySize, CGSize(width: 1080, height: 1920))
+        let result = try await VideoExporter().export(url: url, metadata: metadata, settings: .init(preset: .original), options: .init(),
+                                                      rotation: .quarter) { _ in }
+        defer { TemporaryFiles.remove(result.url) }
+        XCTAssertEqual(result.metadata.displaySize, CGSize(width: 1920, height: 1080))
+        func pixels(_ url: URL, turn: VideoRotation) async throws -> [Float] {
+            let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
+            generator.appliesPreferredTrackTransform = true
+            let frame = turn.apply(CIImage(cgImage: try await generator.image(at: .zero).image))
+            let image = frame.transformed(by: CGAffineTransform(scaleX: 16 / frame.extent.width, y: 16 / frame.extent.height))
+            var values = [Float](repeating: 0, count: 16 * 16 * 4)
+            FilterEngine().context.render(image, toBitmap: &values, rowBytes: 16 * 16, bounds: CGRect(x: 0, y: 0, width: 16, height: 16), format: .RGBAf, colorSpace: FilterEngine.workingSpace)
+            return values
+        }
+        let expected = try await pixels(url, turn: .quarter), exported = try await pixels(result.url, turn: .none)
+        let meanError = zip(expected, exported).reduce(Float(0)) { $0 + abs($1.0 - $1.1) } / Float(expected.count)
+        XCTAssertLessThan(meanError, 0.04, "The export does not match the source turned 90° clockwise")
+    }
+
+    /// The preview draws the same turn as the export: a 90° turn of the portrait file gives a landscape frame.
+    func testPreviewCompositionFollowsTheUsersTurn() async throws {
+        let url = try fixture("portrait_audio")
+        let asset = AVURLAsset(url: url)
+        let settings = PreviewSettings()
+        settings.update(.init(preset: .original), comparing: true)
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.appliesPreferredTrackTransform = true
+        generator.videoComposition = try await VideoPreview().composition(asset: asset, settings: settings, rotation: .quarter)
+        let frame = try await generator.image(at: .zero).image
+        XCTAssertEqual(CGSize(width: frame.width, height: frame.height), CGSize(width: 1920, height: 1080))
+    }
+
     func testTrialVideoStopsAtTenSecondsAndKeepsAudio() async throws {
         let url = try fixture("trial_12seconds")
         let metadata = try await MediaInspector().inspect(url)

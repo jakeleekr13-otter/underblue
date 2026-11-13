@@ -180,6 +180,22 @@ UnderBlue está pensada para los recuerdos del buceo recreativo. No es una herra
 
 **Spanish (Spain):** buceo,submarinismo,snorkel,fotosub,submarino,fotos,vídeo,arrecife,coral,corregir,filtro,restaurar (98 bytes)
 
+## What's New (1.1.15)
+
+Jake, 13 Nov 2026: names the fix and the new button. Jake enters it in App Store Connect.
+
+**English:** Fixed: some videos filmed in portrait were exported upside down. New: a Rotate button in the video editor turns the video 90° at a time. The export uses the same turn.
+
+**Korean:** 세로로 촬영한 일부 동영상이 위아래가 뒤집혀 내보내지던 문제를 고쳤습니다. 동영상 편집 화면에 회전 버튼을 추가했습니다. 90°씩 돌릴 수 있고, 내보내기에도 같은 방향이 적용됩니다.
+
+**Japanese:** 縦向きで撮影した一部の動画が上下逆さまに書き出される問題を修正しました。動画の編集画面に回転ボタンを追加しました。90°ずつ回転でき、書き出しにも同じ向きが使われます。
+
+**Simplified Chinese:** 修复了部分竖拍视频导出后上下颠倒的问题。视频编辑界面新增旋转按钮，每次旋转 90°，导出时使用相同方向。
+
+**Traditional Chinese:** 修正了部分直拍影片輸出後上下顛倒的問題。影片編輯畫面新增旋轉按鈕，每次旋轉 90°，輸出時使用相同方向。
+
+**Spanish (Spain):** Corregido: algunos vídeos grabados en vertical se exportaban boca abajo. Nuevo: un botón Girar en el editor de vídeo gira el vídeo 90° cada vez. La exportación usa el mismo giro.
+
 ## What's New (1.1.13)
 
 Jake, 10 Nov 2026: submitted with the general note, as in 1.1.11. A detailed draft about Quick and the quality levels was not used. The text Jake entered in App Store Connect was not checked here.

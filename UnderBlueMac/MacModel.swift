@@ -100,6 +100,16 @@ final class MacModel {
     private var analysingVideo: UUID?
     /// The preview shows the original because the selected video is still analysed.
     var analysingSelectedVideo: Bool { analysingVideo != nil && analysingVideo == selectedItem?.id }
+    /// A video can turn once its preview shows and its scene is analysed, and while the queue is not running.
+    var canRotateSelected: Bool {
+        guard let item = selectedItem, item.kind == .video, item.state != .done else { return false }
+        return !engine.running && player != nil && !analysingSelectedVideo
+    }
+    /// Turns the selected video 90° clockwise, for its preview and its export.
+    func rotateSelected() {
+        guard canRotateSelected, let item = selectedItem, engine.setRotation(item.id, item.rotation.next) else { return }
+        refreshPreview()
+    }
     private var previewGeneration = PreviewGeneration()
     private var runTask: Task<Void, Never>?
     private var openedScopes: [URL] = []
@@ -667,7 +677,8 @@ final class MacModel {
         let pending = videoAnalysis[item.id] == nil
         if pending { analysingVideo = item.id }
         previewSettings.update(settings, comparing: showingOriginal || pending)
-        let avItem = try await videoPreview.item(url, settings: previewSettings, analysis: videoAnalysis[item.id])
+        let avItem = try await videoPreview.item(url, settings: previewSettings, analysis: videoAnalysis[item.id],
+                                                 rotation: item.rotation)
         try Task.checkCancellation()
         player = AVPlayer(playerItem: avItem)
         previewBusy = false
@@ -697,7 +708,8 @@ final class MacModel {
         if let analysis = videoAnalysis[item.id] { s.analysis = analysis.legacyAnalysis }
         previewSettings.update(s, comparing: showingOriginal || analysingVideo == item.id)
         let generation = previewGeneration.begin()
-        let composition = try await videoPreview.composition(asset: avItem.asset, settings: previewSettings, analysis: videoAnalysis[item.id])
+        let composition = try await videoPreview.composition(asset: avItem.asset, settings: previewSettings, analysis: videoAnalysis[item.id],
+                                                             rotation: item.rotation)
         try Task.checkCancellation()
         guard previewGeneration.accepts(generation) else { return }
         avItem.videoComposition = composition

@@ -25,6 +25,9 @@ final class BatchEngine {
         var error: String?
         /// The subjects this photo protects. Off (no lift) unless the Labs switch is on. A video ignores it.
         var subjects = SubjectChoice.off
+        /// The user's turn on top of the file's own orientation. A photo ignores it.
+        /// Each file starts from its own orientation tag, and only a file set by hand turns (per-file override).
+        var rotation = VideoRotation.none
     }
 
     /// Jobs allowed at once in each stage. `inFlight` caps the items that were admitted but are not delivered yet,
@@ -70,6 +73,15 @@ final class BatchEngine {
     func setSubjects(_ id: Item.ID, _ choice: SubjectChoice) -> Bool {
         guard !running, items.contains(where: { $0.id == id }) else { return false }
         update(id) { $0.subjects = choice }
+        return true
+    }
+
+    /// Sets the turn of one video that has not been saved yet. A run reads it when the video exports,
+    /// so it is refused while running, and for a saved item, whose file would not change.
+    @discardableResult
+    func setRotation(_ id: Item.ID, _ rotation: VideoRotation) -> Bool {
+        guard !running, let item = items.first(where: { $0.id == id }), item.kind == .video, item.state != .done else { return false }
+        update(id) { $0.rotation = rotation }
         return true
     }
 
@@ -248,7 +260,7 @@ final class BatchEngine {
         } catch { await workers.analysis.release(analysisSlot); throw error }
         await workers.analysis.release(analysisSlot)
         update(item.id) { $0.state = .waiting }
-        let chosen = settings, chosenOptions = options, found = analysis, id = item.id, url = item.url
+        let chosen = settings, chosenOptions = options, found = analysis, id = item.id, url = item.url, turn = item.rotation
         let size = metadata.displaySize
         let cost = workers.memory.cost(megapixels: Double(size.width * size.height) / 1_000_000)
         let result = try await workers.video.run { slot in
@@ -257,7 +269,7 @@ final class BatchEngine {
             do {
                 await self.update(id) { $0.state = .exporting }
                 let done = try await workers.exporters[slot].export(url: url, metadata: metadata, settings: chosen, options: chosenOptions,
-                                                                     restorationAnalysis: found) { value in
+                                                                     restorationAnalysis: found, rotation: turn) { value in
                     await self.update(id) { $0.progress = value }
                 }
                 await workers.memory.release(reservation)

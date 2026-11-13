@@ -130,6 +130,27 @@ Notes for 8.1:
 - The preview can render below full size to stay inside the pixel-rate budget (`VideoPreview.swift:75`). So a zoomed frame can look softer than the export.
 - How it works: the player view keeps its controls. While zoomed, a second `AVPlayerLayer` of the same player draws the zoomed frame in the player's video overlay, under the controls.
 
+## 9. Video orientation and Rotate (Jake, 13 Nov 2026)
+
+| # | Work | State | Source |
+|---|---|---|---|
+| 9.1 | Fix: a video with a 90° or 270° orientation tag exported upside down | iPhone 1.1.15 (21). The Mac code is on `main`, for the next Mac build. | `VideoMetadata.ciTransform` |
+| 9.2 | Rotate button in the iPhone editor: 90° clockwise per press, preview and export alike | iPhone 1.1.15 (21) | `EditorView.swift`, `VideoRotation` |
+| 9.3 | Mac queue: Rotate per video, for its preview and its export | On `main`, for the next Mac build. | `PreviewPane.swift`, `BatchEngine.setRotation` |
+
+Decided (Jake, 13 Nov 2026):
+
+- The file's own orientation tag is the start. Rotate adds a turn on top, because a tag can be wrong.
+- Rotate works after the scene analysis, when the preview shows.
+- Batch: each file keeps its own tag, and a turn is set per file. There is no "apply to all", because files in one batch can carry different tags. The iPhone batch is photo-only, so this is the Mac queue.
+
+Notes:
+
+- Cause of 9.1: the track transform uses a y-down space, and Core Image is y-up. Applied as is, a 90° turn went the wrong way, so the frame ended 180° off. `GX017598.MP4` (GoPro, 2704 x 1520, 90° tag): mean pixel error against the AVFoundation frame was 0.285 before and 0.0016 after.
+- The HDR to SDR path was not affected: there AVFoundation applies the transform.
+- The test clip `portrait_audio.mov` had no rotation at all: ffmpeg `-metadata rotate=90` wrote no matrix. It is now made by `scripts/rotate_fixture.swift`. With the old code its test fails (0.55); with the fix it passes.
+- The export writes turned pixels with an identity transform. Correction, restoration and the particle filter run before the turn; the watermark goes on after it.
+
 ## Recommended order
 
 1. Section 2, after the Mac review ends: the Mac release, hardening first. The app is built, and the Mac price is the higher one ([MacApp](MacApp.md)).

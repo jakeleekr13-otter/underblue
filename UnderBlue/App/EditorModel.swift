@@ -57,6 +57,9 @@ final class EditorModel {
     /// From this length on, the editor warns that analysis and export take longer.
     static let longVideoSeconds = 45.0
     var metadata: VideoMetadata?
+    /// The user's turn on top of the file's orientation. The preview and the export both use it.
+    var rotation = VideoRotation.none
+    func rotate() { rotation = rotation.next }
     var isLongVideo: Bool { (metadata?.duration ?? 0) >= Self.longVideoSeconds }
     var videoAnalysis: VideoRestorationAnalysis?
     var capability = ExportCapability.photo
@@ -139,7 +142,7 @@ final class EditorModel {
                 // The first frame shows the original until the analysis is done. Before it the filter has no
                 // analysis, and its look differed from playback and export (Jake, 30 Oct 2026).
                 previewSettings.update(settings, comparing: true)
-                player = AVPlayer(playerItem: try await videoPreview.item(media.url, settings: previewSettings))
+                player = AVPlayer(playerItem: try await videoPreview.item(media.url, settings: previewSettings, rotation: rotation))
                 ready = true
                 // Show the first frame immediately. Device benchmarking and depth analysis continue
                 // without keeping the editor behind "Opening…". Playback stays blocked until they finish.
@@ -169,7 +172,7 @@ final class EditorModel {
                     do {
                         let composition = try await videoPreview.composition(asset: item.asset,
                                                                              settings: previewSettings,
-                                                                             analysis: analysis)
+                                                                             analysis: analysis, rotation: rotation)
                         if previewGeneration.accepts(generation) {
                             item.videoComposition = composition
                             // A paused player keeps the frame it drew before the analysis, so the still frame
@@ -211,7 +214,7 @@ final class EditorModel {
             guard let player, let item = player.currentItem else { return }
             do {
                 let composition = try await videoPreview.composition(asset: item.asset, settings: previewSettings,
-                                                                     analysis: videoAnalysis)
+                                                                     analysis: videoAnalysis, rotation: rotation)
                 try Task.checkCancellation()
                 guard previewGeneration.accepts(generation) else { return }
                 item.videoComposition = composition
@@ -391,7 +394,8 @@ final class EditorModel {
                 let output: URL
                 if let metadata {
                     let result = try await video.export(url: media.url, metadata: metadata, settings: chosenSettings,
-                                                        options: chosenOptions, restorationAnalysis: videoAnalysis, pause: pause) { value in
+                                                        options: chosenOptions, restorationAnalysis: videoAnalysis, pause: pause,
+                                                        rotation: rotation) { value in
                         await self.updateProgress(value)
                     }
                     output = result.url

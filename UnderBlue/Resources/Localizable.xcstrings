@@ -4471,6 +4471,47 @@
         }
       }
     },
+    "Rotate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rotate"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Girar"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "回転"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "회전"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "旋转"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "旋轉"
+          }
+        }
+      }
+    },
     "Save results to" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4918,6 +4959,47 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "點一下「匯出」，然後點一下「儲存到照片」。"
+          }
+        }
+      }
+    },
+    "Turn the video 90 degrees clockwise. Export uses the same turn." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn the video 90 degrees clockwise. Export uses the same turn."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gira el vídeo 90 grados en el sentido de las agujas del reloj. La exportación usa el mismo giro."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "動画を時計回りに90度回転します。書き出しにも同じ回転が使われます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "동영상을 시계 방향으로 90도 회전합니다. 내보내기에도 같은 회전이 적용됩니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将视频顺时针旋转 90 度。导出时使用相同的旋转。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "將影片順時針旋轉 90 度。輸出時使用相同的旋轉。"
           }
         }
       }

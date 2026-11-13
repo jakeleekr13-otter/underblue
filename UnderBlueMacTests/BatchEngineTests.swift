@@ -60,6 +60,27 @@ final class BatchEngineTests: XCTestCase {
          try makePhoto(CIColor(red: 0.05, green: 0.45, blue: 0.75), size: CGSize(width: 4000, height: 3000), name: "IMG_0002.heic")]
     }
 
+    /// Each file starts from its own orientation. A turn set on one video applies to that video only; a photo refuses it.
+    func testRotationIsPerVideoAndReachesTheExport() async throws {
+        let sink = RecordingSink(directory: output)
+        let batch = engine(sink: sink)
+        batch.add([try video("portrait_audio.mov"), try video("portrait_audio.mov"),
+                   try makePhoto(CIColor(red: 0.1, green: 0.5, blue: 0.6), size: CGSize(width: 240, height: 160), name: "IMG_0004.heic")])
+        let ids = batch.items.map(\.id)
+        XCTAssertTrue(batch.setRotation(ids[0], .quarter))
+        XCTAssertFalse(batch.setRotation(ids[2], .quarter), "a photo has no turn")
+        batch.start(settings: FilterSettings(preset: .original))
+        XCTAssertFalse(batch.setRotation(ids[1], .half), "refused while running")
+        await batch.waitUntilFinished()
+        XCTAssertEqual(batch.items.map(\.state), [.done, .done, .done], batch.items.compactMap(\.error).joined(separator: "; "))
+        XCTAssertFalse(batch.setRotation(ids[0], .half), "a saved video would not change")
+        let names = await sink.names
+        let turned = try await MediaInspector().inspect(output.appendingPathComponent(names[0]))
+        let kept = try await MediaInspector().inspect(output.appendingPathComponent(names[1]))
+        XCTAssertEqual(turned.displaySize, CGSize(width: 1920, height: 1080))
+        XCTAssertEqual(kept.displaySize, CGSize(width: 1080, height: 1920))
+    }
+
     /// A Pro run (`trial: false`, also the Mac app's path for Pro) has no mark. A free run has it in the bottom-right corner.
     func testProBatchHasNoWatermarkAndFreeBatchHasIt() async throws {
         let size = CGSize(width: 1200, height: 800)

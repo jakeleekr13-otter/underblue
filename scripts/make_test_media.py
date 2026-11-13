@@ -20,5 +20,6 @@ make('hevc_4k_24_audio','3840x2160',24,'libx265',audio=True)
 make('hevc_4k_60','3840x2160',60,'libx265',duration='0.3')
 make('hlg_10bit','1920x1080',30,'libx265',hdr='arib-std-b67')
 make('pq_10bit','1920x1080',30,'libx265',hdr='smpte2084')
-subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-y','-i',str(root/'h264_1080_30_audio.mov'),'-c','copy','-metadata:s:v:0','rotate=90',str(root/'portrait_audio.mov')],check=True)
+# ffmpeg -metadata rotate=90 wrote no track matrix; AVFoundation sets a real one.
+subprocess.run(['swift','scripts/rotate_fixture.swift',str(root/'h264_1080_30_audio.mov'),str(root/'portrait_audio.mov')],check=True)
 print('Created',len(list(root.glob('*.mov'))),'fixtures')

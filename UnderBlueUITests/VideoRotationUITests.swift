@@ -1,6 +1,6 @@
 import XCTest
 
-/// Rotate in the editor: off while the scene is analysed, then each press turns the preview 90° clockwise.
+/// Rotate in the editor: hidden while the scene is analysed, then on the preview's top right. Each press turns 90° clockwise.
 /// Needs a video in the app's Documents, copied there before the run (`simctl get_app_container … data`).
 /// The file name comes from `UI_TEST_VIDEO`; without it the test is skipped.
 final class VideoRotationUITests: XCTestCase {
@@ -12,11 +12,12 @@ final class VideoRotationUITests: XCTestCase {
                                "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
         let rotate = app.buttons["Rotate"]
-        XCTAssertTrue(rotate.waitForExistence(timeout: 60), "Rotate button missing")
-        // Off until the analysis ends.
-        let deadline = Date().addingTimeInterval(300)
-        while !rotate.isEnabled, Date() < deadline { sleep(1) }
-        XCTAssertTrue(rotate.isEnabled, "Rotate stayed off: the analysis did not end in 300 s")
+        // Hidden until the analysis ends, then on the preview's top right.
+        XCTAssertTrue(rotate.waitForExistence(timeout: 300), "Rotate did not show: the analysis did not end in 300 s")
+        XCTAssertFalse(app.staticTexts["Analyzing…"].exists, "Rotate showed during the analysis")
+        let preview = app.otherElements["Video preview"]
+        XCTAssertGreaterThan(rotate.frame.midX, preview.frame.midX, "Rotate is not on the right")
+        XCTAssertLessThan(rotate.frame.midY, preview.frame.midY, "Rotate is not at the top")
         XCTAssertEqual(rotate.value as? String, "0°")
         attach("before")
         rotate.tap()
@@ -29,6 +30,10 @@ final class VideoRotationUITests: XCTestCase {
         }
         sleep(2)
         attach("after 360")
+        // The player's own controls show on a tap. Rotate must stay clear of them.
+        preview.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        sleep(1)
+        attach("with player controls")
     }
 
     private func attach(_ name: String) {

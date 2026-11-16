@@ -89,7 +89,10 @@ struct EditorView: View {
             Color.black
             if model.media.kind == .video {
                 // No playback and no zoom while the scene is analysed: the filter-only preview stutters on large clips.
-                if let player = model.player { ZoomableVideoPreview(player: player, zoom: $zoom, locked: model.analyzing, rotation: model.rotation) }
+                if let player = model.player {
+                    ZoomableVideoPreview(player: player, zoom: $zoom, locked: model.analyzing, rotation: model.rotation)
+                        .overlay(alignment: .topTrailing) { rotateButton }
+                }
             }
             else if let preview = model.comparing ? model.originalPreview : model.preview {
                 // Compare swaps the image but keeps the zoom, so the same detail can be checked both ways.
@@ -133,6 +136,21 @@ struct EditorView: View {
             }
         }.frame(maxWidth: .infinity, maxHeight: .infinity).clipped()
     }
+    /// Top right of the preview (Jake, 13 Nov 2026). Shown once the analysis ends and the preview is final.
+    /// Each press turns 90° clockwise. The file's own orientation is the start.
+    @ViewBuilder private var rotateButton: some View {
+        if model.ready, !model.analyzing, !model.exporting {
+            Button { model.rotate() } label: {
+                Image(systemName: "rotate.right").font(.title3.weight(.semibold))
+                    .frame(width: 44, height: 44)
+                    .background(.regularMaterial, in: Circle())
+            }
+            .buttonStyle(.plain).padding(12)
+            .accessibilityLabel("Rotate")
+            .accessibilityValue(Text("\(model.rotation.rawValue)°"))
+            .accessibilityHint("Turn the video 90 degrees clockwise. Export uses the same turn.")
+        }
+    }
     @ViewBuilder private var longVideoNotice: some View {
         if model.isLongVideo {
             Text("Analysis and correction can take longer for longer videos.")
@@ -162,12 +180,6 @@ struct EditorView: View {
                             .lineLimit(1).fixedSize()
                     }.buttonStyle(.bordered).frame(minHeight: 44).disabled(!model.ready || model.analyzing)
                         .accessibilityHint("Play three seconds from the current position, then return")
-                    // Each press turns 90° clockwise. The file's own orientation is the start (Jake, 13 Nov 2026).
-                    Button { model.rotate() } label: {
-                        Label("Rotate", systemImage: "rotate.right").labelStyle(.iconOnly)
-                    }.buttonStyle(.bordered).frame(minHeight: 44).disabled(!model.ready || model.analyzing)
-                        .accessibilityValue(Text("\(model.rotation.rawValue)°"))
-                        .accessibilityHint("Turn the video 90 degrees clockwise. Export uses the same turn.")
                 }
                 Button {
                     // Compare closes the picker, as Done does, so both sides compare without the lines.

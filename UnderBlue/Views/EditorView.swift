@@ -145,7 +145,9 @@ struct EditorView: View {
                     .frame(width: 44, height: 44)
                     .background(.regularMaterial, in: Circle())
             }
-            .buttonStyle(.plain).padding(12)
+            // Below the player's own top row: its top-right control ends about 46 pt down and sat under
+            // this button (iPhone 17 simulator, 16 Nov 2026). The middle and bottom controls stay clear.
+            .buttonStyle(.plain).padding(.top, 60).padding(.trailing, 12)
             .accessibilityLabel("Rotate")
             .accessibilityValue(Text("\(model.rotation.rawValue)°"))
             .accessibilityHint("Turn the video 90 degrees clockwise. Export uses the same turn.")

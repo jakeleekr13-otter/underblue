@@ -251,6 +251,18 @@ The complete English and Korean descriptions, promotional text, keywords and rev
     - Manual actions and security issues: none, on both properties.
     - The sitemap was submitted again on the landing property. Right after the submit, it still read "Couldn't fetch".
     - Google's Sitemaps report help names robots.txt blocks, manual actions, a wrong URL and temporary server errors as causes. None applies here. It names no limit for github.io or new sites.
+  - 16 Nov 2026:
+    - Both properties: the sitemap (submitted 12 Nov) still reads "Couldn't fetch" with 0 pages.
+    - Landing property: the Pages report still says it is processing data. Performance, 27 Oct to 13 Nov: 0 clicks, 0 impressions.
+    - Root property: 1 page indexed (report updated 9 Nov).
+    - Root crawl stats (updated 13 Nov): 32 requests, 56% 200 and 44% 404.
+    - The 404s: `/app-ads.txt` 6 times (7 to 14 Nov), `/favicon.ico` once (4 Nov). AdsBot makes 38% of requests.
+    - The 200 list has 11 URLs, from 4 and 5 Nov. On 5 Nov Googlebot fetched the landing root, its CSS and its images. The list has no `sitemap.xml`.
+    - The landing root and `/ko/` have a self `canonical` link and no robots meta tag. `support/` has neither.
+- Bing, 16 Nov 2026:
+  - Landing site: the summary shows 2 known sitemaps and 40 URLs. The sitemap list shows "This might be a momentary issue". Search Performance, 30 Oct to 13 Nov: 0 clicks, 0 impressions.
+  - Root site: the summary now shows 2 known sitemaps and 40 URLs (11 Nov: 1 and 32). The row shows 8 URLs, last crawl 9 Nov, "Success". Search Performance, 11 to 13 Nov: 0 clicks, 0 impressions.
+  - Both sites: Site Explorer shows no indexed URLs.
 - Bing Webmaster Tools:
   - Both `https://jakeleekr13-otter.github.io/underblue-support/` and `https://jakeleekr13-otter.github.io/` are added as sites.
   - Neither site has `BingSiteAuth.xml` or a `msvalidate.01` meta tag. How they were verified is not recorded.

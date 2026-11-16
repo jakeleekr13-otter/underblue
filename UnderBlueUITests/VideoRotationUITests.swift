@@ -4,6 +4,7 @@ import XCTest
 /// Needs a video in the app's Documents, copied there before the run (`simctl get_app_container … data`).
 /// The file name comes from `UI_TEST_VIDEO`; without it the test is skipped.
 final class VideoRotationUITests: XCTestCase {
+    @MainActor
     func testRotateTurnsThePreviewAfterAnalysis() throws {
         guard let file = ProcessInfo.processInfo.environment["UI_TEST_VIDEO"] ?? ProcessInfo.processInfo.environment["TEST_RUNNER_UI_TEST_VIDEO"]
         else { throw XCTSkip("set UI_TEST_VIDEO to a file in the app's Documents") }
@@ -36,6 +37,7 @@ final class VideoRotationUITests: XCTestCase {
         attach("with player controls")
     }
 
+    @MainActor
     private func attach(_ name: String) {
         let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         shot.name = name

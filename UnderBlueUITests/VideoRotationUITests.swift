@@ -3,11 +3,15 @@ import XCTest
 /// Rotate in the editor: hidden while the scene is analysed, then on the preview's top right. Each press turns 90° clockwise.
 /// Needs a video in the app's Documents, copied there before the run (`simctl get_app_container … data`).
 /// The file name comes from `UI_TEST_VIDEO`; without it the test is skipped.
+/// `UI_TEST_LANDSCAPE=1` runs it with the phone turned to landscape (the editor then uses the side panel).
 final class VideoRotationUITests: XCTestCase {
     @MainActor
     func testRotateTurnsThePreviewAfterAnalysis() throws {
         guard let file = ProcessInfo.processInfo.environment["UI_TEST_VIDEO"] ?? ProcessInfo.processInfo.environment["TEST_RUNNER_UI_TEST_VIDEO"]
         else { throw XCTSkip("set UI_TEST_VIDEO to a file in the app's Documents") }
+        let landscape = (ProcessInfo.processInfo.environment["UI_TEST_LANDSCAPE"] ?? ProcessInfo.processInfo.environment["TEST_RUNNER_UI_TEST_LANDSCAPE"]) == "1"
+        XCUIDevice.shared.orientation = landscape ? .landscapeLeft : .portrait
+        defer { XCUIDevice.shared.orientation = .portrait }
         let app = XCUIApplication()
         app.launchArguments = ["--ui-test-keychain=\(UUID().uuidString)", "--ui-test-open=\(file)",
                                "-AppleLanguages", "(en)", "-AppleLocale", "en_US"]

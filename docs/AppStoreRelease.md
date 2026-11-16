@@ -1,8 +1,19 @@
 # App Store release checklist
 
-Last reviewed: 2026-11-13
+Last reviewed: 2026-11-16
 
-## Current release: iPhone 1.1.15 (build 21), 13 Nov 2026
+## Current release: iPhone 1.1.16 (build 22), 16 Nov 2026
+
+iPhone only. The Mac targets stay at 1.0 (1).
+
+- 1.1.16 (22) was uploaded to App Store Connect on 16 Nov 2026 with `xcodebuild -exportArchive` (method `app-store-connect`, destination `upload`, symbols included). The upload succeeded and was processing.
+- Not submitted for App Review here. Jake submits it.
+- Archive: `~/Library/Developer/Xcode/Archives/2026-11-16/UnderBlue 1.1.16 (22).xcarchive`. Checked: app and share extension are both 1.1.16 (22); iPhone only (device family 1); both have the App Group `group.com.underblue.app`; dSYMs for both.
+- New since 1.1.15 (`Roadmap.md` 9.2): Rotate moved from the control row to the top right of the video preview, below the player's own top row. It shows only after the scene analysis.
+- Release note: `AppStoreMetadata.md`, "What's New (1.1.16)": the general note.
+- Tests (16 Nov 2026, iPhone 17 simulator, iOS 27.2): 336 iOS unit tests, 15 skipped, 0 failed. Every skip needs a device, a sample file or an environment variable. `PurchaseTests` not run. UI test `VideoRotationUITests` passes in portrait and in landscape; the screenshots show Rotate clear of the player controls.
+
+## iPhone 1.1.15 (build 21), 13 Nov 2026 (history)
 
 iPhone only. The Mac targets stay at 1.0 (1).
 

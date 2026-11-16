@@ -26,7 +26,7 @@ Order matters. The hardening changes the binary, so it comes before the archive.
 | 2.5 | Japanese and Chinese text: ship as is, or get a native review | Jake decides. | [MacAppStoreRelease](MacAppStoreRelease.md) |
 | 2.6 | Thin bright or dark lines on some edges (turtle, clownfish) | Softer since `ad6ab7f`, not gone. | [MacApp](MacApp.md) |
 | 2.7 | Memory on 8 GB Macs and long 4K video | Not measured. | [MacApp](MacApp.md) |
-| 2.8 | After the release: Mac App Store link on the website (`MAC_APP_STORE`) | Open. The site says "coming soon" until then. | [MacAppStoreRelease](MacAppStoreRelease.md) |
+| 2.8 | After the release: Mac App Store link on the website (`MAC_APP_STORE`) | Done, 17 Nov 2026. The landing pages link `id6824797138`. | [MacAppStoreRelease](MacAppStoreRelease.md) |
 
 ## 3. Video quality (after the Mac release)
 

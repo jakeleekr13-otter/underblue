@@ -135,7 +135,7 @@ Notes for 8.1:
 | # | Work | State | Source |
 |---|---|---|---|
 | 9.1 | Fix: a video with a 90° or 270° orientation tag exported upside down | iPhone 1.1.15 (21). The Mac code is on `main`, for the next Mac build. | `VideoMetadata.ciTransform` |
-| 9.2 | Rotate button in the iPhone editor: 90° clockwise per press, preview and export alike | iPhone 1.1.15 (21) | `EditorView.swift`, `VideoRotation` |
+| 9.2 | Rotate button in the iPhone editor: 90° clockwise per press, preview and export alike | iPhone 1.1.15 (21) in the control row. iPhone 1.1.16 (22): on the preview's top right, below the player's top row (Jake, 16 Nov 2026). | `EditorView.swift`, `VideoRotation` |
 | 9.3 | Mac queue: Rotate per video, for its preview and its export | On `main`, for the next Mac build. | `PreviewPane.swift`, `BatchEngine.setRotation` |
 
 Decided (Jake, 13 Nov 2026):

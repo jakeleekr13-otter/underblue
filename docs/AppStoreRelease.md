@@ -263,6 +263,13 @@ The complete English and Korean descriptions, promotional text, keywords and rev
   - Landing site: the summary shows 2 known sitemaps and 40 URLs. The sitemap list shows "This might be a momentary issue". Search Performance, 30 Oct to 13 Nov: 0 clicks, 0 impressions.
   - Root site: the summary now shows 2 known sitemaps and 40 URLs (11 Nov: 1 and 32). The row shows 8 URLs, last crawl 9 Nov, "Success". Search Performance, 11 to 13 Nov: 0 clicks, 0 impressions.
   - Both sites: Site Explorer shows no indexed URLs.
+- Root sitemap test (16 Nov 2026):
+  - The question: does the sitemap fail because it sits under `/underblue-support/`?
+  - Google's rule: a sitemap may list only URLs in its own folder or below. All 38 URLs are under `/underblue-support/`, so the rule holds.
+  - That rule also gives per-URL errors, not "Couldn't fetch". So the folder is not a likely cause.
+  - Test: the root repo now has `/sitemap.xml`, a byte copy of the landing sitemap. `robots.txt` lists both sitemaps.
+  - It was submitted on the root property on 16 Nov. Right after the submit it read "Couldn't fetch" with 0 pages.
+  - The copy does not update itself. `build_landing.py` rewrites only the landing sitemap. Copy it again after each landing build, or delete it after the test.
 - Bing Webmaster Tools:
   - Both `https://jakeleekr13-otter.github.io/underblue-support/` and `https://jakeleekr13-otter.github.io/` are added as sites.
   - Neither site has `BingSiteAuth.xml` or a `msvalidate.01` meta tag. How they were verified is not recorded.

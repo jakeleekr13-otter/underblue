@@ -290,6 +290,17 @@ The complete English and Korean descriptions, promotional text, keywords and rev
   - Root crawl stats (updated 15 Nov): 41 requests. 54% 200, 41% 404, 5% 301. The 301 report keeps no example URL.
   - On 16 Nov at 09:33 Google fetched the root hub, `favicon.ico` and `favicon-192.png`. No `sitemap.xml` is in the 200 list yet.
   - Bing: no change since 16 Nov. The root `/sitemap.xml` is not submitted to Bing.
+- 17 Nov 2026, indexing requests on the github.io landing property: the 6 language roots (`/`, `/ko/`, `/ja/`, `/zh-hans/`, `/zh-hant/`, `/es/`). Before the request, all 6 read "URL is not on Google". All 6 now read "Indexing requested".
+- Second copy on `underblue.enheart.me` (Jake, 17 Nov 2026):
+  - Why: the github.io sitemap stays "Couldn't fetch". The github.io site stays as it is.
+  - Repo: `jakeleekr13-otter/underblue-site`. GitHub Pages, custom domain `underblue.enheart.me`, HTTPS enforced.
+  - DNS (IONOS): `CNAME underblue -> jakeleekr13-otter.github.io`. Added by Jake.
+  - The content is a build of `underblue-support` with `UNDERBLUE_SITE=https://underblue.enheart.me`. Canonical, hreflang and sitemap URLs point to `underblue.enheart.me`. The copy adds `CNAME` and `robots.txt`. It leaves out `_build/`, `.github/` and the Google verification file.
+  - To update it: build in a clean `underblue-support` checkout with `UNDERBLUE_SITE` set, copy the output to `underblue-site`, then reset the `underblue-support` checkout.
+  - Search Console: the `enheart.me` Domain property already existed (since May 2026). It verified at once through the domain name provider.
+  - The sitemap `https://underblue.enheart.me/sitemap.xml` was submitted on 17 Nov. It read "Success" with 38 pages right away. The github.io copy of the same sitemap still reads "Couldn't fetch".
+  - Indexing was requested for the 6 language roots on `underblue.enheart.me`. Before the request, all 6 read "URL is not on Google".
+  - Next: when the enheart pages are indexed, point the github.io canonical links to `underblue.enheart.me`.
 - Bing Webmaster Tools:
   - Both `https://jakeleekr13-otter.github.io/underblue-support/` and `https://jakeleekr13-otter.github.io/` are added as sites.
   - Neither site has `BingSiteAuth.xml` or a `msvalidate.01` meta tag. How they were verified is not recorded.

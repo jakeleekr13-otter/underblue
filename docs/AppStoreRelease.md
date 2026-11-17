@@ -301,6 +301,8 @@ The complete English and Korean descriptions, promotional text, keywords and rev
   - The sitemap `https://underblue.enheart.me/sitemap.xml` was submitted on 17 Nov. It read "Success" with 38 pages right away. The github.io copy of the same sitemap still reads "Couldn't fetch".
   - Indexing was requested for the 6 language roots on `underblue.enheart.me`. Before the request, all 6 read "URL is not on Google".
   - Next: when the enheart pages are indexed, point the github.io canonical links to `underblue.enheart.me`.
+  - Bing (17 Nov 2026): site `https://underblue.enheart.me/` added. It is verified by `BingSiteAuth.xml` at the site root. Never delete that file. The sitemap was submitted. Right after the submit it read "Submitted", "Processing".
+  - A rebuild must keep `BingSiteAuth.xml`, `CNAME` and `robots.txt` in `underblue-site`. They are not in `underblue-support`.
 - Bing Webmaster Tools:
   - Both `https://jakeleekr13-otter.github.io/underblue-support/` and `https://jakeleekr13-otter.github.io/` are added as sites.
   - Neither site has `BingSiteAuth.xml` or a `msvalidate.01` meta tag. How they were verified is not recorded.

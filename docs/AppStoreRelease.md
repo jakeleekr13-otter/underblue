@@ -281,6 +281,15 @@ The complete English and Korean descriptions, promotional text, keywords and rev
   - Test: the root repo now has `/sitemap.xml`, a byte copy of the landing sitemap. `robots.txt` lists both sitemaps.
   - It was submitted on the root property on 16 Nov. Right after the submit it read "Couldn't fetch" with 0 pages.
   - The copy does not update itself. `build_landing.py` rewrites only the landing sitemap. Copy it again after each landing build, or delete it after the test.
+- 17 Nov 2026 check:
+  - All three sitemap rows still read "Couldn't fetch" with 0 pages: landing `/sitemap.xml` (12 Nov), root `/sitemap.xml` (16 Nov), root `/underblue-support/sitemap.xml` (12 Nov).
+  - Both submits showed "Couldn't fetch" right after the click.
+  - Google's Sitemaps report help says a submitted sitemap "should be fetched immediately".
+  - Landing: the Pages report still says it is processing data. Performance, 27 Oct to 14 Nov: 0 clicks, 0 impressions.
+  - Root: 1 page indexed (updated 13 Nov).
+  - Root crawl stats (updated 15 Nov): 41 requests. 54% 200, 41% 404, 5% 301. The 301 report keeps no example URL.
+  - On 16 Nov at 09:33 Google fetched the root hub, `favicon.ico` and `favicon-192.png`. No `sitemap.xml` is in the 200 list yet.
+  - Bing: no change since 16 Nov. The root `/sitemap.xml` is not submitted to Bing.
 - Bing Webmaster Tools:
   - Both `https://jakeleekr13-otter.github.io/underblue-support/` and `https://jakeleekr13-otter.github.io/` are added as sites.
   - Neither site has `BingSiteAuth.xml` or a `msvalidate.01` meta tag. How they were verified is not recorded.

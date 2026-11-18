@@ -303,6 +303,11 @@ The complete English and Korean descriptions, promotional text, keywords and rev
   - Next: when the enheart pages are indexed, point the github.io canonical links to `underblue.enheart.me`.
   - Bing (17 Nov 2026): site `https://underblue.enheart.me/` added. It is verified by `BingSiteAuth.xml` at the site root. Never delete that file. The sitemap was submitted. Right after the submit it read "Submitted", "Processing".
   - A rebuild must keep `BingSiteAuth.xml`, `CNAME` and `robots.txt` in `underblue-site`. They are not in `underblue-support`.
+- 18 Nov 2026 check:
+  - Google: all 6 `underblue.enheart.me` language roots read "URL is on Google". Indexing was requested on 17 Nov.
+  - Google: the `underblue.enheart.me` sitemap reads "Success", 38 pages.
+  - Google: the github.io landing sitemap still reads "Couldn't fetch". The github.io landing roots `/` and `/ko/` still read "URL is not on Google", with no crawl.
+  - Bing: the `underblue.enheart.me` sitemap was crawled on 17 Nov. Status "Success", 38 URLs.
 - Bing Webmaster Tools:
   - Both `https://jakeleekr13-otter.github.io/underblue-support/` and `https://jakeleekr13-otter.github.io/` are added as sites.
   - Neither site has `BingSiteAuth.xml` or a `msvalidate.01` meta tag. How they were verified is not recorded.

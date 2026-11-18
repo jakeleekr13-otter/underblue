@@ -280,7 +280,7 @@ The complete English and Korean descriptions, promotional text, keywords and rev
   - That rule also gives per-URL errors, not "Couldn't fetch". So the folder is not a likely cause.
   - Test: the root repo now has `/sitemap.xml`, a byte copy of the landing sitemap. `robots.txt` lists both sitemaps.
   - It was submitted on the root property on 16 Nov. Right after the submit it read "Couldn't fetch" with 0 pages.
-  - The copy does not update itself. `build_landing.py` rewrites only the landing sitemap. Copy it again after each landing build, or delete it after the test.
+  - 18 Nov 2026: the test ended. The root `/sitemap.xml` and its `robots.txt` line are deleted. The root property still lists the submitted `/sitemap.xml`.
 - 17 Nov 2026 check:
   - All three sitemap rows still read "Couldn't fetch" with 0 pages: landing `/sitemap.xml` (12 Nov), root `/sitemap.xml` (16 Nov), root `/underblue-support/sitemap.xml` (12 Nov).
   - Both submits showed "Couldn't fetch" right after the click.
@@ -300,7 +300,7 @@ The complete English and Korean descriptions, promotional text, keywords and rev
   - Search Console: the `enheart.me` Domain property already existed (since May 2026). It verified at once through the domain name provider.
   - The sitemap `https://underblue.enheart.me/sitemap.xml` was submitted on 17 Nov. It read "Success" with 38 pages right away. The github.io copy of the same sitemap still reads "Couldn't fetch".
   - Indexing was requested for the 6 language roots on `underblue.enheart.me`. Before the request, all 6 read "URL is not on Google".
-  - Next: when the enheart pages are indexed, point the github.io canonical links to `underblue.enheart.me`.
+  - 18 Nov 2026: the github.io pages now point their canonical links to `underblue.enheart.me` (below).
   - Bing (17 Nov 2026): site `https://underblue.enheart.me/` added. It is verified by `BingSiteAuth.xml` at the site root. Never delete that file. The sitemap was submitted. Right after the submit it read "Submitted", "Processing".
   - A rebuild must keep `BingSiteAuth.xml`, `CNAME` and `robots.txt` in `underblue-site`. They are not in `underblue-support`.
 - 18 Nov 2026 check:
@@ -308,6 +308,11 @@ The complete English and Korean descriptions, promotional text, keywords and rev
   - Google: the `underblue.enheart.me` sitemap reads "Success", 38 pages.
   - Google: the github.io landing sitemap still reads "Couldn't fetch". The github.io landing roots `/` and `/ko/` still read "URL is not on Google", with no crawl.
   - Bing: the `underblue.enheart.me` sitemap was crawled on 17 Nov. Status "Success", 38 URLs.
+- Main site since 18 Nov 2026: `https://underblue.enheart.me`.
+  - `build_landing.py` now uses it as the default `SITE`. Canonical, hreflang, Open Graph and sitemap URLs point to it.
+  - One build feeds both hosts. The github.io output is byte-identical to the `underblue-site` copy (checked 18 Nov).
+  - After a landing build in `underblue-support`, copy the output to `underblue-site`. Leave out `_build/`, `.github/` and `google*.html`. Keep `BingSiteAuth.xml`, `CNAME` and `robots.txt` there.
+  - The App Store support and privacy URLs still point to github.io. Those pages still work.
 - Bing Webmaster Tools:
   - Both `https://jakeleekr13-otter.github.io/underblue-support/` and `https://jakeleekr13-otter.github.io/` are added as sites.
   - Neither site has `BingSiteAuth.xml` or a `msvalidate.01` meta tag. How they were verified is not recorded.

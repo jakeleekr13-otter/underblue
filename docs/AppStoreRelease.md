@@ -313,6 +313,14 @@ The complete English and Korean descriptions, promotional text, keywords and rev
   - One build feeds both hosts. The github.io output is byte-identical to the `underblue-site` copy (checked 18 Nov).
   - After a landing build in `underblue-support`, copy the output to `underblue-site`. Leave out `_build/`, `.github/` and `google*.html`. Keep `BingSiteAuth.xml`, `CNAME` and `robots.txt` there.
   - The App Store support and privacy URLs still point to github.io. Those pages still work.
+- Search ranking work (18 Nov 2026):
+  - Bing Keyword Research had "not enough data" for all 6 seed terms. The niche has low search volume.
+  - Landing titles in all 6 languages now name iPhone and Mac. Support and privacy pages have canonical links to `underblue.enheart.me`.
+  - The app comparison guide now covers 6 apps: UnderBlue, AquaColorFix, Dive+, DeepColors, DiveClick, Aqura FX. Facts checked on 18 Nov from App Store pages and official sites. The Korean page uses Korean App Store prices in won.
+  - Fixed a wrong fact: the comparison said the UnderBlue privacy label is "Data Not Collected". The real label, on iPhone and Mac, is "Data Not Linked to You" (photos or videos, diagnostics). Privacy label names in each language use Apple's own wording.
+  - New guides in 6 languages: `fix-blue-green-underwater-photos` and `batch-underwater-photos-mac`. The Mac guide's call to action links the Mac App Store (`"app": "mac"` in the guide JSON).
+  - Indexing was requested for the English blue/green guide. The next request hit the daily quota. 11 new guide URLs still wait for a request. They are in the sitemap.
+  - Seen, not changed: the Korean App Store description of the iPhone app says the free tier is 1 photo and the first 10 seconds of 1 video. The US description says 3 photos, then 1 photo every 24 hours.
 - Bing Webmaster Tools:
   - Both `https://jakeleekr13-otter.github.io/underblue-support/` and `https://jakeleekr13-otter.github.io/` are added as sites.
   - Neither site has `BingSiteAuth.xml` or a `msvalidate.01` meta tag. How they were verified is not recorded.
